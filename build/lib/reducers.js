@@ -15,7 +15,11 @@ var _assign2 = _interopRequireDefault(_assign);
 
 var _redux = require('redux');
 
-var _dockerApps = require('../lib/dockerApps');
+var _dockerApps = require('./dockerApps');
+
+var _dockerStateObserver = require('./dockerStateObserver');
+
+var _dockerStateObserver2 = _interopRequireDefault(_dockerStateObserver);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -52,31 +56,40 @@ var docker = function docker() {
   var action = arguments[1];
 
 
+  var newState = void 0;
+
   switch (action.type) {
     case 'DAEMON_START':
-      return {
+      newState = {
         pid: action.data.pid,
         volume: action.data.volume,
         events: action.data.events,
         data: null,
         computed: null
       };
+      break;
 
     case 'DOCKER_UPDATE':
-      return (0, _assign2.default)({}, state, {
+      newState = (0, _assign2.default)({}, state, {
         data: action.data
       }, {
         computed: {
           installeds: (0, _dockerApps.containersToApps)(action.data.containers)
         }
       });
+      break;
 
     case 'DAEMON_STOP':
-      return null;
+      newState = null;
+      break;
 
     default:
-      return state;
+      newState = state;
+      break;
   }
+
+  (0, _dockerStateObserver2.default)(newState, state);
+  return newState;
 };
 
 var tasks = function tasks() {
@@ -152,9 +165,7 @@ var store = (0, _redux.createStore)((0, _redux.combineReducers)({
   tasks: tasks
 }));
 
-store.subscribe(function () {
-  return console.log(store.getState());
-});
+// store.subscribe(() => console.log(store.getState()))
 
 console.log('reducers module initialized');
 

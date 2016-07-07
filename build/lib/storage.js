@@ -429,7 +429,7 @@ var createVolume = function () {
 
                 if (!block) throw new InvalidError(blkname + ' not found');
                 if (block.props.devtype !== 'disk') throw new InvalidError(blkname + ' is not a disk');
-                if (block.props.id_bus !== 'ata' && blck.props.id_bus !== 'scsi') throw new InvalidError(blkname + ' is not ata disk');
+                if (block.props.id_bus !== 'ata' && block.props.id_bus !== 'scsi') throw new InvalidError(blkname + ' is not ata disk');
 
                 // check if the block belongs to a volume
                 var volume = blockVolume(block, volumes);
