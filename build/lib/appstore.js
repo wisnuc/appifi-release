@@ -28,14 +28,14 @@ var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 // retrieve text/plain file from url
 
 var retrieveText = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(url) {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(url) {
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             return _context.abrupt('return', new _promise2.default(function (resolve, reject) {
               _superagent2.default.get(url).set('Accept', 'text/plain').end(function (err, res) {
-                err ? reject(err) : resolve(res.text);
+                err ? resolve(err) : resolve(res.text);
               });
             }));
 
@@ -46,13 +46,14 @@ var retrieveText = function () {
       }
     }, _callee, this);
   }));
+
   return function retrieveText(_x) {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
 var retrieveRecipes = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
     var recipes, jsonRecipes;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
@@ -66,44 +67,69 @@ var retrieveRecipes = function () {
             }
 
             recipes = _apps2.default;
-            _context2.next = 11;
+            _context2.next = 20;
             break;
 
           case 5:
             info('retrieve json recipes');
             _context2.next = 8;
-            return retrieveText(jsonRecipesUrl);
+            return retrieveText(getJsonRecipesUrl());
 
           case 8:
             jsonRecipes = _context2.sent;
 
-            info('parse json recipes');
-            recipes = JSON.parse(jsonRecipes);
+            if (!(jsonRecipes instanceof Error)) {
+              _context2.next = 11;
+              break;
+            }
+
+            return _context2.abrupt('return', jsonRecipes);
 
           case 11:
 
-            recipes.filter(function (recipe) {
+            info('parse json recipes');
+            _context2.prev = 12;
+
+            recipes = JSON.parse(jsonRecipes);
+            _context2.next = 20;
+            break;
+
+          case 16:
+            _context2.prev = 16;
+            _context2.t0 = _context2['catch'](12);
+
+            info('json recipes parse error');
+            return _context2.abrupt('return', _context2.t0);
+
+          case 20:
+
+            recipes = recipes.filter(function (recipe) {
               return (0, _dockerApps.validateRecipe)(recipe);
             });
+
+            info('recipes retrieved');
             return _context2.abrupt('return', recipes);
 
-          case 13:
+          case 23:
           case 'end':
             return _context2.stop();
         }
       }
-    }, _callee2, this);
+    }, _callee2, this, [[12, 16]]);
   }));
+
   return function retrieveRecipes() {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
 /* this promise never reject */
 
 
+// retrieve all repos for all recipes, return component -> repo map
+
 var retrieveRepoMap = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(recipes) {
+  var _ref3 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(recipes) {
     var compos, repos, map, i;
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
@@ -115,7 +141,7 @@ var retrieveRepoMap = function () {
             }
 
             warn('retrieveRepoMap: recipes null or undefined');
-            return _context3.abrupt('return', null);
+            return _context3.abrupt('return', new Error('recipes can\'t be null'));
 
           case 3:
 
@@ -148,16 +174,24 @@ var retrieveRepoMap = function () {
       }
     }, _callee3, this);
   }));
+
   return function retrieveRepoMap(_x2) {
-    return ref.apply(this, arguments);
+    return _ref3.apply(this, arguments);
   };
 }();
 
-// TODO
-
+// new appstore definition
+// null (init state)
+// {
+//    status: 'LOADING', 'LOADED', 'ERROR'
+//    errcode: ERROR only
+//    errMessage: ERROR only
+//    result: LOADED only
+// }
+//
 
 var refreshAppStore = exports.refreshAppStore = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4() {
+  var _ref4 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4() {
     var appstore, recipes, repoMap;
     return _regenerator2.default.wrap(function _callee4$(_context4) {
       while (1) {
@@ -177,7 +211,9 @@ var refreshAppStore = exports.refreshAppStore = function () {
 
             (0, _reducers.storeDispatch)({
               type: 'APPSTORE_UPDATE',
-              data: 'LOADING'
+              data: {
+                status: 'LOADING'
+              }
             });
 
             _context4.next = 7;
@@ -186,50 +222,68 @@ var refreshAppStore = exports.refreshAppStore = function () {
           case 7:
             recipes = _context4.sent;
 
-            if (recipes) {
-              _context4.next = 11;
+            if (!(recipes instanceof Error)) {
+              _context4.next = 12;
               break;
             }
 
+            console.log(recipes);
             (0, _reducers.storeDispatch)({
               type: 'APPSTORE_UPDATE',
-              data: 'ERROR'
+              data: {
+                status: 'ERROR',
+                code: recipes.code,
+                message: recipes.message
+              }
             });
             return _context4.abrupt('return');
 
-          case 11:
-            _context4.next = 13;
+          case 12:
+            _context4.next = 14;
             return retrieveRepoMap(recipes);
 
-          case 13:
+          case 14:
             repoMap = _context4.sent;
 
-            if (!repoMap) {
-              (0, _reducers.storeDispatch)({
-                type: 'APPSTORE_UPDATE',
-                data: 'ERROR'
-              });
+            if (!(repoMap instanceof Error)) {
+              _context4.next = 19;
+              break;
             }
+
+            // TODO this seems unnecessary
+            console.log(repoMap);
+            (0, _reducers.storeDispatch)({
+              type: 'APPSTORE_UPDATE',
+              data: {
+                status: 'ERROR',
+                code: recipes.code,
+                message: recipes.message
+              }
+            });
+            return _context4.abrupt('return');
+
+          case 19:
 
             (0, _reducers.storeDispatch)({
               type: 'APPSTORE_UPDATE',
-              data: { recipes: recipes, repoMap: repoMap }
+              data: {
+                status: 'LOADED',
+                result: { recipes: recipes, repoMap: repoMap }
+              }
             });
 
-          case 16:
+          case 20:
           case 'end':
             return _context4.stop();
         }
       }
     }, _callee4, this);
   }));
+
   return function refreshAppStore() {
-    return ref.apply(this, arguments);
+    return _ref4.apply(this, arguments);
   };
 }();
-
-// TODO move to elsewhere
-
 
 var _clone = require('clone');
 
@@ -249,7 +303,17 @@ var _reducers = require('../lib/reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi/master/hosted/apps.json';
+// const jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi/master/hosted/apps.json'
+
+var jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/master/release.json';
+
+var getJsonRecipesUrl = function getJsonRecipesUrl() {
+
+  var url = (0, _reducers.storeState)().serverConfig && (0, _reducers.storeState)().serverConfig.appstoreMaster === true ? 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/master/release.json' : 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/release/release.json';
+
+  info('using ' + url);
+  return url;
+};
 
 var useLocalRecipes = false;
 
@@ -264,27 +328,21 @@ function info(text) {
       if (err) resolve(null);else if (!res.ok) resolve(null);else resolve(res.body);
     });
   });
-}
+}exports.default = {
 
-function getApp(recipeKeyString) {
-
-  if (memo.status !== 'success') return null;
-  var app = memo.apps.find(function (app) {
-    return recipeKeyString === (0, _dockerApps.calcRecipeKeyString)(app);
-  });
-  return app ? (0, _clone2.default)(app) : null;
-}
-
-exports.default = {
-
-  init: function init() {
+  // init is called in app init
+  reload: function reload() {
     info('loading');
-    refreshAppStore().then(function (r) {}).catch(function (e) {});
-  },
-  get: function get() {
-    return memo;
-  },
-
-  /* server side use */
-  getApp: getApp
+    refreshAppStore().then(function (r) {
+      if (r instanceof Error) {
+        info('failed loading appstore');
+        console.log(r);
+        return;
+      }
+      info('loading success');
+    }).catch(function (e) {
+      console.log(e);
+      info('loading failed');
+    });
+  }
 };

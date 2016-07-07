@@ -17,7 +17,7 @@ var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 
 var udevInfo = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(sysfspath) {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(sysfspath) {
     var result, output;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
@@ -72,8 +72,9 @@ var udevInfo = function () {
       }
     }, _callee, this);
   }));
+
   return function udevInfo(_x) {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
@@ -82,7 +83,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var child = require('child_process');
 
 var udevInfoAttr = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(sysfspath) {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(sysfspath) {
     var props, p, output;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
@@ -135,13 +136,14 @@ var udevInfoAttr = function () {
       }
     }, _callee2, undefined);
   }));
+
   return function udevInfoAttr(_x2) {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
 var udevInfoBoth = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(sysfspath) {
+  var _ref3 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(sysfspath) {
     var info, attr;
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
@@ -166,13 +168,14 @@ var udevInfoBoth = function () {
       }
     }, _callee3, undefined);
   }));
+
   return function udevInfoBoth(_x3) {
-    return ref.apply(this, arguments);
+    return _ref3.apply(this, arguments);
   };
 }();
 
 var udevInfoBatch = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4(paths) {
+  var _ref4 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4(paths) {
     var e;
     return _regenerator2.default.wrap(function _callee4$(_context4) {
       while (1) {
@@ -219,8 +222,9 @@ var udevInfoBatch = function () {
       }
     }, _callee4, undefined);
   }));
+
   return function udevInfoBatch(_x4) {
-    return ref.apply(this, arguments);
+    return _ref4.apply(this, arguments);
   };
 }();
 

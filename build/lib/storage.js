@@ -41,7 +41,7 @@ var _inherits2 = require('babel-runtime/helpers/inherits');
 var _inherits3 = _interopRequireDefault(_inherits2);
 
 var portsPaths = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -61,13 +61,14 @@ var portsPaths = function () {
       }
     }, _callee, this);
   }));
+
   return function portsPaths() {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
 var probePorts = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
     var paths;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
@@ -87,13 +88,14 @@ var probePorts = function () {
       }
     }, _callee2, this);
   }));
+
   return function probePorts() {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
 var blockPaths = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3() {
+  var _ref3 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3() {
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
         switch (_context3.prev = _context3.next) {
@@ -113,13 +115,14 @@ var blockPaths = function () {
       }
     }, _callee3, this);
   }));
+
   return function blockPaths() {
-    return ref.apply(this, arguments);
+    return _ref3.apply(this, arguments);
   };
 }();
 
 var probeBlocks = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4() {
+  var _ref4 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4() {
     var paths;
     return _regenerator2.default.wrap(function _callee4$(_context4) {
       while (1) {
@@ -143,13 +146,14 @@ var probeBlocks = function () {
       }
     }, _callee4, this);
   }));
+
   return function probeBlocks() {
-    return ref.apply(this, arguments);
+    return _ref4.apply(this, arguments);
   };
 }();
 
 var probeStorage = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee5() {
+  var _ref5 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee5() {
     var result;
     return _regenerator2.default.wrap(function _callee5$(_context5) {
       while (1) {
@@ -175,13 +179,14 @@ var probeStorage = function () {
       }
     }, _callee5, this);
   }));
+
   return function probeStorage() {
-    return ref.apply(this, arguments);
+    return _ref5.apply(this, arguments);
   };
 }();
 
 var execAnyway = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee6(cmd) {
+  var _ref6 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee6(cmd) {
     var debug;
     return _regenerator2.default.wrap(function _callee6$(_context6) {
       while (1) {
@@ -205,13 +210,14 @@ var execAnyway = function () {
       }
     }, _callee6, this);
   }));
+
   return function execAnyway(_x) {
-    return ref.apply(this, arguments);
+    return _ref6.apply(this, arguments);
   };
 }();
 
 var mountVolumeAnyway = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee7(uuid, mountpoint, opts) {
+  var _ref7 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee7(uuid, mountpoint, opts) {
     return _regenerator2.default.wrap(function _callee7$(_context7) {
       while (1) {
         switch (_context7.prev = _context7.next) {
@@ -229,13 +235,14 @@ var mountVolumeAnyway = function () {
       }
     }, _callee7, this);
   }));
+
   return function mountVolumeAnyway(_x2, _x3, _x4) {
-    return ref.apply(this, arguments);
+    return _ref7.apply(this, arguments);
   };
 }();
 
 var mountVolumesAnyway = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee8(volumes, mounts) {
+  var _ref8 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee8(volumes, mounts) {
     var unmounted, tasks;
     return _regenerator2.default.wrap(function _callee8$(_context8) {
       while (1) {
@@ -257,13 +264,14 @@ var mountVolumesAnyway = function () {
       }
     }, _callee8, this);
   }));
+
   return function mountVolumesAnyway(_x5, _x6) {
-    return ref.apply(this, arguments);
+    return _ref8.apply(this, arguments);
   };
 }();
 
 var probeUsages = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee9(mounts) {
+  var _ref9 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee9(mounts) {
     var filtered;
     return _regenerator2.default.wrap(function _callee9$(_context9) {
       while (1) {
@@ -287,13 +295,14 @@ var probeUsages = function () {
       }
     }, _callee9, this);
   }));
+
   return function probeUsages(_x7) {
-    return ref.apply(this, arguments);
+    return _ref9.apply(this, arguments);
   };
 }();
 
 var probeStorageWithUsages = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee10() {
+  var _ref10 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee10() {
     var storage, mounts, usages;
     return _regenerator2.default.wrap(function _callee10$(_context10) {
       while (1) {
@@ -327,13 +336,14 @@ var probeStorageWithUsages = function () {
       }
     }, _callee10, this);
   }));
+
   return function probeStorageWithUsages() {
-    return ref.apply(this, arguments);
+    return _ref10.apply(this, arguments);
   };
 }();
 
 var refreshStorage = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee11() {
+  var _ref11 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee11() {
     var obj;
     return _regenerator2.default.wrap(function _callee11$(_context11) {
       while (1) {
@@ -357,8 +367,9 @@ var refreshStorage = function () {
       }
     }, _callee11, this);
   }));
+
   return function refreshStorage() {
-    return ref.apply(this, arguments);
+    return _ref11.apply(this, arguments);
   };
 }();
 
@@ -376,8 +387,8 @@ var refreshStorage = function () {
  */
 
 var createVolume = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee12(blknames, opts) {
-    var debug, storage, daemon, mps, stdout, blknamesValidation, blknamesMounted;
+  var _ref12 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee12(blknames, opts) {
+    var mode, debug, storage, daemon, mps, stdout, blknamesValidation, blknamesMounted;
     return _regenerator2.default.wrap(function _callee12$(_context12) {
       while (1) {
         switch (_context12.prev = _context12.next) {
@@ -418,7 +429,7 @@ var createVolume = function () {
 
                 if (!block) throw new InvalidError(blkname + ' not found');
                 if (block.props.devtype !== 'disk') throw new InvalidError(blkname + ' is not a disk');
-                if (block.props.id_bus !== 'ata') throw new InvalidError(blkname + ' is not ata disk');
+                if (block.props.id_bus !== 'ata' && blck.props.id_bus !== 'scsi') throw new InvalidError(blkname + ' is not ata disk');
 
                 // check if the block belongs to a volume
                 var volume = blockVolume(block, volumes);
@@ -439,53 +450,65 @@ var createVolume = function () {
               });
             };
 
+            info('createVolume');
+            info('blknames: ' + blknames.join(','));
+
+            mode = opts.mode;
+
+            if (mode === undefined) mode = 'single';
+
+            if (!(mode !== 'single' && mode !== 'raid0' && mode !== 'raid1')) {
+              _context12.next = 8;
+              break;
+            }
+
+            return _context12.abrupt('return', new Error('invalid mode, only single, raid0, raid1 are supported'));
+
+          case 8:
             debug = true;
 
             if (blknames.length) {
-              _context12.next = 5;
+              _context12.next = 11;
               break;
             }
 
             throw new InvalidError('device names empty');
 
-          case 5:
+          case 11:
 
             // undupe
             blknames = blknames.filter(function (blkname, index, self) {
               return index === self.indexOf(blkname);
             });
 
-            debug && console.log('---- blknames');
-            debug && console.log(blknames);
-
             // probe storage
-            _context12.next = 10;
+            _context12.next = 14;
             return probeStorage();
 
-          case 10:
+          case 14:
             storage = _context12.sent;
-            _context12.next = 13;
+            _context12.next = 17;
             return (0, _docker.probeDaemon)();
 
-          case 13:
+          case 17:
             daemon = _context12.sent;
 
             if (!(storage.blocks === null)) {
-              _context12.next = 16;
+              _context12.next = 20;
               break;
             }
 
             return _context12.abrupt('return');
 
-          case 16:
+          case 20:
             if (!(storage.blocks.length === 0)) {
-              _context12.next = 18;
+              _context12.next = 22;
               break;
             }
 
             return _context12.abrupt('return');
 
-          case 18:
+          case 22:
 
             // validate
             blknamesValidation(blknames, storage.blocks, storage.volumes, storage.mounts, storage.swaps, daemon);
@@ -493,11 +516,10 @@ var createVolume = function () {
             // find mounted mountpoints
             mps = blknamesMounted(blknames, storage.blocks, storage.volumes, storage.mounts);
 
-            debug && console.log('---- blknames mounted:');
-            debug && console.log(mps);
+            info('blknames mounted: ' + mps.join(' '));
 
             // umount mounted
-            _context12.next = 24;
+            _context12.next = 27;
             return _promise2.default.all(mps.map(function (mp) {
               return new _promise2.default(function (resolve, reject) {
                 child.exec('umount ' + mp, function (err, stdout, stderr) {
@@ -506,26 +528,27 @@ var createVolume = function () {
               });
             }));
 
-          case 24:
-            debug && console.log('---- unmount mounted blknames successfully');
+          case 27:
 
-            _context12.next = 27;
+            info('unmount mounted blknames successfully');
+
+            _context12.next = 30;
             return new _promise2.default(function (resolve, reject) {
-              child.exec('mkfs.btrfs -f ' + blknames.join(' '), function (err, stdout, stderr) {
+              child.exec('mkfs.btrfs -d ' + mode + ' -f ' + blknames.join(' '), function (err, stdout, stderr) {
                 err ? reject(err) : resolve(stdout);
               });
             });
 
-          case 27:
+          case 30:
             stdout = _context12.sent;
 
 
-            debug && console.log('---- mkfs.btrfs successfully');
+            info('mkfs.btrfs successfully');
 
-            _context12.next = 31;
+            _context12.next = 34;
             return probeStorageWithUsages();
 
-          case 31:
+          case 34:
             storage = _context12.sent;
             return _context12.abrupt('return', storage.volumes.find(function (vol) {
               return vol.devices.length === blknames.length && vol.devices.every(function (dev) {
@@ -535,20 +558,21 @@ var createVolume = function () {
               });
             }));
 
-          case 33:
+          case 36:
           case 'end':
             return _context12.stop();
         }
       }
     }, _callee12, this);
   }));
+
   return function createVolume(_x8, _x9) {
-    return ref.apply(this, arguments);
+    return _ref12.apply(this, arguments);
   };
 }();
 
 var testOperation = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee13() {
+  var _ref13 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee13() {
     return _regenerator2.default.wrap(function _callee13$(_context13) {
       while (1) {
         switch (_context13.prev = _context13.next) {
@@ -567,13 +591,14 @@ var testOperation = function () {
       }
     }, _callee13, this);
   }));
+
   return function testOperation() {
-    return ref.apply(this, arguments);
+    return _ref13.apply(this, arguments);
   };
 }();
 
 var mkfsBtrfsOperation = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee14(arg) {
+  var _ref14 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee14(arg) {
     var opts, blknames;
     return _regenerator2.default.wrap(function _callee14$(_context14) {
       while (1) {
@@ -598,13 +623,14 @@ var mkfsBtrfsOperation = function () {
       }
     }, _callee14, this);
   }));
+
   return function mkfsBtrfsOperation(_x10) {
-    return ref.apply(this, arguments);
+    return _ref14.apply(this, arguments);
   };
 }();
 
 var _operation = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee15(req) {
+  var _ref15 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee15(req) {
     var f, args;
     return _regenerator2.default.wrap(function _callee15$(_context15) {
       while (1) {
@@ -613,51 +639,51 @@ var _operation = function () {
             f = void 0, args = void 0;
 
             if (!(req && req.operation)) {
-              _context15.next = 14;
+              _context15.next = 13;
               break;
             }
 
             info('operation: ' + req.operation);
-            console.log(req.args);
 
             args = req.args && Array.isArray(req.args) ? req.args : [];
             _context15.t0 = req.operation;
-            _context15.next = _context15.t0 === 'test' ? 8 : _context15.t0 === 'mkfs_btrfs' ? 10 : 12;
+            _context15.next = _context15.t0 === 'test' ? 7 : _context15.t0 === 'mkfs_btrfs' ? 9 : 11;
             break;
 
-          case 8:
+          case 7:
             f = testOperation;
-            return _context15.abrupt('break', 14);
+            return _context15.abrupt('break', 13);
 
-          case 10:
+          case 9:
             f = mkfsBtrfsOperation;
-            return _context15.abrupt('break', 14);
+            return _context15.abrupt('break', 13);
 
-          case 12:
+          case 11:
             info('operation: ' + req.operation + ' is not implemented');
-            return _context15.abrupt('break', 14);
+            return _context15.abrupt('break', 13);
 
-          case 14:
+          case 13:
             if (!f) {
-              _context15.next = 17;
+              _context15.next = 16;
               break;
             }
 
-            _context15.next = 17;
+            _context15.next = 16;
             return f.apply(undefined, (0, _toConsumableArray3.default)(args));
 
-          case 17:
+          case 16:
             return _context15.abrupt('return', { errno: 0 });
 
-          case 18:
+          case 17:
           case 'end':
             return _context15.stop();
         }
       }
     }, _callee15, this);
   }));
+
   return function _operation(_x11) {
-    return ref.apply(this, arguments);
+    return _ref15.apply(this, arguments);
   };
 }();
 

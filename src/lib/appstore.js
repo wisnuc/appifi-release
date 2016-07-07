@@ -5,7 +5,19 @@ import localRecipes from '../hosted/apps'
 import { validateRecipe, calcRecipeKeyString } from '../lib/dockerApps'
 import { storeState, storeDispatch } from '../lib/reducers'
 
-const jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi/master/hosted/apps.json'
+// const jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi/master/hosted/apps.json'
+
+const jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/master/release.json'
+
+const getJsonRecipesUrl = () => {
+
+  let url = (storeState().serverConfig && storeState().serverConfig.appstoreMaster === true) ?
+    'https://raw.githubusercontent.com/wisnuc/appifi-recipes/master/release.json' :
+    'https://raw.githubusercontent.com/wisnuc/appifi-recipes/release/release.json'
+
+  info(`using ${url}`)
+  return url
+}
 
 let useLocalRecipes = false
 
@@ -19,7 +31,7 @@ async function retrieveText(url) {
     request.get(url)
       .set('Accept', 'text/plain')
       .end((err, res) => {
-        err ? reject(err) : resolve(res.text)
+        err ? resolve(err) : resolve(res.text)
       })
   })
 }
@@ -32,12 +44,22 @@ async function retrieveRecipes() {
   }
   else {
     info('retrieve json recipes')
-    let jsonRecipes = await retrieveText(jsonRecipesUrl)
+    let jsonRecipes = await retrieveText(getJsonRecipesUrl())
+    if (jsonRecipes instanceof Error) return jsonRecipes
+
     info('parse json recipes')
-    recipes = JSON.parse(jsonRecipes)
+    try {
+      recipes = JSON.parse(jsonRecipes)
+    }
+    catch (e) {
+      info('json recipes parse error')
+      return e
+    }
   }
 
-  recipes.filter(recipe => validateRecipe(recipe)) 
+  recipes = recipes.filter(recipe => validateRecipe(recipe))  
+
+  info('recipes retrieved')
   return recipes 
 }
 
@@ -56,11 +78,12 @@ function retrieveRepo(namespace, name) {
   }) 
 }
 
+// retrieve all repos for all recipes, return component -> repo map
 async function retrieveRepoMap(recipes) {
 
   if (!recipes) {
     warn(`retrieveRepoMap: recipes null or undefined`)
-    return null
+    return new Error('recipes can\'t be null')
   }
 
   info(`retrieving repos for recipes`)
@@ -80,7 +103,16 @@ async function retrieveRepoMap(recipes) {
   return map
 }
 
-// TODO
+// new appstore definition
+// null (init state)
+// {
+//    status: 'LOADING', 'LOADED', 'ERROR'
+//    errcode: ERROR only
+//    errMessage: ERROR only
+//    result: LOADED only
+// } 
+//
+
 export async function refreshAppStore() {
 
   let appstore = storeState().appstore
@@ -91,50 +123,65 @@ export async function refreshAppStore() {
 
   storeDispatch({
     type: 'APPSTORE_UPDATE',
-    data: 'LOADING' 
+    data: {
+      status: 'LOADING',
+    } 
   })
 
   let recipes = await retrieveRecipes()
-  if (!recipes) {
+  if (recipes instanceof Error) {
+    console.log(recipes)
     storeDispatch({
       type: 'APPSTORE_UPDATE',
-      data: 'ERROR'
+      data: {
+        status: 'ERROR',
+        code: recipes.code,
+        message: recipes.message,
+      }
     })
     return
   }
 
   let repoMap = await retrieveRepoMap(recipes)
-  if (!repoMap) {
+  if (repoMap instanceof Error) { // TODO this seems unnecessary
+    console.log(repoMap)
     storeDispatch({
       type: 'APPSTORE_UPDATE',
-      data: 'ERROR'
+      data: {
+        status: 'ERROR',
+        code: recipes.code,
+        message: recipes.message,
+      }
     })
+    return
   }
 
   storeDispatch({
     type: 'APPSTORE_UPDATE',
-    data: { recipes, repoMap }
+    data: {
+      status: 'LOADED',
+      result: { recipes, repoMap }
+    }
   })
-}
-
-// TODO move to elsewhere
-function getApp(recipeKeyString) {
-
-  if (memo.status !== 'success') return null
-  let app = memo.apps.find(app => recipeKeyString === calcRecipeKeyString(app))
-  return app ? clone(app) : null 
 }
 
 export default {
 
-  init: () => {
+  // init is called in app init
+  reload: () => {
     info('loading')
-    refreshAppStore().then(r => {}).catch(e => {})
+    refreshAppStore().then(r => {
+      if (r instanceof Error) {
+        info('failed loading appstore')
+        console.log(r)
+        return
+      }
+      info('loading success')
+    }).catch(e => {
+      console.log(e) 
+      info('loading failed')
+    })
   },
-  get: () => memo,
-  
-  /* server side use */
-  getApp
 }
 
 

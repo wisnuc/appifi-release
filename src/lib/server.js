@@ -10,15 +10,20 @@ storeSubscribe(() => {
 
 const appstoreFacade = (appstore) => {
 
-  if (appstore === null ||
-      appstore === 'ERROR' ||
-      appstore === 'LOADING') {
-    return appstore
-  }
+  if (appstore === null) return null
 
-  let { recipes, repoMap } = appstore
+  if (appstore.status === 'LOADING') 
+    return { status: 'LOADING' }
+
+  if (appstore.status === 'ERROR')
+    return { status: 'ERROR', code: appstore.code, message: appstore.message }
+
+  let { recipes, repoMap } = appstore.result
   if (!repoMap) {
-    return recipes
+    return {
+      status: 'LOADED',
+      result: recipes
+    }
   }
 
   // be careful. if recipes are cloned first, then cloned 
@@ -38,7 +43,10 @@ const appstoreFacade = (appstore) => {
   }) 
 
   appended.forEach(recipe => recipe.key = calcRecipeKeyString(recipe)) 
-  return appended
+  return {
+    status: 'LOADED',
+    result: appended
+  }
 }
 
 const installedFacades = (installeds) => {
@@ -82,6 +90,7 @@ const facade = () => {
 
   return {
     status,
+    config: storeState().serverConfig,
     storage: storeState().storage,
     docker: dockerFacade(storeState().docker),
     appstore: appstoreFacade(storeState().appstore),
@@ -97,9 +106,6 @@ export default {
 
   get: () => {
     let f = facade()
-//    console.log('>>>> facade')
-//    console.log(JSON.stringify(f, null, '  '))
-//    console.log('<<<< facade')
     return f
   },
 }

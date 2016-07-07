@@ -17,7 +17,7 @@ var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
  */
 
 var btrfs_fi_show_uuid = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(uuid) {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(uuid) {
     var stdout, lines, vol;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
@@ -63,36 +63,36 @@ var btrfs_fi_show_uuid = function () {
                   vol.uuid = _tmp[_tmp.length - 1]; // last one
                 }
               } else if (l.startsWith('Total')) {
-                  var _tmp2 = l.split(' ');
-                  vol.total = parseInt(_tmp2[2]);
-                  vol.used = _tmp2[6];
-                } else if (l.startsWith('devid')) {
-                  var _tmp3 = l.split(' ').filter(function (l) {
-                    return l.length;
-                  });
+                var _tmp2 = l.split(' ');
+                vol.total = parseInt(_tmp2[2]);
+                vol.used = _tmp2[6];
+              } else if (l.startsWith('devid')) {
+                var _tmp3 = l.split(' ').filter(function (l) {
+                  return l.length;
+                });
+                vol.devices.push({
+                  id: parseInt(_tmp3[1]),
+                  size: _tmp3[3],
+                  used: _tmp3[5],
+                  path: _tmp3[7]
+                });
+              }
+              // FIXME warning devid 2 not found already (not sure stdout or stderr)
+              // FIXME also, the error message won't print if volume mounted
+              // warning, device 2 is missing
+              else if (l.startsWith('warning, device')) {
+                  var _tmp4 = l.split(' ');
                   vol.devices.push({
-                    id: parseInt(_tmp3[1]),
-                    size: _tmp3[3],
-                    used: _tmp3[5],
-                    path: _tmp3[7]
+                    id: parseInt(_tmp4[2])
                   });
+                } else if (l.startsWith('*** Some devices missing')) {
+                  vol.missing = true;
+                } else {
+                  console.log('unexpected behavior');
+                  console.log('----');
+                  console.log(l);
+                  console.log('----');
                 }
-                // FIXME warning devid 2 not found already (not sure stdout or stderr)
-                // FIXME also, the error message won't print if volume mounted
-                // warning, device 2 is missing
-                else if (l.startsWith('warning, device')) {
-                    var _tmp4 = l.split(' ');
-                    vol.devices.push({
-                      id: parseInt(_tmp4[2])
-                    });
-                  } else if (l.startsWith('*** Some devices missing')) {
-                    vol.missing = true;
-                  } else {
-                    console.log('unexpected behavior');
-                    console.log('----');
-                    console.log(l);
-                    console.log('----');
-                  }
             });
 
             // sort devices by id
@@ -108,8 +108,9 @@ var btrfs_fi_show_uuid = function () {
       }
     }, _callee, this);
   }));
+
   return function btrfs_fi_show_uuid(_x) {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
@@ -118,7 +119,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var child = require('child_process');
 
 var btrfs_fi_show = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
     var cmd, stdout, uuids;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
@@ -153,8 +154,9 @@ var btrfs_fi_show = function () {
       }
     }, _callee2, undefined);
   }));
+
   return function btrfs_fi_show() {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 

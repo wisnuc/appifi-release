@@ -19,6 +19,20 @@ var _dockerApps = require('../lib/dockerApps');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var serverConfig = function serverConfig() {
+  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'SERVER_CONFIG':
+      state[action.key] = action.value;
+      return state;
+    default:
+      return state;
+  }
+};
+
 var storage = function storage() {
   var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
   var action = arguments[1];
@@ -85,16 +99,7 @@ var tasks = function tasks() {
         });
         return [].concat((0, _toConsumableArray3.default)(state), [action.task]);
       }
-    /*
-      case 'TASK_UPDATE': {
-        let index = state.findIndex(t => t.type === action.task.type && t.id === action.task.id)
-        if (index === -1) {
-          console.log(`ERROR: TASK_UPDATE, task not found, type: ${action.task.type}, id: ${action.task.id}`)
-          return state
-        }
-        return [...state.slice(0, index), action.data, ...state.slice(index + 1)]
-      }
-    */
+
     case 'TASK_REMOVE':
       var index = state.findIndex(function (t) {
         return t.type === action.task.type && t.id === action.task.id;
@@ -140,6 +145,7 @@ var increment = function increment() {
 
 var store = (0, _redux.createStore)((0, _redux.combineReducers)({
   increment: increment,
+  serverConfig: serverConfig,
   storage: storage,
   docker: docker,
   appstore: appstore,
@@ -157,12 +163,9 @@ var storeState = exports.storeState = function storeState() {
 };
 var storeDispatch = exports.storeDispatch = function storeDispatch(action) {
 
-  console.log(':: Dispatching action');
-  console.log(action);
   store.dispatch(action);
 };
 
 var storeSubscribe = exports.storeSubscribe = function storeSubscribe(f) {
   return store.subscribe(f);
 };
-// export { store }

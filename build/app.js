@@ -1,5 +1,7 @@
 'use strict';
 
+var _reducers = require('./lib/reducers');
+
 var _server = require('./lib/server');
 
 var _server2 = _interopRequireDefault(_server);
@@ -18,14 +20,22 @@ var _storage2 = _interopRequireDefault(_storage);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var express = require('express');
 var path = require('path');
+var express = require('express');
 // var favicon = require('serve-favicon')
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 var app = express();
+
+/**
+process.argv.forEach(function (val, index, array) {
+  if (val === '--appstore-master') {
+    global.config.appstoreMaster = true
+  }
+});
+**/
 
 /*
  * middlewares
@@ -49,9 +59,19 @@ app.use(express.static(path.join(__dirname, '../public')));
  */
 
 
+process.argv.forEach(function (val, index, array) {
+  if (val === '--appstore-master') {
+    (0, _reducers.storeDispatch)({
+      type: 'SERVER_CONFIG',
+      key: 'appstoreMaster',
+      value: true
+    });
+  }
+});
+
 _storage2.default.init();
 _docker2.default.init();
-_appstore2.default.init();
+_appstore2.default.reload();
 
 /*
  * routes

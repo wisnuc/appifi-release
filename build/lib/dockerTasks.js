@@ -61,6 +61,10 @@ var _task4 = _interopRequireDefault(_task3);
 
 var _dockerApps = require('./dockerApps');
 
+var _reducers = require('./reducers');
+
+var _docker = require('./docker');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function info(text) {
@@ -198,9 +202,27 @@ var AppInstallTask = function (_task2) {
   }
 
   (0, _createClass3.default)(AppInstallTask, [{
+    key: 'processBinds',
+    value: function processBinds(recipeKeyString, opt) {
+      if (!opt || !opt.HostConfig || !opt.HostConfig.Binds) return opt;
+      var subpath = recipeKeyString.replace(/:/g, '/');
+      opt.HostConfig.Binds = opt.HostConfig.Binds.map(function (bind) {
+        return (0, _docker.dockerAppdataDir)() + '/' + subpath + bind;
+      });
+      return opt;
+    }
+  }, {
+    key: 'processPortBindings',
+    value: function processPortBindings(recipeKeyString, opt) {
+      return opt;
+    }
+
+    //
+
+  }, {
     key: 'createAndStartContainers',
     value: function () {
-      var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
+      var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
         var i, job, opt, re, id;
         return _regenerator2.default.wrap(function _callee$(_context) {
           while (1) {
@@ -210,7 +232,7 @@ var AppInstallTask = function (_task2) {
 
               case 1:
                 if (!(i >= 0)) {
-                  _context.next = 16;
+                  _context.next = 18;
                   break;
                 }
 
@@ -218,18 +240,20 @@ var AppInstallTask = function (_task2) {
                 opt = (0, _deepmerge2.default)((0, _containerDefault2.default)(), job.compo.config);
 
                 opt.Image = job.compo.namespace + '/' + job.compo.name;
+                opt = this.processBinds(this.id, opt);
+                opt = this.processPortBindings(this.id, opt);
 
                 // opt.Labels['appifi-signature'] = this.id
                 (0, _dockerApps.installAppifiLabel)(opt.Labels, this.uuid, this.recipe);
 
-                _context.next = 8;
+                _context.next = 10;
                 return (0, _dockerapi.containerCreate)(opt);
 
-              case 8:
+              case 10:
                 re = _context.sent;
 
                 if (!(re instanceof Error)) {
-                  _context.next = 12;
+                  _context.next = 14;
                   break;
                 }
 
@@ -240,7 +264,7 @@ var AppInstallTask = function (_task2) {
                 };
                 return _context.abrupt('return', re);
 
-              case 12:
+              case 14:
 
                 job.container = {
                   errno: 0,
@@ -248,18 +272,18 @@ var AppInstallTask = function (_task2) {
                   result: re
                 };
 
-              case 13:
+              case 15:
                 i--;
                 _context.next = 1;
                 break;
 
-              case 16:
+              case 18:
                 id = this.jobs[0].container.result.Id;
 
                 info('starting container ' + id);
                 return _context.abrupt('return', (0, _dockerapi.containerStart)(this.jobs[0].container.result.Id));
 
-              case 19:
+              case 21:
               case 'end':
                 return _context.stop();
             }
@@ -268,7 +292,7 @@ var AppInstallTask = function (_task2) {
       }));
 
       function createAndStartContainers() {
-        return ref.apply(this, arguments);
+        return _ref.apply(this, arguments);
       }
 
       return createAndStartContainers;

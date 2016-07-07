@@ -13,15 +13,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var router = _express2.default.Router();
 
 router.get('/', function (req, res) {
-  res.status(200).json(_appstore2.default.get());
-});
-
-router.post('/', function (req, res) {
-  _appstore2.default.refresh(function (e, r) {
-    if (e) return res.status(500);
-
-    res.status(200).json(r);
-  });
+  _appstore2.default.reload();
+  res.status(200).json({});
 });
 
 module.exports = router;

@@ -2,6 +2,17 @@ import { createStore, combineReducers } from 'redux'
 
 import { containersToApps } from '../lib/dockerApps'
 
+const serverConfig = (state = {}, action) => {
+
+  switch(action.type) {
+  case 'SERVER_CONFIG':
+    state[action.key] = action.value
+    return state 
+  default:
+    return state
+  }
+}
+
 const storage = (state = null, action) => {
 
   switch(action.type) {
@@ -61,16 +72,7 @@ const tasks = (state = [], action) => {
     })
     return [...state, action.task]
   }
-/*
-  case 'TASK_UPDATE': {
-    let index = state.findIndex(t => t.type === action.task.type && t.id === action.task.id)
-    if (index === -1) {
-      console.log(`ERROR: TASK_UPDATE, task not found, type: ${action.task.type}, id: ${action.task.id}`)
-      return state
-    }
-    return [...state.slice(0, index), action.data, ...state.slice(index + 1)]
-  }
-*/
+
   case 'TASK_REMOVE':
     let index = state.findIndex(t => t.type === action.task.type && t.id === action.task.id)
     if (index === -1) {
@@ -108,6 +110,7 @@ const increment = (state = 0, action) => {
 
 let store = createStore(combineReducers({
   increment,
+  serverConfig,
   storage,
   docker,
   appstore,
@@ -121,13 +124,10 @@ console.log(`reducers module initialized`)
 export const storeState = () => store.getState()
 export const storeDispatch = (action) => {
 
-  console.log(':: Dispatching action')
-  console.log(action)
   store.dispatch(action)
 }
 
 export const storeSubscribe = (f) => store.subscribe(f)
-// export { store }
 
 
 

@@ -17,7 +17,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var fs = require('fs');
 
 var procMounts = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
     var data, lines, all, filtered;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
@@ -56,8 +56,9 @@ var procMounts = function () {
       }
     }, _callee, undefined);
   }));
+
   return function procMounts() {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 

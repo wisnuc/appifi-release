@@ -23,15 +23,21 @@ var _status = 0;
 
 var appstoreFacade = function appstoreFacade(appstore) {
 
-  if (appstore === null || appstore === 'ERROR' || appstore === 'LOADING') {
-    return appstore;
-  }
+  if (appstore === null) return null;
 
-  var recipes = appstore.recipes;
-  var repoMap = appstore.repoMap;
+  if (appstore.status === 'LOADING') return { status: 'LOADING' };
+
+  if (appstore.status === 'ERROR') return { status: 'ERROR', code: appstore.code, message: appstore.message };
+
+  var _appstore$result = appstore.result;
+  var recipes = _appstore$result.recipes;
+  var repoMap = _appstore$result.repoMap;
 
   if (!repoMap) {
-    return recipes;
+    return {
+      status: 'LOADED',
+      result: recipes
+    };
   }
 
   // be careful. if recipes are cloned first, then cloned
@@ -53,7 +59,10 @@ var appstoreFacade = function appstoreFacade(appstore) {
   appended.forEach(function (recipe) {
     return recipe.key = (0, _dockerApps.calcRecipeKeyString)(recipe);
   });
-  return appended;
+  return {
+    status: 'LOADED',
+    result: appended
+  };
 };
 
 var installedFacades = function installedFacades(installeds) {
@@ -105,6 +114,7 @@ var facade = function facade() {
 
   return {
     status: _status,
+    config: (0, _reducers.storeState)().serverConfig,
     storage: (0, _reducers.storeState)().storage,
     docker: dockerFacade((0, _reducers.storeState)().docker),
     appstore: appstoreFacade((0, _reducers.storeState)().appstore),
@@ -120,9 +130,6 @@ exports.default = {
 
   get: function get() {
     var f = facade();
-    //    console.log('>>>> facade')
-    //    console.log(JSON.stringify(f, null, '  '))
-    //    console.log('<<<< facade')
     return f;
   }
 };

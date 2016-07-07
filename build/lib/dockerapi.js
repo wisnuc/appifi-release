@@ -20,7 +20,7 @@ var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 // return err
 
 var containerStart = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(id) {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(id) {
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -47,8 +47,9 @@ var containerStart = function () {
       }
     }, _callee, this);
   }));
+
   return function containerStart(_x) {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
@@ -56,7 +57,7 @@ var containerStart = function () {
 
 
 var containerStop = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(id) {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(id) {
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
         switch (_context2.prev = _context2.next) {
@@ -85,8 +86,9 @@ var containerStop = function () {
       }
     }, _callee2, this);
   }));
+
   return function containerStop(_x2) {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
@@ -94,7 +96,7 @@ var containerStop = function () {
 
 
 var containerCreate = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(option) {
+  var _ref3 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(option) {
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
         switch (_context3.prev = _context3.next) {
@@ -116,8 +118,9 @@ var containerCreate = function () {
       }
     }, _callee3, this);
   }));
+
   return function containerCreate(_x3) {
-    return ref.apply(this, arguments);
+    return _ref3.apply(this, arguments);
   };
 }();
 
@@ -125,7 +128,7 @@ var containerCreate = function () {
 
 
 var containerDelete = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4(id) {
+  var _ref4 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4(id) {
     return _regenerator2.default.wrap(function _callee4$(_context4) {
       while (1) {
         switch (_context4.prev = _context4.next) {
@@ -153,8 +156,9 @@ var containerDelete = function () {
       }
     }, _callee4, this);
   }));
+
   return function containerDelete(_x4) {
-    return ref.apply(this, arguments);
+    return _ref4.apply(this, arguments);
   };
 }();
 

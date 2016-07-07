@@ -1,6 +1,8 @@
 import fs from 'fs'
 import child from 'child_process'
 
+import mkdirp from 'mkdirp'
+
 import { toLines, delay } from '../lib/utils'
 import { createStore, combineReducers } from '../lib/reduced'
 import appstore from './appstore' // TODO
@@ -17,8 +19,19 @@ const dockerUrl = 'http://127.0.0.1:1688'
 const dockerPidFile = '/run/wisnuc/app/docker.pid'
 const dockerVolumesDir = '/run/wisnuc/volumes'
 
+const dockerAppdataDir = () => {
+
+  if (!storeState().docker || !storeState().docker.volume) return null
+  return `${dockerVolumesDir}/${storeState().docker.volume}/wisnuc/appdata`
+}
+
 function info(message){
   console.log(`[docker] ${message}`)
+}
+
+async function mkdirpAsync(dirpath) {
+
+  return new Promise(resolve => mkdirp(dirpath, err => err ? resolve(err) : resolve(null)))
 }
 
 /*
@@ -44,19 +57,34 @@ async function probeDaemon() {
             p[10] === 'docker' && 
             p[11] === 'daemon' &&
             p[12].startsWith('--exec-root=/run/wisnuc/volumes/') && 
-            p[12].endsWith('/root') &&
             p[13].startsWith('--graph=/run/wisnuc/volumes/') &&
-            p[13].endsWith('/graph') &&
             p[14] === '--host=127.0.0.1:1688' &&
             p[15] === '--pidfile=/run/wisnuc/app/docker.pid') return true
         return false
       })
 
-      if (!cmdline) return resolve({running: false})
+      if (!cmdline) {
+        info(`probeDaemon docker is not running`)
+        return resolve({running: false})
+      }
+
       let p = cmdline.split(/\s+/)
       let pid = parseInt(p[1])
       let pp = p[12].split(/\//)
-      let volume = pp[pp.length - 2]
+/**
+[ '--exec-root=',
+  'run',
+  'wisnuc',
+  'volumes',
+  'faa48687-8b84-42ce-b625-ab49cf9e7830',
+  'wisnuc',
+  'docker',
+  'root' ]
+**/
+
+      let volume = pp[4]
+
+      info(`probeDaemon, docker is running with pid: ${pid}, volume:${volume}`)
       resolve({running: true, pid, volume})
     })
   }) 
@@ -90,7 +118,16 @@ async function daemonStart(uuid) {
 
   let out = fs.openSync('/dev/null', 'w')
   let err = fs.openSync('/dev/null', 'w')
+
   let mountpoint = `${dockerVolumesDir}/${uuid}`
+  let execRootDir = `${mountpoint}/wisnuc/r`
+  let graphDir = `${mountpoint}/wisnuc/g`
+  let appDataDir =`${dockerVolumesDir}/${uuid}/wisnuc/appdata` 
+
+  await mkdirpAsync(execRootDir)
+  await mkdirpAsync(graphDir)
+  await mkdirpAsync(appDataDir)
+
   let opts = {
     cwd: mountpoint,
     detached: true, 
@@ -99,8 +136,10 @@ async function daemonStart(uuid) {
  
   let args = [
     'daemon', 
-    `--exec-root=${mountpoint}/root`, 
-    `--graph=${mountpoint}/graph`, 
+//    `--exec-root=${mountpoint}/root`, 
+//    `--graph=${mountpoint}/graph`, 
+    `--exec-root=${execRootDir}`,
+    `--graph=${graphDir}`,
     '--host=127.0.0.1:1688',  
     `--pidfile=${dockerPidFile}`
   ]
@@ -166,7 +205,7 @@ async function appInstall(recipeKeyString) {
   } 
 
   // retrieve recipe
-  let appstore = storeState().appstore
+  let appstore = storeState().appstore.result
   if (!appstore || !appstore.recipes) {
     info(`recipes unavail, failed to install ${appname} (${recipeKeyString})`)
     return
@@ -446,5 +485,5 @@ export default {
   },
 }
 
-export { daemonStart, probeDaemon }
+export { daemonStart, probeDaemon, dockerAppdataDir }
 

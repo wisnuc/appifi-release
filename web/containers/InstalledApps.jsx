@@ -13,6 +13,7 @@ import IconAVStop from 'material-ui/svg-icons/av/stop'
 
 import { LabeledText, Spacer } from './CustomViews'
 import { dispatch, dockerStore, dockerState, taskStates, installedStore } from '../utils/storeState'
+import imagePrefix from '../utils/imagePrefix'
 
 import {
   BouncyCardHeaderLeftText,
@@ -114,6 +115,13 @@ const BusyFlatButton = ({ busy, label, disabled, onTouchTap }) => {
 
 const OpenButton = ({container}) => {
 
+  let port
+  if (container.State === 'running') {
+    let portObj = container.Ports.find(p => p.Type === 'tcp' && p.PublicPort !== undefined)
+    if (portObj) port = portObj.PublicPort 
+  }
+
+/*
   const openable = (container) =>
     ( container.State === 'running' &&
       container.Ports.length &&
@@ -122,10 +130,12 @@ const OpenButton = ({container}) => {
 
 
   if (!openable(container)) return <div style={containerButtonStyle} /> 
+*/
+ 
+  if (!port) return <div style={containerButtonStyle} /> 
 
-  let url = `http://${window.location.hostname}:${container.Ports[0].PublicPort}`
+  let url = `http://${window.location.hostname}:${port}`
   let onOpen = () => window.open(url) 
-
   return (
     <div style={containerButtonStyle}>
       <FlatButton label="open" primary={true} onTouchTap={ onOpen } />
@@ -237,7 +247,7 @@ const renderInstalledHeaderRight = (installed) => {
 
 const renderInstalledCardHeader = (installed) => {
 
-  let avatar = `/images/${installed.recipe.components[0].imageLink}`
+  let avatar = imagePrefix(`/images/${installed.recipe.components[0].imageLink}`)
   let onClick = () => {
     let select = installedStore().select
     if (select && select.type === 'installed' && select.id === installed.uuid) {
@@ -368,7 +378,7 @@ const renderInstallingHeaderRight = (task) => {
 
 const renderInstallingCardHeader = (task) => {
 
-  let avatar = `/images/${task.recipe.components[0].imageLink}`
+  let avatar = imagePrefix(`/images/${task.recipe.components[0].imageLink}`)
   let onClick = () => {
     let select = installedStore().select
     if (select && select.type === 'installed' && select.id === task.uuid) {
@@ -410,6 +420,9 @@ const renderInstallingCardContentJob = (compo, job) => {
   let ccdLeftColStyle = {paddingTop:16, paddingBottom:16, width:200}
   let ccdRightColStyle = {paddingTop:16, paddingBottom:16, flex:3}
 
+  // FIXME workaround
+  // let key = `${compo.namespace}::${compo.name}`
+
   return (
     <div style={ccdRowStyle}>
       <div style={{width:56}} />
@@ -418,7 +431,7 @@ const renderInstallingCardContentJob = (compo, job) => {
         <div style={{fontSize:15, fotnWeight:300, opacity:0.54}}>{compo.namespace}</div>
       </div>
       <div style={ccdRightColStyle}>
-        { job.image.threads && job.image.threads.map(t => <LabeledText label={t.id} text={threadText(t)} right={4} />) }
+        { job.image.threads && job.image.threads.map(t => <LabeledText key={t.id} label={t.id} text={threadText(t)} right={4} />) }
       </div>
     </div>
   )

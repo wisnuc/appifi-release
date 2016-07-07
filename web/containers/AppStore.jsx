@@ -7,6 +7,7 @@ import { FlatButton, RaisedButton, Paper, Dialog } from 'material-ui'
 import Progress from './Progress'
 
 import { dispatch, appstoreStore, dockerState, storageState, appstoreState, taskStates } from '../utils/storeState'
+import imagePrefix from '../utils/imagePrefix'
 
 const formatNumber = (num) => {
 
@@ -145,7 +146,7 @@ const renderSelectedApp = (app) => {
 
   return (
     <SelectedApp
-      imgSrc={`/images/${app.components[0].imageLink}`}
+      imgSrc={imagePrefix(`/images/${app.components[0].imageLink}`)}
       title={app.appname}
       subtitle={app.components[0].namespace}
       stars={repo ? repo.star_count : 'n/a'}
@@ -184,19 +185,24 @@ const AppCard = ({
     </Paper> 
   )
 
-const renderAppCard = (app) => (
+const renderAppCard = (app) => {
+
+  let repo = app.components[0].repo
+
+  return (
     <AppCard
       key={app.appname}
-      imgSrc={`/images/${app.components[0].imageLink}`} 
+      imgSrc={imagePrefix(`/images/${app.components[0].imageLink}`)} 
       title={app.appname}
-      stars={app.components[0].repo.star_count}
-      pulls={app.components[0].repo.pull_count}
+      stars={repo ? repo.star_count : 'n/a'}
+      pulls={repo ? repo.pull_count : 'n/a'}
       onTouchTap={() => dispatch({
         type: 'STORE_SELECTEDAPP',
         selectedApp: app
       })}
     />
   )
+}
 
 const PAGEKEY = 'appstore-page-key'
 
@@ -216,45 +222,28 @@ let render = () => {
     console.log(`[AppStore] docker is null`)
     if (storage.volumes.length === 0) {
       console.log(`[AppStore] storage no volume`)
-/* 
-      dispatch({
-        type: 'NAV_SELECT',
-        select: 'STORAGE'
-      })
-*/
-      // return <Progress key='appstore_loading' text='AppEngine not started. For starting AppEngine, you need to create a disk volume first.' busy={false} />      
-      // return <div key={PAGEKEY} style={{fontSize:16, opacity:0.87}}>For running AppEngine, you need to create a volume first.</div>
       return null
     }
     return <div key={PAGEKEY}><Progress key='appstore_loading' text='AppEngine not started' busy={false} /></div>
   }
 
-  /*
-    appstore 
-    null (supposed to be initial state)
-    RELOADING
-    ERROR
-    [] // success
-  */
   if (appstore === null) {
-    return <Progress key='appstore_loading' text='Loading Apps from AppStore' busy={true} />
+    return <Progress key='appstore_loading' text='AppStore not started' busy={false} />
   }
 
-  if (appstore === 'ERROR') {
-    return <div>Error loading appstore, please refresh</div>
+  if (appstore.status === 'ERROR') { // TODO
+    return (<div key='appstore_loading'>Error loading appstore, please refresh</div>
+    )
   }
 
-  if (appstore === 'LOADING') {
+  if (appstore.status === 'LOADING') {
     return <Progress key='appstore_loading' text='Loading Apps from AppStore' busy={true} />
   }
 
   // Assert status is success
-  if (appstore.length === 0) {
+  if (appstore.result.length === 0) {
     return <Progress key='appstore_loading' text='It seems that your computer can not connect to docker hub (hub.docker.com)' busy={false} />
   }
-
-  console.log('dialog')
-  console.log(selectedApp)
 
   return (
     <div key='appstore' >
@@ -264,7 +253,7 @@ let render = () => {
         flexDirection: 'row',
         flexWrap: 'wrap',
       }}>
-        { appstore.map(app => renderAppCard(app)) }
+        { appstore.result.map(app => renderAppCard(app)) }
       </div>
       <Dialog
         style={{overflowY: scroll}}

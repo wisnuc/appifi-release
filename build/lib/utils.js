@@ -18,7 +18,7 @@ var _asyncToGenerator2 = require("babel-runtime/helpers/asyncToGenerator");
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 
 var delay = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(duration) {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(duration) {
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -37,8 +37,9 @@ var delay = function () {
       }
     }, _callee, this);
   }));
+
   return function delay(_x) {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 

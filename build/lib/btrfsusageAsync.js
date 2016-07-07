@@ -17,7 +17,7 @@ var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 
 var btrfs_filesystem_usage = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(mountpoint) {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(mountpoint) {
     var tmp, cmd, stdout, result, o, filling;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
@@ -84,43 +84,43 @@ var btrfs_filesystem_usage = function () {
                   // }
                 });
               } else {
-                  sec.split(/\n/).filter(function (l) {
-                    return l.length;
-                  }).forEach(function (l) {
-                    if (l.startsWith('Data') || l.startsWith('Metadata') || l.startsWith('System') || l.startsWith('Unallocated')) {
+                sec.split(/\n/).filter(function (l) {
+                  return l.length;
+                }).forEach(function (l) {
+                  if (l.startsWith('Data') || l.startsWith('Metadata') || l.startsWith('System') || l.startsWith('Unallocated')) {
 
-                      tmp = l.split(' ').filter(function (l) {
-                        return l.length;
-                      });
+                    tmp = l.split(' ').filter(function (l) {
+                      return l.length;
+                    });
 
-                      if (l.startsWith('Data')) {
-                        result.data.mode = tmp[0].slice(5, -1);
-                        result.data.size = parseInt(tmp[1].slice(5, -1));
-                        result.data.used = parseInt(tmp[2].slice(5));
-                        filling = 'data';
-                      } else if (l.startsWith('Metadata')) {
-                        result.metadata.mode = tmp[0].slice(9, -1);
-                        result.metadata.size = parseInt(tmp[1].slice(5, -1));
-                        result.metadata.used = parseInt(tmp[2].slice(5));
-                        filling = 'metadata';
-                      } else if (l.startsWith('System')) {
-                        result.system.mode = tmp[0].slice(7, -1);
-                        result.system.size = parseInt(tmp[1].slice(5, -1));
-                        result.system.used = parseInt(tmp[2].slice(5));
-                        filling = 'system';
-                      } else if (l.startsWith('Unallocated')) {
-                        filling = 'unallocated';
-                      }
-                    } else {
-                      tmp = l.replace(/\t+/, ' ').split(' ').filter(function (l) {
-                        return l.length;
-                      });
-                      if (tmp[0].startsWith('/dev/')) {
-                        result[filling].devices[tmp[0]] = tmp[1];
-                      }
+                    if (l.startsWith('Data')) {
+                      result.data.mode = tmp[0].slice(5, -1);
+                      result.data.size = parseInt(tmp[1].slice(5, -1));
+                      result.data.used = parseInt(tmp[2].slice(5));
+                      filling = 'data';
+                    } else if (l.startsWith('Metadata')) {
+                      result.metadata.mode = tmp[0].slice(9, -1);
+                      result.metadata.size = parseInt(tmp[1].slice(5, -1));
+                      result.metadata.used = parseInt(tmp[2].slice(5));
+                      filling = 'metadata';
+                    } else if (l.startsWith('System')) {
+                      result.system.mode = tmp[0].slice(7, -1);
+                      result.system.size = parseInt(tmp[1].slice(5, -1));
+                      result.system.used = parseInt(tmp[2].slice(5));
+                      filling = 'system';
+                    } else if (l.startsWith('Unallocated')) {
+                      filling = 'unallocated';
                     }
-                  });
-                }
+                  } else {
+                    tmp = l.replace(/\t+/, ' ').split(' ').filter(function (l) {
+                      return l.length;
+                    });
+                    if (tmp[0].startsWith('/dev/')) {
+                      result[filling].devices[tmp[0]] = tmp[1];
+                    }
+                  }
+                });
+              }
             });
             return _context.abrupt('return', result);
 
@@ -131,8 +131,9 @@ var btrfs_filesystem_usage = function () {
       }
     }, _callee, this);
   }));
+
   return function btrfs_filesystem_usage(_x) {
-    return ref.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
@@ -141,7 +142,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var child = require('child_process');
 
 var btrfs_device_usage = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(mountpoint) {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(mountpoint) {
     var cmd, stdout, lines, result, dev;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
@@ -203,13 +204,14 @@ var btrfs_device_usage = function () {
       }
     }, _callee2, undefined);
   }));
+
   return function btrfs_device_usage(_x2) {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
 var btrfs_usage = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(mountpoint) {
+  var _ref3 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(mountpoint) {
     var usage;
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
@@ -229,8 +231,9 @@ var btrfs_usage = function () {
       }
     }, _callee3, undefined);
   }));
+
   return function btrfs_usage(_x3) {
-    return ref.apply(this, arguments);
+    return _ref3.apply(this, arguments);
   };
 }();
 

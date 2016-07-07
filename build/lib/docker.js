@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.probeDaemon = exports.daemonStart = undefined;
+exports.dockerAppdataDir = exports.probeDaemon = exports.daemonStart = undefined;
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
@@ -21,18 +21,44 @@ var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
 
 var _asyncToGenerator3 = _interopRequireDefault(_asyncToGenerator2);
 
+var mkdirpAsync = function () {
+  var _ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee(dirpath) {
+    return _regenerator2.default.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            return _context.abrupt('return', new _promise2.default(function (resolve) {
+              return (0, _mkdirp2.default)(dirpath, function (err) {
+                return err ? resolve(err) : resolve(null);
+              });
+            }));
+
+          case 1:
+          case 'end':
+            return _context.stop();
+        }
+      }
+    }, _callee, this);
+  }));
+
+  return function mkdirpAsync(_x) {
+    return _ref.apply(this, arguments);
+  };
+}();
+
 /*
  * async function, return { running: false } or { running: true, pid, volume }, may return error
  * in future
  */
 
+
 var probeDaemon = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee() {
-    return _regenerator2.default.wrap(function _callee$(_context) {
+  var _ref2 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2() {
+    return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
-        switch (_context.prev = _context.next) {
+        switch (_context2.prev = _context2.next) {
           case 0:
-            _context.next = 2;
+            _context2.next = 2;
             return new _promise2.default(function (resolve) {
               // TODO never reject?
               _child_process2.default.exec('ps aux | grep docker | grep "docker daemon"', function (err, stdout) {
@@ -48,31 +74,49 @@ var probeDaemon = function () {
                   // console.log(line)
                   var p = line.split(/\s+/);
                   // console.log(p)
-                  if (p.length === 16 && p[10] === 'docker' && p[11] === 'daemon' && p[12].startsWith('--exec-root=/run/wisnuc/volumes/') && p[12].endsWith('/root') && p[13].startsWith('--graph=/run/wisnuc/volumes/') && p[13].endsWith('/graph') && p[14] === '--host=127.0.0.1:1688' && p[15] === '--pidfile=/run/wisnuc/app/docker.pid') return true;
+                  if (p.length === 16 && p[10] === 'docker' && p[11] === 'daemon' && p[12].startsWith('--exec-root=/run/wisnuc/volumes/') && p[13].startsWith('--graph=/run/wisnuc/volumes/') && p[14] === '--host=127.0.0.1:1688' && p[15] === '--pidfile=/run/wisnuc/app/docker.pid') return true;
                   return false;
                 });
 
-                if (!cmdline) return resolve({ running: false });
+                if (!cmdline) {
+                  info('probeDaemon docker is not running');
+                  return resolve({ running: false });
+                }
+
                 var p = cmdline.split(/\s+/);
                 var pid = parseInt(p[1]);
                 var pp = p[12].split(/\//);
-                var volume = pp[pp.length - 2];
+                /**
+                [ '--exec-root=',
+                  'run',
+                  'wisnuc',
+                  'volumes',
+                  'faa48687-8b84-42ce-b625-ab49cf9e7830',
+                  'wisnuc',
+                  'docker',
+                  'root' ]
+                **/
+
+                var volume = pp[4];
+
+                info('probeDaemon, docker is running with pid: ' + pid + ', volume:' + volume);
                 resolve({ running: true, pid: pid, volume: volume });
               });
             });
 
           case 2:
-            return _context.abrupt('return', _context.sent);
+            return _context2.abrupt('return', _context2.sent);
 
           case 3:
           case 'end':
-            return _context.stop();
+            return _context2.stop();
         }
       }
-    }, _callee, this);
+    }, _callee2, this);
   }));
+
   return function probeDaemon() {
-    return ref.apply(this, arguments);
+    return _ref2.apply(this, arguments);
   };
 }();
 
@@ -81,21 +125,39 @@ var probeDaemon = function () {
  */
 
 var daemonStart = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee2(uuid) {
-    var out, err, mountpoint, opts, args, dockerDaemon, agent;
-    return _regenerator2.default.wrap(function _callee2$(_context2) {
+  var _ref3 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3(uuid) {
+    var out, err, mountpoint, execRootDir, graphDir, appDataDir, opts, args, dockerDaemon, agent;
+    return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
-        switch (_context2.prev = _context2.next) {
+        switch (_context3.prev = _context3.next) {
           case 0:
             out = _fs2.default.openSync('/dev/null', 'w');
             err = _fs2.default.openSync('/dev/null', 'w');
             mountpoint = dockerVolumesDir + '/' + uuid;
+            execRootDir = mountpoint + '/wisnuc/r';
+            graphDir = mountpoint + '/wisnuc/g';
+            appDataDir = dockerVolumesDir + '/' + uuid + '/wisnuc/appdata';
+            _context3.next = 8;
+            return mkdirpAsync(execRootDir);
+
+          case 8:
+            _context3.next = 10;
+            return mkdirpAsync(graphDir);
+
+          case 10:
+            _context3.next = 12;
+            return mkdirpAsync(appDataDir);
+
+          case 12:
             opts = {
               cwd: mountpoint,
               detached: true,
               stdio: ['ignore', out, err]
             };
-            args = ['daemon', '--exec-root=' + mountpoint + '/root', '--graph=' + mountpoint + '/graph', '--host=127.0.0.1:1688', '--pidfile=' + dockerPidFile];
+            args = ['daemon',
+            //    `--exec-root=${mountpoint}/root`,
+            //    `--graph=${mountpoint}/graph`,
+            '--exec-root=' + execRootDir, '--graph=' + graphDir, '--host=127.0.0.1:1688', '--pidfile=' + dockerPidFile];
             dockerDaemon = _child_process2.default.spawn('docker', args, opts);
 
             dockerDaemon.on('exit', function (code, signal) {
@@ -104,37 +166,38 @@ var daemonStart = function () {
               if (signal !== undefined) console.log('daemon exits with signal ' + signal);
             });
 
-            _context2.next = 9;
+            _context3.next = 18;
             return (0, _utils.delay)(1000);
 
-          case 9:
+          case 18:
             if (!(dockerDaemon === null)) {
-              _context2.next = 11;
+              _context3.next = 20;
               break;
             }
 
             throw 'docker daemon stopped right after started';
 
-          case 11:
+          case 20:
             dockerDaemon.unref();
 
-            _context2.next = 14;
+            _context3.next = 23;
             return (0, _dockerEvents.dockerEventsAgent)();
 
-          case 14:
-            agent = _context2.sent;
+          case 23:
+            agent = _context3.sent;
 
             dispatchDaemonStart(dockerDaemon.pid, uuid, agent);
 
-          case 16:
+          case 25:
           case 'end':
-            return _context2.stop();
+            return _context3.stop();
         }
       }
-    }, _callee2, this);
+    }, _callee3, this);
   }));
-  return function daemonStart(_x) {
-    return ref.apply(this, arguments);
+
+  return function daemonStart(_x2) {
+    return _ref3.apply(this, arguments);
   };
 }();
 
@@ -144,17 +207,17 @@ var daemonStart = function () {
 
 
 var daemonStop = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee3() {
+  var _ref4 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4() {
     var daemon;
-    return _regenerator2.default.wrap(function _callee3$(_context3) {
+    return _regenerator2.default.wrap(function _callee4$(_context4) {
       while (1) {
-        switch (_context3.prev = _context3.next) {
+        switch (_context4.prev = _context4.next) {
           case 0:
-            _context3.next = 2;
+            _context4.next = 2;
             return probeDaemon();
 
           case 2:
-            daemon = _context3.sent;
+            daemon = _context4.sent;
 
             if (daemon.running) {
               info('sending term signal to ' + daemon.pid);
@@ -163,47 +226,48 @@ var daemonStop = function () {
 
           case 4:
           case 'end':
-            return _context3.stop();
+            return _context4.stop();
         }
       }
-    }, _callee3, this);
+    }, _callee4, this);
   }));
+
   return function daemonStop() {
-    return ref.apply(this, arguments);
+    return _ref4.apply(this, arguments);
   };
 }();
 
 var appInstall = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee4(recipeKeyString) {
+  var _ref5 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee5(recipeKeyString) {
     var status, appstore, recipe, tasks, stopped, task;
-    return _regenerator2.default.wrap(function _callee4$(_context4) {
+    return _regenerator2.default.wrap(function _callee5$(_context5) {
       while (1) {
-        switch (_context4.prev = _context4.next) {
+        switch (_context5.prev = _context5.next) {
           case 0:
 
             // check if installed or installing
             status = appStatus(recipeKeyString);
 
             if (!(status !== 'NOTFOUND')) {
-              _context4.next = 4;
+              _context5.next = 4;
               break;
             }
 
             info(recipeKeyString + ' status: ' + status + ', install rejected');
-            return _context4.abrupt('return');
+            return _context5.abrupt('return');
 
           case 4:
 
             // retrieve recipe
-            appstore = (0, _reducers.storeState)().appstore;
+            appstore = (0, _reducers.storeState)().appstore.result;
 
             if (!(!appstore || !appstore.recipes)) {
-              _context4.next = 8;
+              _context5.next = 8;
               break;
             }
 
             info('recipes unavail, failed to install ' + appname + ' (' + recipeKeyString + ')');
-            return _context4.abrupt('return');
+            return _context5.abrupt('return');
 
           case 8:
             recipe = appstore.recipes.find(function (r) {
@@ -211,12 +275,12 @@ var appInstall = function () {
             });
 
             if (recipe) {
-              _context4.next = 12;
+              _context5.next = 12;
               break;
             }
 
             info('recipe not found: ' + recipeKeyString + ', install app failed');
-            return _context4.abrupt('return');
+            return _context5.abrupt('return');
 
           case 12:
 
@@ -246,24 +310,25 @@ var appInstall = function () {
 
           case 17:
           case 'end':
-            return _context4.stop();
+            return _context5.stop();
         }
       }
-    }, _callee4, this);
+    }, _callee5, this);
   }));
-  return function appInstall(_x2) {
-    return ref.apply(this, arguments);
+
+  return function appInstall(_x3) {
+    return _ref5.apply(this, arguments);
   };
 }();
 
 var _init = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee5() {
+  var _ref6 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee6() {
     var config, daemon, agent, storage, volume;
-    return _regenerator2.default.wrap(function _callee5$(_context5) {
+    return _regenerator2.default.wrap(function _callee6$(_context6) {
       while (1) {
-        switch (_context5.prev = _context5.next) {
+        switch (_context6.prev = _context6.next) {
           case 0:
-            _context5.next = 2;
+            _context6.next = 2;
             return new _promise2.default(function (resolve, reject) {
               _child_process2.default.exec('mkdir -p /run/wisnuc/app', function (err, stdout, stderr) {
                 err ? reject(stderr) : resolve(stdout);
@@ -271,19 +336,19 @@ var _init = function () {
             });
 
           case 2:
-            _context5.next = 4;
+            _context6.next = 4;
             return (0, _dockerConfig.readConfig)();
 
           case 4:
-            config = _context5.sent;
-            _context5.next = 7;
+            config = _context6.sent;
+            _context6.next = 7;
             return probeDaemon();
 
           case 7:
-            daemon = _context5.sent;
+            daemon = _context6.sent;
 
             if (!daemon.running) {
-              _context5.next = 16;
+              _context6.next = 16;
               break;
             }
 
@@ -300,36 +365,36 @@ var _init = function () {
               });
             }
 
-            _context5.next = 13;
+            _context6.next = 13;
             return (0, _dockerEvents.dockerEventsAgent)();
 
           case 13:
-            agent = _context5.sent;
+            agent = _context6.sent;
 
             dispatchDaemonStart(daemon.pid, daemon.volume, agent);
-            return _context5.abrupt('return');
+            return _context6.abrupt('return');
 
           case 16:
             if (config.lastUsedVolume) {
-              _context5.next = 19;
+              _context6.next = 19;
               break;
             }
 
             info('last used volume not set, docker daemon not started');
-            return _context5.abrupt('return');
+            return _context6.abrupt('return');
 
           case 19:
             if ((0, _reducers.storeState)().storage) {
-              _context5.next = 25;
+              _context6.next = 25;
               break;
             }
 
             info('wait 200ms for storage module init');
-            _context5.next = 23;
+            _context6.next = 23;
             return (0, _utils.delay)(200);
 
           case 23:
-            _context5.next = 19;
+            _context6.next = 19;
             break;
 
           case 25:
@@ -339,52 +404,53 @@ var _init = function () {
             });
 
             if (volume) {
-              _context5.next = 30;
+              _context6.next = 30;
               break;
             }
 
             info('last used volume (' + config.lastUsedVolume + ') not found, docker daemon not started');
-            return _context5.abrupt('return');
+            return _context6.abrupt('return');
 
           case 30:
             if (!volume.missing) {
-              _context5.next = 33;
+              _context6.next = 33;
               break;
             }
 
             info('last used volume (' + config.lastUsedVolume + ') has missing drive, docker daemon not started');
-            return _context5.abrupt('return');
+            return _context6.abrupt('return');
 
           case 33:
-            _context5.next = 35;
+            _context6.next = 35;
             return daemonStart(volume.uuid);
 
           case 35:
           case 'end':
-            return _context5.stop();
+            return _context6.stop();
         }
       }
-    }, _callee5, this);
+    }, _callee6, this);
   }));
+
   return function _init() {
-    return ref.apply(this, arguments);
+    return _ref6.apply(this, arguments);
   };
 }();
 
 var daemonStartOperation = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee6(uuid) {
+  var _ref7 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee7(uuid) {
     var storage, volume;
-    return _regenerator2.default.wrap(function _callee6$(_context6) {
+    return _regenerator2.default.wrap(function _callee7$(_context7) {
       while (1) {
-        switch (_context6.prev = _context6.next) {
+        switch (_context7.prev = _context7.next) {
           case 0:
             if (!(0, _reducers.storeState)().docker) {
-              _context6.next = 3;
+              _context7.next = 3;
               break;
             }
 
             info('WARNING: daemon already started');
-            return _context6.abrupt('return');
+            return _context7.abrupt('return');
 
           case 3:
             storage = (0, _reducers.storeState)().storage;
@@ -393,43 +459,44 @@ var daemonStartOperation = function () {
             });
 
             if (!(!volume || volume.missing)) {
-              _context6.next = 7;
+              _context7.next = 7;
               break;
             }
 
-            return _context6.abrupt('return');
+            return _context7.abrupt('return');
 
           case 7:
-            _context6.next = 9;
+            _context7.next = 9;
             return daemonStart(volume.uuid);
 
           case 9:
           case 'end':
-            return _context6.stop();
+            return _context7.stop();
         }
       }
-    }, _callee6, this);
+    }, _callee7, this);
   }));
-  return function daemonStartOperation(_x3) {
-    return ref.apply(this, arguments);
+
+  return function daemonStartOperation(_x4) {
+    return _ref7.apply(this, arguments);
   };
 }();
 
 var containerDeleteCommand = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee7(id) {
+  var _ref8 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee8(id) {
     var docker, installeds, inst;
-    return _regenerator2.default.wrap(function _callee7$(_context7) {
+    return _regenerator2.default.wrap(function _callee8$(_context8) {
       while (1) {
-        switch (_context7.prev = _context7.next) {
+        switch (_context8.prev = _context8.next) {
           case 0:
             docker = (0, _reducers.storeState)().docker;
 
             if (!(!docker || !docker.computed || !docker.computed.installeds)) {
-              _context7.next = 3;
+              _context8.next = 3;
               break;
             }
 
-            return _context7.abrupt('return', null);
+            return _context8.abrupt('return', null);
 
           case 3:
             installeds = docker.computed.installeds;
@@ -448,12 +515,12 @@ var containerDeleteCommand = function () {
             });
 
             if (!inst) {
-              _context7.next = 11;
+              _context8.next = 11;
               break;
             }
 
             info('container in apps cannot be deleted directly');
-            return _context7.abrupt('return', null);
+            return _context8.abrupt('return', null);
 
           case 11:
 
@@ -466,80 +533,26 @@ var containerDeleteCommand = function () {
 
           case 12:
           case 'end':
-            return _context7.stop();
-        }
-      }
-    }, _callee7, this);
-  }));
-  return function containerDeleteCommand(_x4) {
-    return ref.apply(this, arguments);
-  };
-}();
-
-var installedStart = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee8(uuid) {
-    var state, installeds, installed, container;
-    return _regenerator2.default.wrap(function _callee8$(_context8) {
-      while (1) {
-        switch (_context8.prev = _context8.next) {
-          case 0:
-
-            info('installedStart uuid: ' + uuid);
-
-            state = (0, _reducers.storeState)();
-
-            if (!(state.docker === null || state.docker.data === null || state.docker.data.containers === null || state.docker.computed === null || !state.docker.computed.installeds)) {
-              _context8.next = 4;
-              break;
-            }
-
-            return _context8.abrupt('return', { errno: -1 });
-
-          case 4:
-            installeds = state.docker.computed.installeds;
-            installed = installeds.find(function (inst) {
-              return inst.uuid === uuid;
-            });
-
-            if (installed) {
-              _context8.next = 8;
-              break;
-            }
-
-            return _context8.abrupt('return', { errno: -1 });
-
-          case 8:
-            container = (0, _dockerApps.appMainContainer)(installed);
-
-            if (!(container && container.Id)) {
-              _context8.next = 12;
-              break;
-            }
-
-            _context8.next = 12;
-            return (0, _dockerapi.containerStart)(container.Id);
-
-          case 12:
-          case 'end':
             return _context8.stop();
         }
       }
     }, _callee8, this);
   }));
-  return function installedStart(_x5) {
-    return ref.apply(this, arguments);
+
+  return function containerDeleteCommand(_x5) {
+    return _ref8.apply(this, arguments);
   };
 }();
 
-var installedStop = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee9(uuid) {
+var installedStart = function () {
+  var _ref9 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee9(uuid) {
     var state, installeds, installed, container;
     return _regenerator2.default.wrap(function _callee9$(_context9) {
       while (1) {
         switch (_context9.prev = _context9.next) {
           case 0:
 
-            info('installedStop uuid: ' + uuid);
+            info('installedStart uuid: ' + uuid);
 
             state = (0, _reducers.storeState)();
 
@@ -572,7 +585,7 @@ var installedStop = function () {
             }
 
             _context9.next = 12;
-            return (0, _dockerapi.containerStop)(container.Id);
+            return (0, _dockerapi.containerStart)(container.Id);
 
           case 12:
           case 'end':
@@ -581,21 +594,21 @@ var installedStop = function () {
       }
     }, _callee9, this);
   }));
-  return function installedStop(_x6) {
-    return ref.apply(this, arguments);
+
+  return function installedStart(_x6) {
+    return _ref9.apply(this, arguments);
   };
 }();
 
-var appUninstall = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee10(uuid) {
-    var state, installeds, installed, containers, i, _i;
-
+var installedStop = function () {
+  var _ref10 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee10(uuid) {
+    var state, installeds, installed, container;
     return _regenerator2.default.wrap(function _callee10$(_context10) {
       while (1) {
         switch (_context10.prev = _context10.next) {
           case 0:
 
-            info('appUninstall uuid: ' + uuid);
+            info('installedStop uuid: ' + uuid);
 
             state = (0, _reducers.storeState)();
 
@@ -620,21 +633,78 @@ var appUninstall = function () {
             return _context10.abrupt('return', { errno: -1 });
 
           case 8:
+            container = (0, _dockerApps.appMainContainer)(installed);
+
+            if (!(container && container.Id)) {
+              _context10.next = 12;
+              break;
+            }
+
+            _context10.next = 12;
+            return (0, _dockerapi.containerStop)(container.Id);
+
+          case 12:
+          case 'end':
+            return _context10.stop();
+        }
+      }
+    }, _callee10, this);
+  }));
+
+  return function installedStop(_x7) {
+    return _ref10.apply(this, arguments);
+  };
+}();
+
+var appUninstall = function () {
+  var _ref11 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee11(uuid) {
+    var state, installeds, installed, containers, i, _i;
+
+    return _regenerator2.default.wrap(function _callee11$(_context11) {
+      while (1) {
+        switch (_context11.prev = _context11.next) {
+          case 0:
+
+            info('appUninstall uuid: ' + uuid);
+
+            state = (0, _reducers.storeState)();
+
+            if (!(state.docker === null || state.docker.data === null || state.docker.data.containers === null || state.docker.computed === null || !state.docker.computed.installeds)) {
+              _context11.next = 4;
+              break;
+            }
+
+            return _context11.abrupt('return', { errno: -1 });
+
+          case 4:
+            installeds = state.docker.computed.installeds;
+            installed = installeds.find(function (inst) {
+              return inst.uuid === uuid;
+            });
+
+            if (installed) {
+              _context11.next = 8;
+              break;
+            }
+
+            return _context11.abrupt('return', { errno: -1 });
+
+          case 8:
             containers = installed.containers;
             i = 0;
 
           case 10:
             if (!(i < containers.length)) {
-              _context10.next = 16;
+              _context11.next = 16;
               break;
             }
 
-            _context10.next = 13;
+            _context11.next = 13;
             return (0, _dockerapi.containerStop)(containers[i].Id);
 
           case 13:
             i++;
-            _context10.next = 10;
+            _context11.next = 10;
             break;
 
           case 16:
@@ -642,36 +712,37 @@ var appUninstall = function () {
 
           case 17:
             if (!(_i < containers.length)) {
-              _context10.next = 23;
+              _context11.next = 23;
               break;
             }
 
-            _context10.next = 20;
+            _context11.next = 20;
             return (0, _dockerapi.containerDelete)(containers[_i].Id);
 
           case 20:
             _i++;
-            _context10.next = 17;
+            _context11.next = 17;
             break;
 
           case 23:
           case 'end':
-            return _context10.stop();
+            return _context11.stop();
         }
       }
-    }, _callee10, this);
+    }, _callee11, this);
   }));
-  return function appUninstall(_x7) {
-    return ref.apply(this, arguments);
+
+  return function appUninstall(_x8) {
+    return _ref11.apply(this, arguments);
   };
 }();
 
 var _operation = function () {
-  var ref = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee11(req) {
+  var _ref12 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee12(req) {
     var f, args;
-    return _regenerator2.default.wrap(function _callee11$(_context11) {
+    return _regenerator2.default.wrap(function _callee12$(_context12) {
       while (1) {
-        switch (_context11.prev = _context11.next) {
+        switch (_context12.prev = _context12.next) {
           case 0:
 
             info('operation: ' + req.operation);
@@ -679,75 +750,76 @@ var _operation = function () {
             f = void 0, args = void 0;
 
             if (!(req && req.operation)) {
-              _context11.next = 26;
+              _context12.next = 26;
               break;
             }
 
             args = req.args && Array.isArray(req.args) ? req.args : [];
-            _context11.t0 = req.operation;
-            _context11.next = _context11.t0 === 'daemonStart' ? 7 : _context11.t0 === 'daemonStop' ? 9 : _context11.t0 === 'containerStart' ? 11 : _context11.t0 === 'containerStop' ? 13 : _context11.t0 === 'containerDelete' ? 15 : _context11.t0 === 'installedStart' ? 17 : _context11.t0 === 'installedStop' ? 19 : _context11.t0 === 'appInstall' ? 21 : _context11.t0 === 'appUninstall' ? 23 : 25;
+            _context12.t0 = req.operation;
+            _context12.next = _context12.t0 === 'daemonStart' ? 7 : _context12.t0 === 'daemonStop' ? 9 : _context12.t0 === 'containerStart' ? 11 : _context12.t0 === 'containerStop' ? 13 : _context12.t0 === 'containerDelete' ? 15 : _context12.t0 === 'installedStart' ? 17 : _context12.t0 === 'installedStop' ? 19 : _context12.t0 === 'appInstall' ? 21 : _context12.t0 === 'appUninstall' ? 23 : 25;
             break;
 
           case 7:
             f = daemonStartOperation;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 9:
             f = daemonStop;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 11:
             f = _dockerapi.containerStart;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 13:
             f = _dockerapi.containerStop;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 15:
             f = containerDeleteCommand;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 17:
             f = installedStart;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 19:
             f = installedStop;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 21:
             f = appInstall;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 23:
             f = appUninstall;
-            return _context11.abrupt('break', 26);
+            return _context12.abrupt('break', 26);
 
           case 25:
             info('operation not implemented, ' + req.operation);
 
           case 26:
             if (!f) {
-              _context11.next = 29;
+              _context12.next = 29;
               break;
             }
 
-            _context11.next = 29;
+            _context12.next = 29;
             return f.apply(undefined, (0, _toConsumableArray3.default)(args));
 
           case 29:
-            return _context11.abrupt('return', null);
+            return _context12.abrupt('return', null);
 
           case 30:
           case 'end':
-            return _context11.stop();
+            return _context12.stop();
         }
       }
-    }, _callee11, this);
+    }, _callee12, this);
   }));
-  return function _operation(_x8) {
-    return ref.apply(this, arguments);
+
+  return function _operation(_x9) {
+    return _ref12.apply(this, arguments);
   };
 }();
 
@@ -758,6 +830,10 @@ var _fs2 = _interopRequireDefault(_fs);
 var _child_process = require('child_process');
 
 var _child_process2 = _interopRequireDefault(_child_process);
+
+var _mkdirp = require('mkdirp');
+
+var _mkdirp2 = _interopRequireDefault(_mkdirp);
 
 var _utils = require('../lib/utils');
 
@@ -786,6 +862,12 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var dockerUrl = 'http://127.0.0.1:1688';
 var dockerPidFile = '/run/wisnuc/app/docker.pid';
 var dockerVolumesDir = '/run/wisnuc/volumes';
+
+var dockerAppdataDir = function dockerAppdataDir() {
+
+  if (!(0, _reducers.storeState)().docker || !(0, _reducers.storeState)().docker.volume) return null;
+  return dockerVolumesDir + '/' + (0, _reducers.storeState)().docker.volume + '/wisnuc/appdata';
+};
 
 function info(message) {
   console.log('[docker] ' + message);
@@ -860,3 +942,4 @@ exports.default = {
 };
 exports.daemonStart = daemonStart;
 exports.probeDaemon = probeDaemon;
+exports.dockerAppdataDir = dockerAppdataDir;
