@@ -118,13 +118,48 @@ const increment = (state = 0, action) => {
   }
 }
 
+const network = (state = null, action) => {
+
+  switch(action.type) {
+  case 'NETWORK_UPDATE':
+    return action.data
+  default:
+    return state
+  }
+}
+
+const timeDate = (state = null, action) => {
+
+  switch(action.type) {
+  case 'TIMEDATE_UPDATE':
+    return action.data
+  default:
+    return state
+  }
+}
+
+const barcelona = (state = {}, action) => {
+
+  switch(action.type) {
+  case 'BARCELONA_FANSPEED_UPDATE':
+    return Object.assign({}, state, { fanSpeed: action.data })
+  case 'BARCELONA_FANSCALE_UPDATE':
+    return Object.assign({}, state, { fanScale: action.data })
+  default:
+    return state
+  }  
+}
+
 let store = createStore(combineReducers({
   increment,
   serverConfig,
   storage,
   docker,
   appstore,
-  tasks
+  tasks,
+  network,
+  timeDate,
+  barcelona
 }))
 
 // store.subscribe(() => console.log(store.getState()))
@@ -132,12 +167,11 @@ let store = createStore(combineReducers({
 console.log(`reducers module initialized`)
 
 export const storeState = () => store.getState()
-export const storeDispatch = (action) => {
-
-  store.dispatch(action)
-}
-
+export const storeDispatch = (action) => store.dispatch(action)
 export const storeSubscribe = (f) => store.subscribe(f)
+
+export const testing = { store }
+
 
 
 

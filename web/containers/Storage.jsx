@@ -3,9 +3,9 @@ import ReactCSSTransitionGroup from 'react-addons-css-transition-group'
 import FlipMove from 'react-flip-move'
 
 import { Card, CardTitle, CardHeader, CardText, CardMedia } from 'material-ui/Card'
-import { FlatButton, RaisedButton, Avatar, Paper, Divider } from 'material-ui'
+import { FlatButton, RaisedButton, Avatar, Paper, Divider, CircularProgress } from 'material-ui'
 
-import { dispatch, storageStore, storageState, dockerState } from '../utils/storeState'
+import { dispatch, storageStore, serverOpStore, storageState, dockerState } from '../utils/storeState'
 import { LabeledText, Spacer } from './CustomViews'
 import { BouncyCardHeaderLeft, BouncyCardHeaderLeftText } from '../components/bouncy'
 
@@ -91,9 +91,7 @@ const driveHasPartitionsAsSwap = (drive) => {
 }
 
 const driveIsInDockerVolume = (drive) => !!dockerVolumeBlocks().find(blk => blk === drive.block.props.devname)
-
 const driveIsRemovable = (drive) => drive.block.sysfsProps[0].attrs.removable === '1'
-
 const driveIsUSB = (drive) => drive.block.props.id_bus === 'usb'
 
 // this function returns null as OK and a string as disallowance reason
@@ -127,13 +125,11 @@ const volumeExpanded = (volume) =>
 
 const creatingVolumeSubmitted = () => {
 
-  let { creatingVolume, operation } = storageStore()
+  let { creatingVolume } = storageStore()
+  let op = serverOpStore()
   let submitted
 
-  if (creatingVolume === 2 &&
-      operation &&
-      operation.request &&
-      operation.data.operation === 'mkfs_btrfs') {
+  if (creatingVolume === 2 && op && op.agent && op.operation === 'mkfs_btrfs') {
     submitted = true
   }
   else {
@@ -145,13 +141,11 @@ const creatingVolumeSubmitted = () => {
 
 const creatingVolumeFinished = () => {
 
-  let { creatingVolume, operation } = storageStore()
+  let { creatingVolume } = storageStore()
+  let op = serverOpStore()
   let finished
 
-  if (creatingVolume === 2 &&
-      operation &&
-      operation.request === null &&
-      operation.data.operation === 'mkfs_btrfs') {
+  if (creatingVolume === 2 && op && op.agent === null && op.operation === 'mkfs_btrfs') { 
     finished = true
   }
   else {
@@ -166,49 +160,31 @@ let renderVolumeCard = (volume) => {
   let { ports, blocks, volumes, mounts, swaps, usages } = storageState()
   let docker = dockerState()
 
-  let { request } = storageStore()
-
   let usage = usages.find(u => u.mountpoint.endsWith(volume.uuid))
 
   let running = docker !== null
   let runningOnMe = (docker && docker.volume === volume.uuid) ? true : false
+  let daemonStartingOnMe = (op) => (op && op.operation === 'daemonStart' && op.args && op.args.length && op.args[0] === volume.uuid) ? true : false
+  let daemonStoppingOnMe = (op) => (op && op.operation === 'daemonStop' && op.args && op.args.length && op.args[0] === volume.uuid) ? true : false
+  let daemonOperatingOnMe = (op) => daemonStartingOnMe(op) || daemonStoppingOnMe(op)
 
-  let daemonStartingOnMe = (request) => {
-    if (request) {
-      let op = request.operation
-      return (op.operation === 'daemonStart' && op.args && op.args.length && op.args[0] === volume.uuid) ? true : false
-    } 
-    return false
-  }
-
-  let daemonStoppingOnMe = (request) => {
-    if (request) {
-      let op = request.operation
-      return (op.operation === 'daemonStop' && op.args && op.args.length && op.args[0] === volume.uuid) ? true : false
-    } 
-    return false
-  }
-
-  let daemonOperatingOnMe = (request) => daemonStartingOnMe(request) || daemonStoppingOnMe(request)
-  let daemonStart = (uuid) => {
+  let daemonStart = (uuid) => 
     dispatch({ 
-      type: 'DOCKER_OPERATION',
-      operation: { 
+      type: 'SERVEROP_REQUEST',
+      data: { 
         operation: 'daemonStart',
         args: [uuid]
       }
     })
-  }
 
-  let daemonStop = (uuid) => {
+  let daemonStop = (uuid) => 
     dispatch({
-      type: 'DOCKER_OPERATION',
-      operation: {
+      type: 'SERVEROP_REQUEST',
+      data: {
         operation: 'daemonStop',
         args: [uuid]
       }
     }) 
-  }
 
   let bannerText = () => {
     if (!running) {
@@ -236,7 +212,6 @@ let renderVolumeCard = (volume) => {
   let shrinkedCardStyle = { width: '100%', marginTop: 0, marginBottom: 0 }
   let expandedCardStyle = { width: '100%', marginTop: 24, marginBottom: 24 }
 
-
   return (
     <div key={volume.uuid}>
       <Paper style={expanded ? expandedCardStyle : shrinkedCardStyle} zDepth={expanded ? 2 : 1}>
@@ -244,13 +219,16 @@ let renderVolumeCard = (volume) => {
           <BouncyCardHeaderLeft title='btrfs' onClick={volumeCardOnClick}>
             <BouncyCardHeaderLeftText text={bannerText()} />
           </BouncyCardHeaderLeft>
-          <div>
-            <RaisedButton style={{marginRight:16}} label='start' primary={true} 
+          <div style={{display:'flex', alignItems:'center'}}>
+            { daemonOperatingOnMe(serverOpStore()) && <div style={{width:48, height:48, marginRight:16}}><CircularProgress size={0.5} /></div> }
+            { !daemonOperatingOnMe(serverOpStore()) &&
+            <RaisedButton style={{width:96, marginRight:16}} label='start' primary={true} 
               disabled={running || storageStore().creatingVolume !== 0} 
-              onTouchTap={() => daemonStart(volume.uuid)} />
-            <RaisedButton style={{marginRight:16}} label='stop' secondary={true} 
+              onTouchTap={() => daemonStart(volume.uuid)} /> }
+            { !daemonOperatingOnMe(serverOpStore()) &&
+            <RaisedButton style={{width:96, marginRight:16}} label='stop' secondary={true} 
               disabled={!runningOnMe || storageStore().creatingVolume !== 0} 
-              onTouchTap={() => daemonStop(volume.uuid)} />
+              onTouchTap={() => daemonStop(volume.uuid)} /> }
           </div>
         </div>
         { expanded ? (<div>
@@ -274,7 +252,7 @@ let renderVolumeCard = (volume) => {
             <div style={{width:56}} /> 
             <div style={{paddingTop:16, paddingBottom:16, width:200,
               fontSize:16, fontWeight:'bold', opacity:0.54}}>Usage</div>
-            { usage.overall ? (
+            { (usage && usage.overall) ? (
             <div style={{paddingTop:16, paddingBottom:16, flex:3}}>
               <LabeledText label='data size' text={usage.overall.deviceSize} right={2} />
               <LabeledText label='device allocated' text={usage.overall.deviceAllocated} right={2} />
@@ -297,9 +275,9 @@ let renderVolumeCard = (volume) => {
             <div style={{paddingTop:16, paddingBottom:16, width:200,
               fontSize:16, fontWeight:'bold', opacity:0.54}}>System</div>
             <div style={{paddingTop:16, paddingBottom:16, flex:3}}>
-              <LabeledText label='mode' text={usage.system.mode} right={2} />
-              <LabeledText label='size' text={usage.system.size} right={2} />
-              <LabeledText label='used' text={usage.system.used} right={2} />
+              <LabeledText label='mode' text={(usage && usage.system) ? usage.system.mode : 'n/a'} right={2} />
+              <LabeledText label='size' text={(usage && usage.system) ? usage.system.size : 'n/a'} right={2} />
+              <LabeledText label='used' text={(usage && usage.system) ? usage.system.used : 'n/a'} right={2} />
             </div>
           </div>
         </div>
@@ -309,9 +287,9 @@ let renderVolumeCard = (volume) => {
             <div style={{paddingTop:16, paddingBottom:16, width:200,
               fontSize:16, fontWeight:'bold', opacity:0.54}}>Metadata</div>
             <div style={{paddingTop:16, paddingBottom:16, flex:3}}>
-              <LabeledText label='mode' text={usage.metadata.mode} right={2} />
-              <LabeledText label='size' text={usage.metadata.size} right={2} />
-              <LabeledText label='used' text={usage.metadata.used} right={2} />
+              <LabeledText label='mode' text={(usage && usage.metadata) ? usage.metadata.mode : 'n/a'} right={2} />
+              <LabeledText label='size' text={(usage && usage.metadata) ? usage.metadata.size : 'n/a'} right={2} />
+              <LabeledText label='used' text={(usage && usage.metadata) ? usage.metadata.used : 'n/a'} right={2} />
             </div>
           </div>
         </div>
@@ -321,9 +299,9 @@ let renderVolumeCard = (volume) => {
             <div style={{paddingTop:16, paddingBottom:16, width:200,
               fontSize:16, fontWeight:'bold', opacity:0.54}}>Data</div>
             <div style={{paddingTop:16, paddingBottom:16, flex:3}}>
-              <LabeledText label='mode' text={usage.data.mode} right={2} />
-              <LabeledText label='size' text={usage.data.size} right={2} />
-              <LabeledText label='used' text={usage.data.used} right={2} />
+              <LabeledText label='mode' text={(usage && usage.data) ? usage.data.mode : 'n/a'} right={2} />
+              <LabeledText label='size' text={(usage && usage.data) ? usage.data.size : 'n/a'} right={2} />
+              <LabeledText label='used' text={(usage && usage.data) ? usage.data.used : 'n/a'} right={2} />
             </div>
           </div>
         </div>
@@ -551,7 +529,7 @@ let renderAll = () => {
   }
 
   let cancelCreatingNewVolume = () => dispatch({
-    type: 'STORAGE_CREATE_VOLUME_CANCEL'
+    type: 'STORAGE_CREATE_VOLUME_END'
   })
   
   let mainButtonLabel = creatingVolume ? 'cancel' : 'new volume'
@@ -559,7 +537,7 @@ let renderAll = () => {
 
   let showSingleButton = creatingVolume === 2 && newVolumeCandidates.length > 0
   let singleButtonOnTouchTap = () => dispatch({
-    type: 'STORAGE_OPERATION',
+    type: 'SERVEROP_REQUEST',
     data: {
       operation: 'mkfs_btrfs',
       args: [{
@@ -571,7 +549,7 @@ let renderAll = () => {
   
   let showRaid0Button = creatingVolume === 2 && newVolumeCandidates.length > 1
   let raid0ButtonOnTouchTap = () => dispatch({
-    type: 'STORAGE_OPERATION',
+    type: 'SERVEROP_REQUEST',
     data: {
       operation: 'mkfs_btrfs',
       args: [{
@@ -583,7 +561,7 @@ let renderAll = () => {
 
   let showRaid1Button = creatingVolume === 2 && newVolumeCandidates.length > 1
   let raid1ButtonOnTouchTap = () => dispatch({
-    type: 'STORAGE_OPERATION',
+    type: 'SERVEROP_REQUEST',
     data: {
       operation: 'mkfs_btrfs',
       args: [{

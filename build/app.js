@@ -2,6 +2,10 @@
 
 var _reducers = require('./lib/reducers');
 
+var _appifiConfig = require('./lib/appifiConfig');
+
+var _barcelona = require('./lib/barcelona');
+
 var _server = require('./lib/server');
 
 var _server2 = _interopRequireDefault(_server);
@@ -69,6 +73,13 @@ process.argv.forEach(function (val, index, array) {
   }
 });
 
+(0, _appifiConfig.initConfig)();
+
+// code for barcelona, harmless for other platfrom
+(0, _barcelona.updateFanSpeed)();
+(0, _barcelona.pollingPowerButton)();
+(0, _barcelona.setFanScale)((0, _appifiConfig.getConfig)('barcelonaFanScale'));
+
 _storage2.default.init();
 _docker2.default.init();
 _appstore2.default.reload();
@@ -77,8 +88,6 @@ _appstore2.default.reload();
  * routes
  */
 app.use('/', require('./routes/index'));
-app.use('/storage', require('./routes/storage'));
-app.use('/docker', require('./routes/docker'));
 app.use('/appstore', require('./routes/appstore'));
 app.use('/server', require('./routes/server'));
 

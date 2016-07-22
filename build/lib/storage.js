@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.mkfsBtrfsOperation = undefined;
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
@@ -793,3 +794,4 @@ exports.default = {
     });
   }
 };
+exports.mkfsBtrfsOperation = mkfsBtrfsOperation;

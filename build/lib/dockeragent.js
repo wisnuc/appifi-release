@@ -161,18 +161,3 @@ var post = function post(path, callback) {
 };
 
 exports.default = { get: get, post: post };
-
-/**
-get('/events', (err, agent) => {
-
-  if (err) {
-    console.log(err)
-    return
-  }
-
-  agent.on('json', data => console.log(data))
-  agent.on('close', () => console.log('close'))
-
-  setTimeout(() => agent.abort(), 30000)
-})
-**/

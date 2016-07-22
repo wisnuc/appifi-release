@@ -3,17 +3,23 @@ import ReactDom from 'react-dom'
 import Transition from '../utils/transition'
 import { mixin, dispatch } from '../utils/utils'
 
-import { AppBar, Paper, TextField, CircularProgress } from 'material-ui'
+import { AppBar, Paper, TextField, CircularProgress, Snackbar } from 'material-ui'
 import { Menu, MenuItem } from 'material-ui/Menu'
 import { Tabs, Tab } from 'material-ui/Tabs'
 import { Card, CardActions, CardHeader, CardMedia, CardTitle, CardText } from 'material-ui/Card'
+
 import FlatButton from 'material-ui/FlatButton'
-import RaisedButton from 'material-ui/RaisedButton'
 import Divider from 'material-ui/Divider'
 
 import AppStoreRender from './AppStore'
 import InstalledAppsRender from './InstalledApps'
 import Storage from './Storage'
+import Network from './Network'
+import Cooling from './Cooling'
+import TimeDate from './TimeDate'
+import Password from './Password'
+import SysUpdate from './SysUpdate'
+import PowerOff from './PowerOff'
 
 import IconButton from 'material-ui/IconButton'
 import IconNavigationApps from 'material-ui/svg-icons/navigation/apps'
@@ -31,6 +37,8 @@ import lang, { langText } from '../utils/lang'
 
 import CSSTransition from 'react-addons-css-transition-group'
 import ReactCSSTransitionGroup from 'react-addons-css-transition-group'            
+
+import { snackbarStore } from '../utils/storeState'
 
 /* This list must be consistent with the list defined in reducer */
 export const decoration = [
@@ -57,58 +65,47 @@ export const decoration = [
         render: Storage.Volumes,
         themeColor: 'grey', 
       },
-/*
-      {
-        name: 'VOLUMES',
-        text: { en_US: 'Volumes' },
-        render: Storage.Volumes
-      },
-      {
-        name: 'DRIVES',
-        text: { en_US: 'Drives' },
-        render: Storage.Drives
-      },
-      {
-        name: 'MOUNTS',
-        text: { en_US: 'Mounts' },
-        render: Storage.Mounts
-      },
-      {
-        name: 'PORTS',
-        text: { en_US: 'Ports' },
-        render: Storage.Ports
-      },
-*/
       {
         name: 'ETHERNET',
         text: { en_US: 'Ethernet' },
         icon: IconActionSettingsEthernet,
-        themeColor: 'teal'
+        render: Network,
+        themeColor: 'teal',
       },
       {
         name: 'COOLING',
         text: { en_US: 'Cooling' },
         icon: IconHardwareToys,
+        render: Cooling,
+        themeColor: 'indigo'
       },
       {
-        name: 'DATETIME',
+        name: 'TIMEDATE',
         text: { en_US: 'Date & Time' },
         icon: IconDeviceAccessTime,
+        render: TimeDate,
+        themeColor: 'brown'
       },
       {
         name: 'SYSUPDATE',
-        text: { en_US: 'System Update', },
+        text: { en_US: 'Update', },
         icon: IconNotificationSystemUpdate,
+        render: SysUpdate,
+        themeColor: 'blue'
       },
       {
         name: 'PASSWORD',
         text: { en_US: 'Password', },
         icon: IconHardwareSecurity,
+        render: Password,
+        themeColor: 'red'
       },
       {
-        name: 'POWEROFF',
-        text: { en_US: 'Power Off', },
+        name: 'POWER',
+        text: { en_US: 'Power', },
         icon: IconActionPowerSettingsNew,
+        render: PowerOff,
+        themeColor: 'green'
       } 
     ]
 
@@ -146,28 +143,22 @@ const loginDialogStyle = {
 const loginErrorText = () => {
 
   let err, state = window.store.getState().login.state
-
   switch (state) {
-    
     case 'REJECTED':
       err = 'Incorrect password'
       break
-
     case 'TIMEOUT':
       err = 'Server timeout'
       break
-
     case 'ERROR':
       err = 'Server internal error, please retry'
       break
-
     case 'READY':
     case 'BUSY':
     default:
       err = null
       break
   }
-
   return err
 }
 
@@ -306,10 +297,6 @@ class Navigation extends React.Component {
 
   buildTabs(tabList) {
 
-    let debug = false
-
-    debug && console.log(tabList)
-
     let selectedName = tabList.find(item => item.selected === true).name
     let style = {display: 'flex', justifyContent: 'center', backgroundColor:this.getColor('primary1Color') }
     return ( 
@@ -366,16 +353,10 @@ class Navigation extends React.Component {
 
   renderContentPage(navSelect) {
 
-    let debug = false
-
-    debug && console.log(navSelect)
-
     return (
-
       <div style={{width: '100%'}} >
-        <Transition opts={['content', true, true, false, 2000, 1500, 5000]}>
-          { navSelect.render !== undefined ? React.createElement(navSelect.render, {key: navSelect.name}) : 
-            <CardPage /> }
+        <Transition opts={['content', true, true, false, 1000, 1000, 5000]}>
+          { navSelect.render !== undefined ? React.createElement(navSelect.render, { key: navSelect.name }) : <CardPage /> }
         </Transition>
       </div>
     )
@@ -436,18 +417,28 @@ class Navigation extends React.Component {
     return (
       <div>
         <div id='login-container' className='login-container-style' >
-          <Transition opts={['login-title', true, true, false, 100, 1000, 100]}>
+          <ReactCSSTransitionGroup
+            transitionName="login-title" 
+            transitionAppear={true}
+            transitionEnter={true}
+            transitionLeave={false}
+            transitionAppearTimeout={350}
+            transitionEnterTimeout={600} 
+          >
             { !loggedIn() && 
-              <div style={{ 
-                height:"64px", 
-                verticalAlign:"bottom",
-                fontSize: 48,
-              }}>
+              <div style={{ height:"64px", verticalAlign:"bottom", fontSize: 48}}>
                 <div>你好，主人！</div>
               </div> 
             }
-          </Transition> 
-          <Transition opts={['login-dialog', true, true, false, 100, 1000, 100]}>
+          </ReactCSSTransitionGroup> 
+          <ReactCSSTransitionGroup
+            transitionName="login-dialog" 
+            transitionAppear={true}
+            transitionEnter={true}
+            transitionLeave={false}
+            transitionAppearTimeout={350}
+            transitionEnterTimeout={600} 
+          >
             { !loggedIn() && <div> 
               <Paper className='login-paper-style' zDepth={2}>
                 { loginBusy() && 
@@ -469,7 +460,7 @@ class Navigation extends React.Component {
                 }
               </Paper> 
             </div> }
-          </Transition>   
+          </ReactCSSTransitionGroup>   
         </div> 
         {/* end of login layout container */}
 
@@ -486,7 +477,9 @@ class Navigation extends React.Component {
                     style={{margin:8, marginRight:-16 }} 
                     tooltip="lock screen" 
                     onTouchTap={() => {
-                      console.log('lock')
+                      window.store.dispatch({type: 'NAV_SELECT', select: 'APP'}) 
+                      window.store.dispatch({type: 'NAV_SELECT', select: 'APPSTORE' })
+                      window.store.dispatch({type: 'THEME_COLOR', color: decoration[0].themeColor})
                       window.store.dispatch({type: 'LOGOUT'})
                     }}
                   >
@@ -549,7 +542,7 @@ class Navigation extends React.Component {
               position: 'relative', // VERY IMPORTANT! TODO Why?
             }}
           >
-            <Transition opts={['content', false, true, false, 300, 1200, 100]}>
+            <Transition opts={['content', false, true, false, 300, 600, 100]}>
               { loggedIn() &&
                 ( navSelect.render !== undefined ? 
                   /* React.createElement(navSelect.render, {key: navSelect.name}) : */
@@ -561,6 +554,13 @@ class Navigation extends React.Component {
             </Transition>
           </div>
         </div>
+        <Snackbar 
+          open={snackbarStore().open} 
+          message={snackbarStore().message} 
+          autoHideDuration={4000} 
+          onRequestClose={() => dispatch({
+            type: 'SNACKBAR_CLOSE' 
+          })} />
       </div>
     )
   } 

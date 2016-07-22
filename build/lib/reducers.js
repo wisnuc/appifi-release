@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.storeSubscribe = exports.storeDispatch = exports.storeState = undefined;
+exports.testing = exports.storeSubscribe = exports.storeDispatch = exports.storeState = undefined;
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
@@ -156,13 +156,57 @@ var increment = function increment() {
   }
 };
 
+var network = function network() {
+  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'NETWORK_UPDATE':
+      return action.data;
+    default:
+      return state;
+  }
+};
+
+var timeDate = function timeDate() {
+  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'TIMEDATE_UPDATE':
+      return action.data;
+    default:
+      return state;
+  }
+};
+
+var barcelona = function barcelona() {
+  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'BARCELONA_FANSPEED_UPDATE':
+      return (0, _assign2.default)({}, state, { fanSpeed: action.data });
+    case 'BARCELONA_FANSCALE_UPDATE':
+      return (0, _assign2.default)({}, state, { fanScale: action.data });
+    default:
+      return state;
+  }
+};
+
 var store = (0, _redux.createStore)((0, _redux.combineReducers)({
   increment: increment,
   serverConfig: serverConfig,
   storage: storage,
   docker: docker,
   appstore: appstore,
-  tasks: tasks
+  tasks: tasks,
+  network: network,
+  timeDate: timeDate,
+  barcelona: barcelona
 }));
 
 // store.subscribe(() => console.log(store.getState()))
@@ -173,10 +217,10 @@ var storeState = exports.storeState = function storeState() {
   return store.getState();
 };
 var storeDispatch = exports.storeDispatch = function storeDispatch(action) {
-
-  store.dispatch(action);
+  return store.dispatch(action);
 };
-
 var storeSubscribe = exports.storeSubscribe = function storeSubscribe(f) {
   return store.subscribe(f);
 };
+
+var testing = exports.testing = { store: store };

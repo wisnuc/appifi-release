@@ -36,11 +36,12 @@ app.use(express.static(path.join(__dirname, '../public')))
  * module init
  */
 import { storeDispatch } from './lib/reducers'
+import { initConfig, getConfig } from './lib/appifiConfig'
+import { setFanScale, updateFanSpeed, pollingPowerButton } from './lib/barcelona'
 import server from './lib/server'
 import appstore from './lib/appstore'
 import docker from './lib/docker'
 import storage from './lib/storage'
-
 
 process.argv.forEach(function (val, index, array) {
   if (val === '--appstore-master') {
@@ -52,6 +53,13 @@ process.argv.forEach(function (val, index, array) {
   }
 });
 
+initConfig()
+
+// code for barcelona, harmless for other platfrom
+updateFanSpeed()
+pollingPowerButton()
+setFanScale(getConfig('barcelonaFanScale'))
+
 storage.init()
 docker.init()
 appstore.reload()
@@ -60,8 +68,6 @@ appstore.reload()
  * routes
  */
 app.use('/', require('./routes/index'))
-app.use('/storage', require('./routes/storage'))
-app.use('/docker', require('./routes/docker'))
 app.use('/appstore', require('./routes/appstore'))
 app.use('/server', require('./routes/server'))
 

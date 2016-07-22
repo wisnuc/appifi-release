@@ -18,9 +18,17 @@ router.get('/', function (req, res) {
 router.get('/status', function (req, res) {
   return res.status(200).json(_server2.default.status());
 });
+
 router.post('/', function (req, res) {
-  return _server2.default.operation(req.body, function (err, result) {
-    return err ? res.status(500).json(err) : res.status(200).json(result);
+
+  _server2.default.operation(req.body, function (err, result) {
+    return err ? res.status(200).json({
+      err: err.message,
+      ecode: err.code
+    }) : res.status(200).json({
+      err: null,
+      result: result
+    });
   });
 });
 

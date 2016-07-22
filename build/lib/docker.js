@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.dockerAppdataDir = exports.probeDaemon = exports.daemonStart = undefined;
+exports.dockerAppdataDir = exports.probeDaemon = exports.appUninstall = exports.appInstall = exports.installedStop = exports.installedStart = exports.containerDelete = exports.containerStop = exports.containerStart = exports.daemonStartOp = exports.daemonStop = exports.daemonStart = undefined;
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
@@ -12,10 +12,6 @@ var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
 var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
-
-var _promise = require('babel-runtime/core-js/promise');
-
-var _promise2 = _interopRequireDefault(_promise);
 
 var _asyncToGenerator2 = require('babel-runtime/helpers/asyncToGenerator');
 
@@ -27,7 +23,7 @@ var mkdirpAsync = function () {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
-            return _context.abrupt('return', new _promise2.default(function (resolve) {
+            return _context.abrupt('return', new _bluebird2.default(function (resolve) {
               return (0, _mkdirp2.default)(dirpath, function (err) {
                 return err ? resolve(err) : resolve(null);
               });
@@ -59,7 +55,7 @@ var probeDaemon = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return new _promise2.default(function (resolve) {
+            return new _bluebird2.default(function (resolve) {
               // TODO never reject?
               _child_process2.default.exec('ps aux | grep docker | grep "docker daemon"', function (err, stdout) {
                 // stderr not used
@@ -167,7 +163,7 @@ var daemonStart = function () {
             });
 
             _context3.next = 18;
-            return (0, _utils.delay)(1000);
+            return (0, _utils.delay)(3000);
 
           case 18:
             if (!(dockerDaemon === null)) {
@@ -224,7 +220,10 @@ var daemonStop = function () {
               process.kill(daemon.pid);
             }
 
-          case 4:
+            _context4.next = 6;
+            return (0, _utils.delay)(2000);
+
+          case 6:
           case 'end':
             return _context4.stop();
         }
@@ -323,13 +322,13 @@ var appInstall = function () {
 
 var _init = function () {
   var _ref6 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee6() {
-    var config, daemon, agent, storage, volume;
+    var daemon, agent, lastUsedVolume, storage, volume;
     return _regenerator2.default.wrap(function _callee6$(_context6) {
       while (1) {
         switch (_context6.prev = _context6.next) {
           case 0:
             _context6.next = 2;
-            return new _promise2.default(function (resolve, reject) {
+            return new _bluebird2.default(function (resolve, reject) {
               _child_process2.default.exec('mkdir -p /run/wisnuc/app', function (err, stdout, stderr) {
                 err ? reject(stderr) : resolve(stdout);
               });
@@ -337,94 +336,80 @@ var _init = function () {
 
           case 2:
             _context6.next = 4;
-            return (0, _dockerConfig.readConfig)();
-
-          case 4:
-            config = _context6.sent;
-            _context6.next = 7;
             return probeDaemon();
 
-          case 7:
+          case 4:
             daemon = _context6.sent;
 
             if (!daemon.running) {
-              _context6.next = 16;
+              _context6.next = 12;
               break;
             }
 
             info('daemon already running with pid ' + daemon.pid + ' and volume ' + daemon.volume);
 
-            if (config.lastUsedVolume !== daemon.volume) {
-              config.lastUsedVolume = daemon.volume;
-              (0, _dockerConfig.saveConfig)(config).then(function () {
-                return info('docker config saved');
-              }) // no result? TODO
-              .catch(function (e) {
-                info('ERROR: failed saving docker config');
-                info(e);
-              });
-            }
-
-            _context6.next = 13;
+            _context6.next = 9;
             return (0, _dockerEvents.dockerEventsAgent)();
 
-          case 13:
+          case 9:
             agent = _context6.sent;
 
             dispatchDaemonStart(daemon.pid, daemon.volume, agent);
             return _context6.abrupt('return');
 
-          case 16:
-            if (config.lastUsedVolume) {
-              _context6.next = 19;
+          case 12:
+            lastUsedVolume = (0, _appifiConfig.getConfig)('lastUsedVolume');
+
+            if (lastUsedVolume) {
+              _context6.next = 16;
               break;
             }
 
             info('last used volume not set, docker daemon not started');
             return _context6.abrupt('return');
 
-          case 19:
+          case 16:
             if ((0, _reducers.storeState)().storage) {
-              _context6.next = 25;
+              _context6.next = 22;
               break;
             }
 
-            info('wait 200ms for storage module init');
-            _context6.next = 23;
-            return (0, _utils.delay)(200);
+            info('wait 500ms for storage module init');
+            _context6.next = 20;
+            return (0, _utils.delay)(500);
 
-          case 23:
-            _context6.next = 19;
+          case 20:
+            _context6.next = 16;
             break;
 
-          case 25:
+          case 22:
             storage = (0, _reducers.storeState)().storage;
             volume = storage.volumes.find(function (vol) {
-              return vol.uuid === config.lastUsedVolume;
+              return vol.uuid === lastUsedVolume;
             });
 
             if (volume) {
+              _context6.next = 27;
+              break;
+            }
+
+            info('last used volume (' + lastUsedVolume + ') not found, docker daemon not started');
+            return _context6.abrupt('return');
+
+          case 27:
+            if (!volume.missing) {
               _context6.next = 30;
               break;
             }
 
-            info('last used volume (' + config.lastUsedVolume + ') not found, docker daemon not started');
+            info('last used volume (' + lastUsedVolume + ') has missing drive, docker daemon not started');
             return _context6.abrupt('return');
 
           case 30:
-            if (!volume.missing) {
-              _context6.next = 33;
-              break;
-            }
-
-            info('last used volume (' + config.lastUsedVolume + ') has missing drive, docker daemon not started');
-            return _context6.abrupt('return');
-
-          case 33:
-            _context6.next = 35;
+            _context6.next = 32;
             return daemonStart(volume.uuid);
 
-          case 35:
+          case 32:
           case 'end':
             return _context6.stop();
         }
@@ -437,7 +422,7 @@ var _init = function () {
   };
 }();
 
-var daemonStartOperation = function () {
+var daemonStartOp = function () {
   var _ref7 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee7(uuid) {
     var storage, volume;
     return _regenerator2.default.wrap(function _callee7$(_context7) {
@@ -445,31 +430,38 @@ var daemonStartOperation = function () {
         switch (_context7.prev = _context7.next) {
           case 0:
             if (!(0, _reducers.storeState)().docker) {
-              _context7.next = 3;
+              _context7.next = 2;
               break;
             }
 
-            info('WARNING: daemon already started');
-            return _context7.abrupt('return');
+            throw new Error('daemon already started');
 
-          case 3:
+          case 2:
             storage = (0, _reducers.storeState)().storage;
             volume = storage.volumes.find(function (vol) {
               return vol.uuid === uuid;
             });
 
-            if (!(!volume || volume.missing)) {
-              _context7.next = 7;
+            if (volume) {
+              _context7.next = 6;
               break;
             }
 
-            return _context7.abrupt('return');
+            throw new Error('volume not found');
 
-          case 7:
-            _context7.next = 9;
+          case 6:
+            if (!volume.missing) {
+              _context7.next = 8;
+              break;
+            }
+
+            throw new Error('volume missing');
+
+          case 8:
+            _context7.next = 10;
             return daemonStart(volume.uuid);
 
-          case 9:
+          case 10:
           case 'end':
             return _context7.stop();
         }
@@ -477,7 +469,7 @@ var daemonStartOperation = function () {
     }, _callee7, this);
   }));
 
-  return function daemonStartOperation(_x4) {
+  return function daemonStartOp(_x4) {
     return _ref7.apply(this, arguments);
   };
 }();
@@ -737,7 +729,7 @@ var appUninstall = function () {
   };
 }();
 
-var _operation = function () {
+var operationAsync = function () {
   var _ref12 = (0, _asyncToGenerator3.default)(_regenerator2.default.mark(function _callee12(req) {
     var f, args;
     return _regenerator2.default.wrap(function _callee12$(_context12) {
@@ -760,7 +752,7 @@ var _operation = function () {
             break;
 
           case 7:
-            f = daemonStartOperation;
+            f = daemonStartOp;
             return _context12.abrupt('break', 26);
 
           case 9:
@@ -818,7 +810,7 @@ var _operation = function () {
     }, _callee12, this);
   }));
 
-  return function _operation(_x9) {
+  return function operationAsync(_x9) {
     return _ref12.apply(this, arguments);
   };
 }();
@@ -830,6 +822,10 @@ var _fs2 = _interopRequireDefault(_fs);
 var _child_process = require('child_process');
 
 var _child_process2 = _interopRequireDefault(_child_process);
+
+var _bluebird = require('bluebird');
+
+var _bluebird2 = _interopRequireDefault(_bluebird);
 
 var _mkdirp = require('mkdirp');
 
@@ -845,7 +841,7 @@ var _appstore2 = _interopRequireDefault(_appstore);
 
 var _dockerapi = require('./dockerapi');
 
-var _dockerConfig = require('./dockerConfig');
+var _appifiConfig = require('./appifiConfig');
 
 var _dockerEvents = require('./dockerEvents');
 
@@ -888,6 +884,7 @@ function dispatchDaemonStart(pid, volume, agent) {
     });
   });
 
+  (0, _appifiConfig.setConfig)('lastUsedVolume', volume);
   (0, _reducers.storeDispatch)({
     type: 'DAEMON_START',
     data: { pid: pid, volume: volume, events: events }
@@ -931,7 +928,7 @@ exports.default = {
   },
 
   operation: function operation(req, callback) {
-    _operation(req).then(function (r) {
+    operationAsync(req).then(function (r) {
       console.log(r);
       r instanceof Error ? callback(r) : callback(null, r);
     }).catch(function (e) {
@@ -941,5 +938,14 @@ exports.default = {
   }
 };
 exports.daemonStart = daemonStart;
+exports.daemonStop = daemonStop;
+exports.daemonStartOp = daemonStartOp;
+exports.containerStart = _dockerapi.containerStart;
+exports.containerStop = _dockerapi.containerStop;
+exports.containerDelete = _dockerapi.containerDelete;
+exports.installedStart = installedStart;
+exports.installedStop = installedStop;
+exports.appInstall = appInstall;
+exports.appUninstall = appUninstall;
 exports.probeDaemon = probeDaemon;
 exports.dockerAppdataDir = dockerAppdataDir;

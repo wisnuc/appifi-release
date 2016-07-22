@@ -66,7 +66,7 @@ var retrieveRecipes = function () {
               break;
             }
 
-            recipes = _apps2.default;
+            recipes = localRecipes;
             _context2.next = 20;
             break;
 
@@ -293,33 +293,27 @@ var _superagent = require('superagent');
 
 var _superagent2 = _interopRequireDefault(_superagent);
 
-var _apps = require('../hosted/apps');
-
-var _apps2 = _interopRequireDefault(_apps);
-
 var _dockerApps = require('../lib/dockerApps');
 
 var _reducers = require('../lib/reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// const jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi/master/hosted/apps.json'
+// import localRecipes from '../hosted/apps'
 
-var jsonRecipesUrl = 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/master/release.json';
+
+function info(text) {
+  console.log('[appstore] ' + text);
+}
 
 var getJsonRecipesUrl = function getJsonRecipesUrl() {
-
   var url = (0, _reducers.storeState)().serverConfig && (0, _reducers.storeState)().serverConfig.appstoreMaster === true ? 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/master/release.json' : 'https://raw.githubusercontent.com/wisnuc/appifi-recipes/release/release.json';
 
   info('using ' + url);
   return url;
 };
 
-var useLocalRecipes = false;
-
-function info(text) {
-  console.log('[appstore] ' + text);
-}function retrieveRepo(namespace, name) {
+var useLocalRecipes = false;function retrieveRepo(namespace, name) {
 
   return new _promise2.default(function (resolve) {
     // never reject

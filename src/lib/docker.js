@@ -1,5 +1,6 @@
 import fs from 'fs'
 import child from 'child_process'
+import Promise from 'bluebird'
 
 import mkdirp from 'mkdirp'
 
@@ -8,7 +9,7 @@ import { createStore, combineReducers } from '../lib/reduced'
 import appstore from './appstore' // TODO
 
 import { containerStart, containerStop, containerCreate, containerDelete } from './dockerapi'
-import { readConfig, saveConfig } from './dockerConfig'
+import { getConfig, setConfig } from './appifiConfig'
 import { dockerEventsAgent, DockerEvents } from './dockerEvents'
 import { AppInstallTask } from './dockerTasks'
 
@@ -25,7 +26,7 @@ const dockerAppdataDir = () => {
   return `${dockerVolumesDir}/${storeState().docker.volume}/wisnuc/appdata`
 }
 
-function info(message){
+function info(message) {
   console.log(`[docker] ${message}`)
 }
 
@@ -105,6 +106,7 @@ function dispatchDaemonStart(pid, volume, agent) {
     })
   })
 
+  setConfig('lastUsedVolume', volume)
   storeDispatch({
     type: 'DAEMON_START',
     data: { pid, volume, events }
@@ -151,7 +153,7 @@ async function daemonStart(uuid) {
     if (signal !== undefined) console.log(`daemon exits with signal ${signal}`)
   })
 
-  await delay(1000)
+  await delay(3000)
 
   if (dockerDaemon === null) throw 'docker daemon stopped right after started'
   dockerDaemon.unref()
@@ -169,7 +171,9 @@ async function daemonStop() {
   if (daemon.running) { 
     info(`sending term signal to ${daemon.pid}`)
     process.kill(daemon.pid)  
-  }      
+  }
+
+  await delay(2000) 
 }
 
 function appStatus(recipeKeyString) {
@@ -247,64 +251,53 @@ async function init() {
     })
   })
 
-  let config = await readConfig()
 
   let daemon = await probeDaemon()
   if (daemon.running) {
     info(`daemon already running with pid ${daemon.pid} and volume ${daemon.volume}`)   
-
-    if (config.lastUsedVolume !== daemon.volume) {
-      config.lastUsedVolume = daemon.volume
-      saveConfig(config)
-        .then(() => info('docker config saved')) // no result? TODO
-        .catch(e => {
-          info('ERROR: failed saving docker config')
-          info(e)
-        })  
-    } 
 
     let agent = await dockerEventsAgent() 
     dispatchDaemonStart(daemon.pid, daemon.volume, agent)
     return
   }
 
-  if (!config.lastUsedVolume) {
+  let lastUsedVolume = getConfig('lastUsedVolume')
+  if (!lastUsedVolume) {
     info('last used volume not set, docker daemon not started')
     return
   }
 
   while (!storeState().storage) {
-    info('wait 200ms for storage module init')
-    await delay(200)
+    info('wait 500ms for storage module init')
+    await delay(500)
   }
 
   let storage = storeState().storage
-  let volume = storage.volumes.find(vol => vol.uuid === config.lastUsedVolume)
+  let volume = storage.volumes.find(vol => vol.uuid === lastUsedVolume)
   if (!volume) {
-    info(`last used volume (${config.lastUsedVolume}) not found, docker daemon not started`)
+    info(`last used volume (${lastUsedVolume}) not found, docker daemon not started`)
     return
   }
 
   if (volume.missing) {
-    info(`last used volume (${config.lastUsedVolume}) has missing drive, docker daemon not started`)
+    info(`last used volume (${lastUsedVolume}) has missing drive, docker daemon not started`)
     return
   }
 
   await daemonStart(volume.uuid)
 }
 
-async function daemonStartOperation(uuid) {
+async function daemonStartOp(uuid) {
 
-  if (storeState().docker) {
-    info('WARNING: daemon already started')
-    return
-  }
+  if (storeState().docker) 
+    throw new Error('daemon already started') 
 
   let storage = storeState().storage
   let volume = storage.volumes.find(vol => vol.uuid === uuid)
-  if (!volume || volume.missing) {
-    return
-  }
+  if (!volume)
+    throw new Error('volume not found')
+  if (volume.missing)
+    throw new Error('volume missing')
 
   await daemonStart(volume.uuid)
 }
@@ -413,7 +406,7 @@ async function appUninstall(uuid) {
   }
 }
 
-async function _operation(req) {
+async function operationAsync(req) {
 
   info(`operation: ${req.operation}`)  
 
@@ -424,7 +417,7 @@ async function _operation(req) {
     switch (req.operation) {
 
     case 'daemonStart':
-      f = daemonStartOperation
+      f = daemonStartOp
       break 
     case 'daemonStop':
       f = daemonStop
@@ -473,7 +466,7 @@ export default {
   },
 
   operation: (req, callback) => {
-    _operation(req)
+    operationAsync(req)
       .then(r => {
         console.log(r)
         r instanceof Error ? callback(r) : callback(null, r)
@@ -485,5 +478,24 @@ export default {
   },
 }
 
-export { daemonStart, probeDaemon, dockerAppdataDir }
+export { 
+
+  daemonStart, 
+  daemonStop,
+  daemonStartOp,
+
+  containerStart,
+  containerStop,
+  containerDelete,
+
+  installedStart,
+  installedStop,
+
+  appInstall,
+  appUninstall,
+
+  probeDaemon, 
+  dockerAppdataDir 
+}
+
 

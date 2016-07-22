@@ -3,38 +3,22 @@ import React from 'react'
 import { Card, CardTitle, CardHeader, CardMedia, CardActions, CardText } from 'material-ui/Card'
 import { FlatButton, RaisedButton, Paper, Dialog } from 'material-ui'
 
-// TODO
-import Progress from './Progress'
+import JumbotronText from './JumbotronText'
 
 import { dispatch, appstoreStore, dockerState, storageState, appstoreState, taskStates } from '../utils/storeState'
 import imagePrefix from '../utils/imagePrefix'
 
-const formatNumber = (num) => {
+const formatNumber = (num) => 
+  (num > 999999) ? (num/1000000).toFixed(1) + 'M' : 
+    (num > 999) ? (num/1000).toFixed(1) + 'K' : num
 
-  if (num > 999999) {
-    return (num/1000000).toFixed(1) + 'M'
-  }
-  else if (num > 999) {
-    return (num/1000).toFixed(1) + 'K'
-  }
-  return num
-}
+const appInstalled = (app) => 
+  dockerState().installeds.find(inst => inst.recipeKeyString === app.key)
 
-// return installed 
-const appInstalled = (app) => {
-  let installeds = dockerState().installeds
-  return installeds.find(inst => inst.recipeKeyString === app.key)
-}
-
-// return task
 const appInstalling = (app) => {
   let tasks = taskStates()
   if (!tasks || !tasks.length) return false
   return tasks.find(t => t.type === 'appInstall' && t.id === app.key && t.status === 'started')
-}
-
-const InstallingBoard = ({}) => {
-  
 }
 
 const SelectedApp = ({
@@ -133,8 +117,8 @@ const renderSelectedApp = (app) => {
     buttonText = 'This app is not installed.'
     buttonOnTouchTap = () => {
       dispatch({
-        type: 'DOCKER_OPERATION',
-        operation: {
+        type: 'SERVEROP_REQUEST',
+        data: {
           operation: 'appInstall',
           args: [app.key]
         } 
@@ -204,69 +188,76 @@ const renderAppCard = (app) => {
   )
 }
 
-const PAGEKEY = 'appstore-page-key'
+const PAGEKEY = 'appstore-content-page'
+const JUMBOKEY = 'appstore-content-page-jumbo-text'
+const APPSKEY = 'appstore-content-apps'
 
-let render = () => {
+const RenderBanner = ({text, busy, refresh}) => (
+    <div style={{display:'flex', alignItems:'center', justifyContent:'space-between'}}>
+      <div style={{display:'flex', alignItems:'center'}}>
+        <div style={{fontSize:16, opacity:0.54}}>{text}</div>
+        { busy && <CircularProgress size={0.4} /> }
+      </div> 
+      { refresh && <RaisedButton label='refresh' onTouchTap={() => dispatch({
+          type: 'SERVEROP_REQUEST',
+          data: {
+            operation: 'appstoreRefresh'
+          }
+        })}/> }
+    </div>
+  ) 
 
-  let { error, request, timeout, selectedApp } = appstoreStore()
+const render = () => {
+
+  let { selectedApp } = appstoreStore()
   let appstore = appstoreState()
   let storage = storageState()
   let docker = dockerState()
 
-  if (!storage || storage instanceof Error) {
-    return <div key={PAGEKEY}><Progress key='appstore_loading' text='Connecting to AppStation' busy={true} /></div>
+  if (!storage || typeof storage === 'string') {
+    return <div key={PAGEKEY}><JumbotronText key={JUMBOKEY} text='Server not ready' /></div>
   }
-
-  if (docker === null) {
-
-    console.log(`[AppStore] docker is null`)
-    if (storage.volumes.length === 0) {
-      console.log(`[AppStore] storage no volume`)
-      return null
-    }
-    return <div key={PAGEKEY}><Progress key='appstore_loading' text='AppEngine not started' busy={false} /></div>
+  else if (storage.volumes.length === 0) {
+    return <div key={PAGEKEY}><JumbotronText key={JUMBOKEY} text='Please create a volume before using AppStore' /></div>
   }
-
-  if (appstore === null) {
-    return <Progress key='appstore_loading' text='AppStore not started' busy={false} />
+  else if (!docker) {
+    return <div key={PAGEKEY}><JumbotronText key={JUMBOKEY} text='AppEngine not started' /></div>
   }
-
-  if (appstore.status === 'ERROR') { // TODO
-    return (<div key='appstore_loading'>Error loading appstore, please refresh</div>
-    )
+  else if (!appstore) {
+    return <div key={PAGEKEY}><JumbotronText key={JUMBOKEY} text='Server error: AppStore not started' /></div>
   }
-
-  if (appstore.status === 'LOADING') {
-    return <Progress key='appstore_loading' text='Loading Apps from AppStore' busy={true} />
+  else if (appstore.status === 'ERROR') {
+    return <div key={APPSKEY}><RenderBanner text='AppStore Error, failed loading recipes from github.com' refresh={true} /></div>
   }
-
-  // Assert status is success
-  if (appstore.result.length === 0) {
-    return <Progress key='appstore_loading' text='It seems that your computer can not connect to docker hub (hub.docker.com)' busy={false} />
+  else if (appstore.status === 'LOADING') {
+    return <div key={PAGEKEY}><JumbotronText key={JUMBOKEY} text='Loading Apps from AppStore' busy={true} /></div>
+  }
+  else if (appstore.result
+            .reduce((prev, curr) => prev.concat(curr.components), [])
+            .every(compo => compo.repo === null)) {
+    return <div key={APPSKEY}><RenderBanner text='AppStore Error, failed loading repository information from hub.docker.com' refresh={true} /></div>
   }
 
   return (
-    <div key='appstore' >
-      <div style={{fontSize:16, opacity:0.54}}>Recommended Apps</div>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-      }}>
-        { appstore.result.map(app => renderAppCard(app)) }
+    <div key={APPSKEY} >
+      <RenderBanner text='Recommended Apps' refresh={true} />
+      <div>
+        <div style={{display: 'flex', flexWrap: 'wrap'}}>
+          { appstore.result.map(app => renderAppCard(app)) }
+        </div>
+        <Dialog
+          style={{overflowY: scroll}}
+          actions={null}
+          modal={false}
+          open={selectedApp !== null}
+          onRequestClose={() => dispatch({
+            type: 'STORE_SELECTEDAPP',
+            selectedApp: null
+          })}
+        >
+          { renderSelectedApp(selectedApp) }
+        </Dialog>
       </div>
-      <Dialog
-        style={{overflowY: scroll}}
-        actions={null}
-        modal={false}
-        open={selectedApp !== null}
-        onRequestClose={() => dispatch({
-          type: 'STORE_SELECTEDAPP',
-          selectedApp: null
-        })}
-      >
-        { renderSelectedApp(selectedApp) }
-      </Dialog>
     </div>
   )
 }

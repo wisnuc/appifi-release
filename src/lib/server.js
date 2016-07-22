@@ -1,7 +1,20 @@
-import { storeState, storeDispatch, storeSubscribe } from '../lib/reducers'
-import { calcRecipeKeyString } from '../lib/dockerApps'
+import child from 'child_process'
+
+import Promise from 'bluebird'
+
+import { storeState, storeDispatch, storeSubscribe } from './reducers'
+import { calcRecipeKeyString } from './dockerApps'
+import { daemonStart, daemonStop, daemonStartOp, containerStart, containerStop, containerDelete,
+  installedStart, installedStop, appInstall, appUninstall } from './docker'
+import { mkfsBtrfsOperation } from './storage'
+import network from './eth'
+import { setFanScale, updateFanSpeed } from './barcelona'
+import appstore from './appstore'
+import timedate from './timedate'
 
 let status = 0
+
+const info = (text) => console.log(`[server] ${text}`)
 
 storeSubscribe(() => {
   status++
@@ -94,8 +107,101 @@ const facade = () => {
     storage: storeState().storage,
     docker: dockerFacade(storeState().docker),
     appstore: appstoreFacade(storeState().appstore),
-    tasks: tasksFacade(storeState().tasks)
+    tasks: tasksFacade(storeState().tasks),
+    network: storeState().network,
+    timeDate: storeState().timeDate,
+    barcelona: storeState().barcelona
   } 
+}
+
+const networkUpdate = async () => storeDispatch({
+  type: 'NETWORK_UPDATE',
+  data: (await network())
+})
+
+const timeDateUpdate = async () => storeDispatch({
+  type: 'TIMEDATE_UPDATE',
+  data: (await Promise.promisify(timedate)())
+})
+
+const shutdown = (cmd) =>
+  setTimeout(() => {
+    child.exec('echo "PWRD_LED 3" > /proc/BOARD_io', err => {})
+    child.exec(`${cmd}`, err => {})
+  }, 1000)
+
+const systemReboot = async () => shutdown('reboot') 
+const systemPowerOff = async () => shutdown('poweroff')
+ 
+const operationAsync = async (req) => {
+
+  info(`operation: ${req.operation}`)
+
+  let f, args
+
+  if (req && req.operation) {
+    
+    args = (req.args && Array.isArray(req.args)) ? req.args : []
+
+    switch (req.operation) {
+    case 'daemonStart':
+      f = daemonStartOp
+      break 
+    case 'daemonStop':
+      f = daemonStop
+      break
+    case 'containerStart':
+      f = containerStart
+      break
+    case 'containerStop':
+      f = containerStop
+      break
+    case 'containerDelete':
+      f = containerDeleteCommand
+      break
+    case 'installedStart':
+      f = installedStart
+      break
+    case 'installedStop':
+      f = installedStop
+      break
+    case 'appInstall':
+      f = appInstall
+      break
+    case 'appUninstall':
+      f = appUninstall
+      break
+    case 'mkfs_btrfs':
+      f = mkfsBtrfsOperation
+      break
+    case 'networkUpdate':
+      f = networkUpdate
+      break
+    case 'barcelonaFanScaleUpdate':
+      f = setFanScale
+      break
+    case 'barcelonaFanSpeedUpdate':
+      f = updateFanSpeed
+      break
+    case 'timeDateUpdate':
+      f = timeDateUpdate
+      break
+    case 'systemReboot':
+      f = systemReboot
+      break
+    case 'systemPowerOff':
+      f = systemPowerOff
+      break
+    case 'appstoreRefresh':
+      f = appstore.reload
+      break
+
+    default:
+      info(`operation not implemented, ${req.operation}`)
+    }
+  }
+
+  return f ? await f(...args) : null // TODO
 }
 
 export default {
@@ -108,6 +214,12 @@ export default {
     let f = facade()
     return f
   },
+
+  operation: (req, callback) => {
+    operationAsync(req)
+      .then(r => callback(null)) 
+      .catch(e => callback(e))
+  }
 }
 
 console.log('server module initialized')

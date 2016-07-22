@@ -34,6 +34,7 @@ var containerStart = function () {
                     304 container already started
                     404 no such container
                     500 server error */
+
                 if (res.statusCode === 204 || res.statusCode === 304) return resolve(null);
 
                 resolve(new _error.HttpStatusError(res.statusCode));
