@@ -1,24 +1,24 @@
 'use strict';
 
-var _reducers = require('./lib/reducers');
+var _reducers = require('./appifi/lib/reducers');
 
-var _appifiConfig = require('./lib/appifiConfig');
+var _appifiConfig = require('./appifi/lib/appifiConfig');
 
-var _barcelona = require('./lib/barcelona');
+var _barcelona = require('./appifi/lib/barcelona');
 
-var _server = require('./lib/server');
+var _server = require('./appifi/lib/server');
 
 var _server2 = _interopRequireDefault(_server);
 
-var _appstore = require('./lib/appstore');
+var _appstore = require('./appifi/lib/appstore');
 
 var _appstore2 = _interopRequireDefault(_appstore);
 
-var _docker = require('./lib/docker');
+var _docker = require('./appifi/lib/docker');
 
 var _docker2 = _interopRequireDefault(_docker);
 
-var _storage = require('./lib/storage');
+var _storage = require('./appifi/lib/storage');
 
 var _storage2 = _interopRequireDefault(_storage);
 
@@ -33,14 +33,6 @@ var bodyParser = require('body-parser');
 
 var app = express();
 
-/**
-process.argv.forEach(function (val, index, array) {
-  if (val === '--appstore-master') {
-    global.config.appstoreMaster = true
-  }
-});
-**/
-
 /*
  * middlewares
  */
@@ -53,6 +45,7 @@ app.use(logger('dev', {
     return false;
   }
 }));
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
@@ -87,9 +80,9 @@ _appstore2.default.reload();
 /*
  * routes
  */
-app.use('/', require('./routes/index'));
-app.use('/appstore', require('./routes/appstore'));
-app.use('/server', require('./routes/server'));
+app.use('/', require('./appifi/routes/index'));
+app.use('/appstore', require('./appifi/routes/appstore'));
+app.use('/server', require('./appifi/routes/server'));
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -202,3 +195,8 @@ function onListening() {
   var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
   debug('Listening on ' + bind);
 }
+
+process.on('unhandledRejection', function (reason, p) {
+  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
+  // application specific logging, throwing an error, or other logic here
+});
