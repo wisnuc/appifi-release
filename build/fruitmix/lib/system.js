@@ -46,11 +46,15 @@ var _media = require('./media');
 
 var _media2 = _interopRequireDefault(_media);
 
+var _thumbnail = require('./thumbnail');
+
+var _thumbnail2 = _interopRequireDefault(_thumbnail);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var initAsync = function () {
   var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(sysroot) {
-    var modelPath, tmpPath, userModelPath, userModel, driveModelPath, driveModel, logpath, log, forest, repo, docPath, docstore, mediasharePath, mediashareArchivePath, msstore, media;
+    var modelPath, tmpPath, userModelPath, userModel, driveModelPath, driveModel, logpath, log, forest, repo, docPath, docstore, mediasharePath, mediashareArchivePath, msstore, media, thumbnailer;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -124,7 +128,11 @@ var initAsync = function () {
 
             _models2.default.setModel('media', media);
 
-          case 32:
+            thumbnailer = (0, _thumbnail2.default)();
+
+            _models2.default.setModel('thumbnailer', thumbnailer);
+
+          case 34:
           case 'end':
             return _context.stop();
         }

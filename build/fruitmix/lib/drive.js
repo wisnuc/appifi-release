@@ -560,6 +560,18 @@ var Drive = function (_IndexedTree) {
         if (node.userReadable(userUUID)) return node.namepath();
       }
     }
+  }, {
+    key: 'readMediaPath',
+    value: function readMediaPath(digest) {
+
+      var digestObj = this.hashMap.get(digest);
+      if (!digestObj) return;
+
+      for (var i = 0; i < digestObj.nodes.length; i++) {
+        var node = digestObj.nodes[i];
+        return node.namepath();
+      }
+    }
   }]);
   return Drive;
 }(_indexedTree.IndexedTree);

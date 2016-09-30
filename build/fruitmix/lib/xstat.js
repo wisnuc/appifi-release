@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.testing = exports.copyXattrAsync = exports.copyXattr = exports.updateXattrHashMagic = exports.updateXattrHash = exports.updateXattrPermission = exports.updateXattrOwner = exports.readXstatAsync = exports.readXstat = exports.readTimeStamp = undefined;
 
+var _bluebird = require('bluebird');
+
 var _stringify = require('babel-runtime/core-js/json/stringify');
 
 var _stringify2 = _interopRequireDefault(_stringify);
@@ -24,10 +26,6 @@ var _assign2 = _interopRequireDefault(_assign);
 var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
-
-var _bluebird = require('bluebird');
-
-var _bluebird2 = _interopRequireDefault(_bluebird);
 
 var _fsXattr = require('fs-xattr');
 
@@ -81,7 +79,7 @@ var TimestampMismatch = function TimestampMismatch(text) {
 };
 
 var readTimeStamp = function readTimeStamp(target, callback) {
-  return _fs2.default.stat(target, function (err, stats) {
+  return _fs2.default.lstat(target, function (err, stats) {
     return err ? callback(err) : callback(null, stats.mtime.getTime());
   });
 };
@@ -179,7 +177,7 @@ var readXstat = function readXstat(target) {
 
   var parsed = void 0,
       valid = void 0;
-  _fs2.default.stat(target, function (err, stats) {
+  _fs2.default.lstat(target, function (err, stats) {
 
     if (err) return callback(err);
     if (!(stats.isDirectory() || stats.isFile())) return callback(new Error('not a folder or file'));
@@ -299,8 +297,8 @@ var copyXattr = function copyXattr(dst, src, callback) {
   });
 };
 
-var readXstatAsync = _bluebird2.default.promisify(readXstat);
-var copyXattrAsync = _bluebird2.default.promisify(copyXattr);
+var readXstatAsync = (0, _bluebird.promisify)(readXstat);
+var copyXattrAsync = (0, _bluebird.promisify)(copyXattr);
 
 var testing = {};
 

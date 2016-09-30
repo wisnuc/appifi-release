@@ -43,4 +43,35 @@ router.post('/', _auth2.default.jwt(), function (req, res) {
   });
 });
 
+router.post('/:shareUUID/update', _auth2.default.jwt(), function (req, res) {
+
+  try {
+    var Media = _models2.default.getModel('media');
+    var user = req.user;
+    var shareUUID = req.params.shareUUID;
+
+    Media.updateMediaShare(user.uuid, shareUUID, req.body, function (err, doc) {
+
+      if (err) console.log(err);
+
+      if (err) return res.status(500).json({ err: err });
+      res.status(200).json(doc);
+    });
+  } catch (e) {
+    console.log(e);
+  }
+});
+
+router.delete('/:shareUUID', _auth2.default.jwt(), function (req, res) {
+
+  var Media = _models2.default.getModel('media');
+  var user = req.user;
+  var shareUUID = req.params.shareUUID;
+
+  Media.deleteMediaShare(user.uuid, shareUUID, function (err) {
+    if (err) return res.status(500).json({ err: err });
+    return res.status(200).end();
+  });
+});
+
 exports.default = router;

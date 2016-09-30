@@ -24,6 +24,7 @@ var _storage2 = _interopRequireDefault(_storage);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var assets = require('../assets');
 var path = require('path');
 var express = require('express');
 // var favicon = require('serve-favicon')
@@ -49,7 +50,6 @@ app.use(logger('dev', {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, '../public')));
 
 /*
  * module init
@@ -80,7 +80,25 @@ _appstore2.default.reload();
 /*
  * routes
  */
-app.use('/', require('./appifi/routes/index'));
+// app.use('/', require('./appifi/routes/index'))
+
+app.get('/', function (req, res) {
+  return res.set('Content-Type', 'text/html').send(assets.indexHtml);
+});
+
+app.get('/favicon.ico', function (req, res) {
+  return res.set('Content-Type', 'image/x-icon').send(assets.favicon);
+});
+
+app.get('/index.html', function (req, res) {
+  res.set('Content-Type', 'text/html').send(assets.indexHtml);
+});
+
+app.get('/bundle.js', function (req, res) {
+  res.set('Content-Type', 'application/javascript').send(assets.bundlejs);
+});
+
+app.use('/stylesheets', require('./appifi/routes/stylesheets'));
 app.use('/appstore', require('./appifi/routes/appstore'));
 app.use('/server', require('./appifi/routes/server'));
 

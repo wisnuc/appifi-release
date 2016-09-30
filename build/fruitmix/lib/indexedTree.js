@@ -420,14 +420,29 @@ var IndexedTree = function (_EventEmitter) {
       if (!node) return null;
       this.deleteNode(node);
     }
+
+    /**
+      deleteSubTree(node) {
+        node.postVisit(n => this.deleteNode(n)) 
+      }
+    **/
+
   }, {
     key: 'deleteSubTree',
     value: function deleteSubTree(node) {
       var _this2 = this;
 
+      if (node.parent === null) return;
+
       node.postVisit(function (n) {
-        return _this2.deleteNode(n);
+        if (n.isFile()) {
+          _this2.fileHashUninstall(n);
+        } else if (n.isDirectory()) {
+          _this2.shared.delete(n);
+        }
       });
+
+      node.detach();
     }
   }, {
     key: 'findNodeByUUID',

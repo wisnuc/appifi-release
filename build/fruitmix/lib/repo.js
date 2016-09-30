@@ -103,7 +103,6 @@ var Repo = function (_EventEmitter) {
         _this.hashMagicWorker.start(node.namepath(), node.uuid);
       });
     });
-
     return _this;
   }
 
@@ -339,6 +338,11 @@ var Repo = function (_EventEmitter) {
 
     ////////////////////////////////////////////////////////////////////////////////
 
+  }, {
+    key: 'inspect',
+    value: function inspect(uuid) {
+      console.log('something requested to inspect node with uuid: ' + uuid);
+    }
   }]);
   return Repo;
 }(_events2.default);

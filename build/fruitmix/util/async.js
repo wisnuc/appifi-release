@@ -21,17 +21,16 @@ var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
 
-var _fsXattr = require('fs-xattr');
-
-var _fsXattr2 = _interopRequireDefault(_fsXattr);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+console.log('async require fs-xattr');
+var xattr = require('fs-xattr');
+
 _bluebird2.default.promisifyAll(_fs2.default);
-_bluebird2.default.promisifyAll(_fsXattr2.default);
+_bluebird2.default.promisifyAll(xattr);
 
 var mkdirpAsync = exports.mkdirpAsync = _bluebird2.default.promisify(_mkdirp2.default);
 var rimrafAsync = exports.rimrafAsync = _bluebird2.default.promisify(_rimraf2.default);
 
 exports.fs = _fs2.default;
-exports.xattr = _fsXattr2.default;
+exports.xattr = xattr;

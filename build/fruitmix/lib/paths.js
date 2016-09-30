@@ -51,7 +51,7 @@ var setRootAsync = function () {
 
           case 5:
             _context.next = 7;
-            return _bluebird2.default.all([(0, _async.mkdirpAsync)(join('models')), (0, _async.mkdirpAsync)(join('drives')), (0, _async.mkdirpAsync)(join('documents')), (0, _async.mkdirpAsync)(join('mediashare')), (0, _async.mkdirpAsync)(join('mediashareArchive')), (0, _async.mkdirpAsync)(join('mediatalk')), (0, _async.mkdirpAsync)(join('mediatallArchive')), (0, _async.mkdirpAsync)(join('log')), (0, _async.mkdirpAsync)(join('etc')), (0, _async.mkdirpAsync)(join('tmp'))]);
+            return _bluebird2.default.all([(0, _async.mkdirpAsync)(join('models')), (0, _async.mkdirpAsync)(join('drives')), (0, _async.mkdirpAsync)(join('documents')), (0, _async.mkdirpAsync)(join('mediashare')), (0, _async.mkdirpAsync)(join('mediashareArchive')), (0, _async.mkdirpAsync)(join('mediatalk')), (0, _async.mkdirpAsync)(join('mediatallArchive')), (0, _async.mkdirpAsync)(join('thumbnail')), (0, _async.mkdirpAsync)(join('log')), (0, _async.mkdirpAsync)(join('etc')), (0, _async.mkdirpAsync)(join('tmp'))]);
 
           case 7:
           case 'end':
@@ -93,10 +93,13 @@ var getPath = function getPath(name) {
     case 'mediashareArchive':
     case 'mediatalk':
     case 'mediatalkArchive':
+    case 'thumbnail':
     case 'log':
     case 'etc':
     case 'tmp':
       return join(name);
+    case 'root':
+      return root;
     default:
       throw new Error('unknown fruitmix path name: ' + name);
   }

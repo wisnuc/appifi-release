@@ -21,9 +21,7 @@ var router = (0, _express.Router)();
 router.get('/sharedWithMe', _auth2.default.jwt(), function (req, res) {
 
   var forest = _models2.default.getModel('forest');
-
   var user = req.user;
-
   var shared = forest.getSharedWithMe(user.uuid);
   res.status(200).json(shared);
 });
@@ -32,7 +30,6 @@ router.get('/sharedWithOthers', _auth2.default.jwt(), function (req, res) {
 
   var forest = _models2.default.getModel('forest');
   var user = req.user;
-
   var shared = forest.getSharedWithOthers(user.uuid);
   res.status(200).json(shared);
 });

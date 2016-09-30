@@ -28,10 +28,15 @@ var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+var _child_process = require('child_process');
 
-var EventEmitter = require('events');
-var child = require('child_process');
+var _child_process2 = _interopRequireDefault(_child_process);
+
+var _events = require('events');
+
+var _events2 = _interopRequireDefault(_events);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var HashMagic = function (_EventEmitter) {
   (0, _inherits3.default)(HashMagic, _EventEmitter);
@@ -92,7 +97,7 @@ var HashMagic = function (_EventEmitter) {
         // record timestamp
         _this2.timestamp = stats.mtime.getTime();
 
-        _this2.hashSpawn = child.spawn('openssl', ['dgst', '-sha256', '-r', _this2.target]);
+        _this2.hashSpawn = _child_process2.default.spawn('openssl', ['dgst', '-sha256', '-r', _this2.target]);
         _this2.hashSpawn.stdout.on('data', function (data) {
           if (_this2.state !== 'BUSY') return;
           var hash = data.toString().trim().split(' ')[0];
@@ -105,7 +110,7 @@ var HashMagic = function (_EventEmitter) {
           if (code === 0 && _this2.magicExitCode === 0) _this2.end();else if (code !== 0) _this2.end(new Error('openssl exit code ' + code));else _this2.hashExitCode = code;
         });
 
-        _this2.magicSpawn = child.spawn('file', ['-b', _this2.target]);
+        _this2.magicSpawn = _child_process2.default.spawn('file', ['-b', _this2.target]);
         _this2.magicSpawn.stdout.on('data', function (data) {
           if (_this2.state !== 'BUSY') return;
           var magic = data.toString().trim();
@@ -151,7 +156,7 @@ var HashMagic = function (_EventEmitter) {
     }
   }]);
   return HashMagic;
-}(EventEmitter);
+}(_events2.default);
 
 exports.default = function () {
   return new HashMagic();

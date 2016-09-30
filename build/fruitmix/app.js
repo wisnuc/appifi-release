@@ -72,6 +72,10 @@ var _samba = require('./routes/samba');
 
 var _samba2 = _interopRequireDefault(_samba);
 
+var _winsun = require('./routes/winsun');
+
+var _winsun2 = _interopRequireDefault(_winsun);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var app = (0, _express2.default)();
@@ -107,6 +111,7 @@ app.use('/mediashare', _mediashare2.default);
 
 app.use('/authtest', require('./routes/authtest'));
 app.use('/samba', _samba2.default);
+app.use('/winsun', _winsun2.default);
 
 // app.use('/library', require('./routes/library'))
 // app.use('/mediashare', require('./routes/mediashare'))

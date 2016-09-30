@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _typeof2 = require('babel-runtime/helpers/typeof');
+
+var _typeof3 = _interopRequireDefault(_typeof2);
+
 var _express = require('express');
 
 var _auth = require('../middleware/auth');
@@ -39,6 +43,42 @@ router.get('/:digest/download', _auth2.default.jwt(), function (req, res) {
   if (!filepath) return res.status(404).json({});
 
   res.status(200).sendFile(filepath);
+});
+
+/**
+  use query string, possible options:
+
+  width: 'integer',
+  height: 'integer'
+  modifier: 'caret',      // optional
+  autoOrient: 'true',     // optional
+  instant: 'true'         // optional
+
+  width and height, provide at least one
+  modifier effectvie only if both width and height provided
+**/
+
+router.get('/:digest/thumbnail', function (req, res) {
+
+  var user = req.user;
+  var digest = req.params.digest;
+  var query = req.query;
+
+  var thumbnailer = _models2.default.getModel('thumbnailer');
+  thumbnailer.request(digest, query, function (err, ret) {
+
+    console.log('>>>>');
+    console.log(err || ret);
+    console.log('<<<<');
+
+    if (err) return res.status(500).json(err);
+
+    if ((typeof ret === 'undefined' ? 'undefined' : (0, _typeof3.default)(ret)) === 'object') {
+      res.status(202).json(ret);
+    } else {
+      res.status(200).sendFile(ret);
+    }
+  });
 });
 
 exports.default = router;
