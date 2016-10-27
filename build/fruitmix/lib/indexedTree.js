@@ -161,7 +161,7 @@ var nodeProperties = {
   },
   preVisitFind: function preVisitFind(func) {
     if (func(this)) return this;
-    if (this.children === undefined) return undefined;
+    if (this.getChildren().length === 0) return undefined;
     return this.children.find(function (child) {
       return child.preVisitFind(func);
     });
@@ -177,18 +177,21 @@ var nodeProperties = {
 // to prevent unexpected modification
 (0, _freeze2.default)(nodeProperties);
 
+var metaType = function metaType(text) {
+
+  if (text.startsWith('JPEG image data')) return 'JPEG';
+};
+
 var IndexedTree = function (_EventEmitter) {
   (0, _inherits3.default)(IndexedTree, _EventEmitter);
-
 
   // proto can be any plain JavaScript object
   // root should have at least the uuid for this general data structure
   // for fruitmix specific usage, root should have owner, writelist and readlist
-
   function IndexedTree(proto) {
     (0, _classCallCheck3.default)(this, IndexedTree);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(IndexedTree).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (IndexedTree.__proto__ || (0, _getPrototypeOf2.default)(IndexedTree)).call(this));
 
     _this.proto = (0, _assign2.default)(proto, nodeProperties);
 
@@ -196,10 +199,6 @@ var IndexedTree = function (_EventEmitter) {
     _this.uuidMap = new _map2.default();
     // file only, examine magic and conditionally put node into map
     _this.hashMap = new _map2.default();
-    // file only, for file without hashmagic
-    _this.hashless = new _set2.default();
-    // for digestObj with extended meta but not sure if it has been extracted before
-    _this.extended = new _set2.default();
     // folder only, for folder with writer/reader other than drive owner
     _this.shared = new _set2.default();
 
@@ -207,7 +206,7 @@ var IndexedTree = function (_EventEmitter) {
     return _this;
   }
 
-  // parent, children
+  // parent, children 
   // uuid, type
   // owner, writelist, readlist
   // mtime, size
@@ -291,11 +290,7 @@ var IndexedTree = function (_EventEmitter) {
     value: function fileHashInstall(node, hash, magic) {
 
       if (!hash) {
-        this.hashless.add(node);
-
-        // TODO
-        // this is probably not the best place to emit since the content update is not finished yet.
-        this.emit('hashlessAdded', node);
+        this.emit('hashMagic', node);
         return;
       }
 
@@ -305,18 +300,15 @@ var IndexedTree = function (_EventEmitter) {
         return;
       }
 
-      var meta = (0, _magicMeta2.default)(magic);
-      if (meta) {
+      var type = metaType(magic);
+      if (type) {
         node.hash = hash;
         digestObj = {
-          meta: meta,
+          type: type,
           nodes: [node]
         };
         this.hashMap.set(hash, digestObj);
-        if (meta.extended) {
-          this.extended.add(digestObj);
-          this.emit('extendedAdded', digestObj);
-        }
+        this.emit('meta', hash);
       }
     }
   }, {
@@ -324,14 +316,9 @@ var IndexedTree = function (_EventEmitter) {
     value: function fileHashUninstall(node) {
 
       // if no hash
-      if (!node.hash) {
-        if (this.hashless.has(node)) {
-          this.hashless.delete(node);
-        }
-        return;
-      }
+      if (!node.hash) return;
 
-      // let hash = node.hash // TODO
+      // let hash = node.hash // TODO no problem, for cleaner code
 
       // retrieve digest object
       var digestObj = this.hashMap.get(node.hash);
@@ -349,8 +336,6 @@ var IndexedTree = function (_EventEmitter) {
 
       // destory digest object if this is last one
       if (digestObj.nodes.length === 0) {
-        // try to remove it out of extended (probably already removed)
-        if (digestObj.meta.extended) this.extended.delete(digestObj);
         this.hashMap.delete(node.hash);
       }
     }
@@ -420,13 +405,6 @@ var IndexedTree = function (_EventEmitter) {
       if (!node) return null;
       this.deleteNode(node);
     }
-
-    /**
-      deleteSubTree(node) {
-        node.postVisit(n => this.deleteNode(n)) 
-      }
-    **/
-
   }, {
     key: 'deleteSubTree',
     value: function deleteSubTree(node) {
@@ -448,6 +426,11 @@ var IndexedTree = function (_EventEmitter) {
     key: 'findNodeByUUID',
     value: function findNodeByUUID(uuid) {
       return this.uuidMap.get(uuid);
+    }
+  }, {
+    key: 'findDigestObject',
+    value: function findDigestObject(digest) {
+      return this.hashMap.get(digest);
     }
   }]);
   return IndexedTree;

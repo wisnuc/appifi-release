@@ -148,7 +148,7 @@ function uncomposeJsonLabel(json) {
 
   // TODO validate version string
 
-  // ! important validator throws ReferenceError for undefined
+  // ! important validator throws ReferenceError for undefined 
   if (!sig.uuid || !_validator2.default.isUUID(sig.uuid)) return null;
   if (!validateRecipe(sig.recipe)) return null;
 
@@ -203,9 +203,9 @@ function groupContainersByUUID(containers) {
 }
 
 function containerMatchComponent(container, component) {
-  var name = component.name;
-  var namespace = component.namespace;
-  var tag = component.tag;
+  var name = component.name,
+      namespace = component.namespace,
+      tag = component.tag;
 
   return container.Image === namespace + '/' + name;
 }
@@ -244,10 +244,10 @@ function containerGroupToApp(group) {
 }
 
 function appMainContainer(app) {
-  var _app$recipe$component = app.recipe.components[0];
-  var name = _app$recipe$component.name;
-  var namespace = _app$recipe$component.namespace;
-  var tag = _app$recipe$component.tag;
+  var _app$recipe$component = app.recipe.components[0],
+      name = _app$recipe$component.name,
+      namespace = _app$recipe$component.namespace,
+      tag = _app$recipe$component.tag;
 
   return app.containers.find(function (c) {
     return c.Image === namespace + '/' + name;

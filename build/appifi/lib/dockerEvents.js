@@ -36,7 +36,6 @@ var _bluebird2 = _interopRequireDefault(_bluebird);
 /*
  * should return state TODO
  */
-
 var probeDockerState = function () {
   var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee() {
     var containersUrl, imagesUrl, infoUrl, versionUrl, volumesUrl, networksUrl, r, id, state;
@@ -156,7 +155,7 @@ var DockerEvents = function (_events) {
   function DockerEvents(agent, interval) {
     (0, _classCallCheck3.default)(this, DockerEvents);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(DockerEvents).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (DockerEvents.__proto__ || (0, _getPrototypeOf2.default)(DockerEvents)).call(this));
 
     if (!interval) interval = 300;
 

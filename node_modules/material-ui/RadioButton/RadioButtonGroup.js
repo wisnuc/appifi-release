@@ -168,11 +168,11 @@ RadioButtonGroup.propTypes = {
    */
   className: _react.PropTypes.string,
   /**
-   * The `value` property (case-sensitive) of the radio button that will be
+   * The `value` property of the radio button that will be
    * selected by default. This takes precedence over the `checked` property
    * of the `RadioButton` elements.
    */
-  defaultSelected: _react.PropTypes.string,
+  defaultSelected: _react.PropTypes.any,
   /**
    * Where the label will be placed for all child radio buttons.
    * This takes precedence over the `labelPosition` property of the
@@ -189,7 +189,7 @@ RadioButtonGroup.propTypes = {
    *
    * @param {object} event `change` event targeting the selected
    * radio button.
-   * @param {string} value The `value` of the selected radio button.
+   * @param {*} value The `value` of the selected radio button.
    */
   onChange: _react.PropTypes.func,
   /**
@@ -199,7 +199,7 @@ RadioButtonGroup.propTypes = {
   /**
    * The `value` of the currently selected radio button.
    */
-  valueSelected: _react.PropTypes.string
+  valueSelected: _react.PropTypes.any
 };
 RadioButtonGroup.defaultProps = {
   style: {}

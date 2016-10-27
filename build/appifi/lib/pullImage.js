@@ -50,7 +50,7 @@ var pullImage = function (_EventEmitter) {
   function pullImage(image, tag, callback) {
     (0, _classCallCheck3.default)(this, pullImage);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(pullImage).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (pullImage.__proto__ || (0, _getPrototypeOf2.default)(pullImage)).call(this));
 
     _this.image = image;
     _this.tag = tag;

@@ -80,6 +80,7 @@ var CardHeader = function (_Component) {
       var actAsExpander = _props.actAsExpander;
       var avatarProp = _props.avatar;
       var children = _props.children;
+      var expandable = _props.expandable;
       var showExpandableButton = _props.showExpandableButton;
       var style = _props.style;
       var subtitle = _props.subtitle;
@@ -88,7 +89,7 @@ var CardHeader = function (_Component) {
       var title = _props.title;
       var titleStyle = _props.titleStyle;
 
-      var other = _objectWithoutProperties(_props, ['actAsExpander', 'avatar', 'children', 'showExpandableButton', 'style', 'subtitle', 'subtitleStyle', 'textStyle', 'title', 'titleStyle']);
+      var other = _objectWithoutProperties(_props, ['actAsExpander', 'avatar', 'children', 'expandable', 'showExpandableButton', 'style', 'subtitle', 'subtitleStyle', 'textStyle', 'title', 'titleStyle']);
 
       var prepareStyles = this.context.muiTheme.prepareStyles;
 

@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createMediaTalkFromObject = exports.createMediaTalk = exports.createMediaTalkPrototype = undefined;
+exports.createMediaTalkFromDoc = exports.createMediaTalk = undefined;
 
 var _create = require('babel-runtime/core-js/object/create');
 
@@ -56,7 +56,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
   The structure of a mediaTalk object should be
 
   {
-    data: {
+    doc: {
       owner: <UUID, string>,
       digest: <SHA256, string>,
       comments: [ // sorted by time
@@ -72,7 +72,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
     docHash: document hash
   }
 
-  the property inside data should be structurally stable
+  the property inside doc should be structurally stable
   the comments should be sorted by time
 
 **/
@@ -83,19 +83,18 @@ var hashObject = function hashObject(obj) {
   return hash.digest('hex');
 };
 
-var mediaTalkPrototype = function () {
+var MediaTalkPrototype = function () {
 
   // assuming store has the save method, requiring owner, digest as parameters
-
-  function mediaTalkPrototype(store) {
-    (0, _classCallCheck3.default)(this, mediaTalkPrototype);
+  function MediaTalkPrototype(store) {
+    (0, _classCallCheck3.default)(this, MediaTalkPrototype);
 
     this.store = store;
   }
 
-  (0, _createClass3.default)(mediaTalkPrototype, [{
+  (0, _createClass3.default)(MediaTalkPrototype, [{
     key: 'save',
-    value: function save(newData, callback) {
+    value: function save(newDoc, callback) {
       this.store.save();
     }
   }, {
@@ -104,33 +103,33 @@ var mediaTalkPrototype = function () {
       var _this = this;
 
       // prevent racing
-      var data = this.data;
+      var doc = this.doc;
 
       // immutable, order is important, order is irrelevent to timestamp
-      var newData = {
-        owner: data.owner,
-        digest: data.digest,
-        comments: [].concat((0, _toConsumableArray3.default)(data.comments), [{
+      var newDoc = {
+        owner: doc.owner,
+        digest: doc.digest,
+        comments: [].concat((0, _toConsumableArray3.default)(doc.comments), [{
           author: author, text: text, time: newDate().getTime()
         }])
       };
 
-      (0, _freeze2.default)(newData);
+      (0, _freeze2.default)(newDoc);
 
-      this.save(newData, function (err, docHash) {
+      this.save(newDoc, function (err, docHash) {
 
         if (err) return callback(err);
-        if (data !== _this.data) {
+        if (doc !== _this.doc) {
           var error = new Error('mediaTalk failed to save due to race condition');
           error.code = 'EBUSY';
           return callback(error);
         }
 
         _this.docHash = docHash;
-        _this.data = newData;
+        _this.doc = newDoc;
         _this.updateAuthorHash();
 
-        callback(null, newData);
+        callback(null, newDoc);
       });
     }
   }, {
@@ -139,40 +138,40 @@ var mediaTalkPrototype = function () {
       var _this2 = this;
 
       // prevent racing
-      var data = this.data;
+      var doc = this.doc;
 
       // check existence
-      var index = data.comments.find(function (c) {
+      var index = doc.comments.find(function (c) {
         return c.author === author && c.time === time;
       });
       if (index === -1) {
         return process.nextTick(function () {
-          return callback(data);
+          return callback(doc);
         });
       }
 
-      var newData = {
-        owner: data.owner,
-        digest: data.digest,
-        comments: [].concat((0, _toConsumableArray3.default)(data.comments.splice(0, index)), (0, _toConsumableArray3.default)(data.comments.splice(index + 1)))
+      var newDoc = {
+        owner: doc.owner,
+        digest: doc.digest,
+        comments: [].concat((0, _toConsumableArray3.default)(doc.comments.slice(0, index)), (0, _toConsumableArray3.default)(doc.comments.slice(index + 1)))
       };
 
-      (0, _freeze2.default)(newData);
+      (0, _freeze2.default)(newDoc);
 
-      this.save(newData, function (err, docHash) {
+      this.save(newDoc, function (err, docHash) {
 
         if (err) return callback(err);
-        if (data !== _this2.data) {
+        if (doc !== _this2.doc) {
           var error = new Error('mediaTalk failed to save due to race condition');
           error.code = 'EBUSY';
           return callback(error);
         }
 
         _this2.docHash = docHash;
-        _this2.data = newData;
+        _this2.doc = newDoc;
         _this2.updateAuthorHash();
 
-        callback(null, newData);
+        callback(null, newDoc);
       });
     }
 
@@ -183,7 +182,7 @@ var mediaTalkPrototype = function () {
     value: function updateAuthorHash() {
 
       var authorHash = new _map2.default();
-      var comments = this.data.comments;
+      var comments = this.doc.comments;
 
       // create a new set
       var authorSet = new _set2.default();
@@ -256,10 +255,10 @@ var mediaTalkPrototype = function () {
       };
     }
   }]);
-  return mediaTalkPrototype;
+  return MediaTalkPrototype;
 }();
 
-// this function create a blank talk, which has not been saved before, then
+// this function create a blank talk, which has not been saved before, then 
 // there is neither document hash nor comments
 
 
@@ -269,10 +268,9 @@ var createMediaTalk = function createMediaTalk(prototype, owner, digest) {
   });
 };
 
-var createMediaTalkFromObject = function createMediaTalkFromObject(prototype, obj, hash) {
+var createMediaTalkFromDoc = function createMediaTalkFromDoc(prototype, obj, hash) {
   return (0, _create2.default)(prototype, obj).updateAuthorHash();
 };
 
-exports.createMediaTalkPrototype = createMediaTalkPrototype;
 exports.createMediaTalk = createMediaTalk;
-exports.createMediaTalkFromObject = createMediaTalkFromObject;
+exports.createMediaTalkFromDoc = createMediaTalkFromDoc;

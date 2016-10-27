@@ -11,7 +11,6 @@ var _regenerator2 = _interopRequireDefault(_regenerator);
 /*
  * parse single volume info
  */
-
 var btrfs_fi_show_uuid = function () {
   var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(uuid) {
     var stdout, lines, vol;
@@ -22,7 +21,7 @@ var btrfs_fi_show_uuid = function () {
             _context.next = 2;
             return new _bluebird2.default(function (resolve, reject) {
               return child.exec('btrfs fi show ' + uuid, function (err, stdout) {
-                return (// stderr not used
+                return (// stderr not used 
                   err ? reject(err) : resolve(stdout)
                 );
               });
@@ -44,7 +43,7 @@ var btrfs_fi_show_uuid = function () {
             lines.forEach(function (l) {
 
               if (l.startsWith('Label')) {
-                // FIXME if label is none, this fails        
+                // FIXME if label is none, this fails         
                 if (l.startsWith('Label: none ')) {
                   vol.label = '';
                   var tmp = l.split(' ').filter(function (l) {

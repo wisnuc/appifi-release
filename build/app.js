@@ -1,60 +1,104 @@
 'use strict';
 
+var _assign = require('babel-runtime/core-js/object/assign');
+
+var _assign2 = _interopRequireDefault(_assign);
+
+var _path = require('path');
+
+var _path2 = _interopRequireDefault(_path);
+
+var _http = require('http');
+
+var _http2 = _interopRequireDefault(_http);
+
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
+
+var _sysinit = require('./system/sysinit');
+
+var _sysinit2 = _interopRequireDefault(_sysinit);
+
+var _sysconfig = require('./system/sysconfig');
+
+var _sysconfig2 = _interopRequireDefault(_sysconfig);
+
 var _reducers = require('./appifi/lib/reducers');
-
-var _appifiConfig = require('./appifi/lib/appifiConfig');
-
-var _barcelona = require('./appifi/lib/barcelona');
-
-var _server = require('./appifi/lib/server');
-
-var _server2 = _interopRequireDefault(_server);
-
-var _appstore = require('./appifi/lib/appstore');
-
-var _appstore2 = _interopRequireDefault(_appstore);
-
-var _docker = require('./appifi/lib/docker');
-
-var _docker2 = _interopRequireDefault(_docker);
 
 var _storage = require('./appifi/lib/storage');
 
 var _storage2 = _interopRequireDefault(_storage);
 
+var _index = require('./system/index');
+
+var _index2 = _interopRequireDefault(_index);
+
+var _appifi = require('./appifi/appifi');
+
+var _appifi2 = _interopRequireDefault(_appifi);
+
+var _index3 = require('./appifi/index');
+
+var _index4 = _interopRequireDefault(_index3);
+
+var _fruitmix = require('./fruitmix/fruitmix');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var assets = require('../assets');
-var path = require('path');
-var express = require('express');
-// var favicon = require('serve-favicon')
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+var debug = (0, _debug2.default)('system:bootstrap');
 
-var app = express();
+var port = 3000;
 
-/*
- * middlewares
- */
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev', {
-  skip: function skip(req) {
-    // console.log(`morgan: ${req.path}`)
-    if (req.path === '/status') return true;
-    return false;
+// append (piggyback) system api
+var startServer = function startServer() {
+
+  _index4.default.use('/system', _index2.default);
+
+  // catch 404 and forward to error handler
+  _index4.default.use(function (req, res, next) {
+    return next((0, _assign2.default)(new Error('Not Found'), { status: 404 }));
+  });
+
+  // development error handler will print stacktrace
+  if (_index4.default.get('env') === 'development') {
+    _index4.default.use(function (err, req, res) {
+      return res.status(err.status || 500).send('error: ' + err.message);
+    });
   }
-}));
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
+  // production error handler no stacktraces leaked to user
+  _index4.default.use(function (err, req, res) {
+    return res.status(err.status || 500).send('error: ' + err.message);
+  });
 
-/*
- * module init
- */
+  _index4.default.set('port', port);
 
+  var httpServer = _http2.default.createServer(_index4.default);
+
+  httpServer.on('error', function (error) {
+
+    if (error.syscall !== 'listen') throw error;
+    switch (error.code) {
+      case 'EACCES':
+        console.error('Port ' + port + ' requires elevated privileges');
+        process.exit(1);
+        break;
+      case 'EADDRINUSE':
+        console.error('Port ' + port + ' is already in use');
+        process.exit(1);
+        break;
+      default:
+        throw error;
+    }
+  });
+
+  httpServer.on('listening', function () {
+    console.log('[app] Listening on port ' + httpServer.address().port);
+  });
+
+  httpServer.listen(port);
+};
 
 process.argv.forEach(function (val, index, array) {
   if (val === '--appstore-master') {
@@ -66,155 +110,94 @@ process.argv.forEach(function (val, index, array) {
   }
 });
 
-(0, _appifiConfig.initConfig)();
+(0, _storage.refreshStorage)().asCallback(function (err) {
 
-// code for barcelona, harmless for other platfrom
-(0, _barcelona.updateFanSpeed)();
-(0, _barcelona.pollingPowerButton)();
-(0, _barcelona.setFanScale)((0, _appifiConfig.getConfig)('barcelonaFanScale'));
-
-_storage2.default.init();
-_docker2.default.init();
-_appstore2.default.reload();
-
-/*
- * routes
- */
-// app.use('/', require('./appifi/routes/index'))
-
-app.get('/', function (req, res) {
-  return res.set('Content-Type', 'text/html').send(assets.indexHtml);
-});
-
-app.get('/favicon.ico', function (req, res) {
-  return res.set('Content-Type', 'image/x-icon').send(assets.favicon);
-});
-
-app.get('/index.html', function (req, res) {
-  res.set('Content-Type', 'text/html').send(assets.indexHtml);
-});
-
-app.get('/bundle.js', function (req, res) {
-  res.set('Content-Type', 'application/javascript').send(assets.bundlejs);
-});
-
-app.use('/stylesheets', require('./appifi/routes/stylesheets'));
-app.use('/appstore', require('./appifi/routes/appstore'));
-app.use('/server', require('./appifi/routes/server'));
-
-// catch 404 and forward to error handler
-app.use(function (req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
-
-// error handlers
-
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function (err, req, res) {
-    res.status(err.status || 500);
-    res.send('error: ' + err.message);
-  });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function (err, req, res) {
-  res.status(err.status || 500);
-  res.send('error: ' + err.message);
-});
-
-// module.exports = app
-
-/**
- * Module dependencies.
- */
-
-// var app = require('../app');
-var debug = require('debug')('appifi:server');
-var http = require('http');
-
-/**
- * Get port from environment and store in Express.
- */
-
-var port = normalizePort(process.env.PORT || '3000');
-app.set('port', port);
-
-/**
- * Create HTTP server.
- */
-
-var httpServer = http.createServer(app);
-
-/**
- * Listen on provided port, on all network interfaces.
- */
-
-httpServer.listen(port);
-httpServer.on('error', onError);
-httpServer.on('listening', onListening);
-
-/**
- * Normalize a port into a number, string, or false.
- */
-
-function normalizePort(val) {
-  var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
+  if (err) {
+    console.log('failed to init storage, exit');
+    console.log(err);
+    process.exit(1);
   }
 
-  if (port >= 0) {
-    // port number
-    return port;
+  var fileSystem = null;
+  var mountpoint = null;
+
+  // load config
+  var lastFileSystem = _sysconfig2.default.get('lastFileSystem');
+
+  debug('sysconfig', _sysconfig2.default);
+  debug('lastFileSystem', lastFileSystem);
+
+  var state = void 0;
+  var currentFileSystem = null;
+  var bootMode = _sysconfig2.default.get('bootMode');
+  debug('bootMode', bootMode);
+
+  if (bootMode === 'maintenance') {
+    // enter maintenance mode by user setting
+    state = 'maintenance';
+    // clear one-shot config
+    _sysconfig2.default.set('bootMode', 'normal');
+  } else {
+    // normal mode
+
+    // find all file system mounted
+    var mounted = (0, _storage.mountedFS)((0, _reducers.storeState)().storage);
+
+    if (lastFileSystem) {
+
+      fileSystem = mounted.find(function (x) {
+        return x.stats.fileSystemType === lastFileSystem.type && x.stats.fileSystemUUID === lastFileSystem.uuid;
+      });
+
+      if (fileSystem) debug('lastFileSystem found', fileSystem);
+    }
+
+    if (fileSystem) {// fileSystem found
+
+    } else {
+      // no lastFileSystem or corresponding file system not found
+
+      var installed = mounted.filter(function (mfs) {
+        return mfs.stats.wisnucInstalled;
+      });
+      if (installed.length == 1) {
+        // only one
+        fileSystem = installed[0];
+      }
+    }
+
+    // Not checked ... TODO
+    if (fileSystem) {
+
+      state = 'normal';
+      currentFileSystem = {
+        type: fileSystem.stats.fileSystemType,
+        uuid: fileSystem.stats.fileSystemUUID,
+        mountpoint: fileSystem.stats.mountpoint
+      };
+
+      debug('set currentFileSystem', fileSystem, currentFileSystem);
+
+      (0, _appifi2.default)();
+      (0, _fruitmix.createFruitmix)(_path2.default.join(currentFileSystem.mountpoint, 'wisnuc', 'fruitmix'));
+      _sysconfig2.default.set('lastFileSystem', currentFileSystem);
+    } else {
+
+      state = 'maintenance';
+    }
   }
 
-  return false;
-}
+  // update store state
+  var actionData = {
+    state: state,
+    bootMode: bootMode,
+    lastFileSystem: lastFileSystem,
+    currentFileSystem: currentFileSystem
+  };
+  (0, _reducers.storeDispatch)({ type: 'UPDATE_SYSBOOT', data: actionData });
 
-/**
- * Event listener for HTTP server "error" event.
- */
+  // log
+  console.log('[app] updating sysboot', actionData);
 
-function onError(error) {
-  if (error.syscall !== 'listen') {
-    throw error;
-  }
-
-  var bind = typeof port === 'string' ? 'Pipe ' + port : 'Port ' + port;
-
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
-      process.exit(1);
-      break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
-
-/**
- * Event listener for HTTP server "listening" event.
- */
-
-function onListening() {
-  var addr = httpServer.address();
-  var bind = typeof addr === 'string' ? 'pipe ' + addr : 'port ' + addr.port;
-  debug('Listening on ' + bind);
-}
-
-process.on('unhandledRejection', function (reason, p) {
-  console.log('Unhandled Rejection at: Promise', p, 'reason:', reason);
-  // application specific logging, throwing an error, or other logic here
+  startServer();
 });

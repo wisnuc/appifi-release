@@ -48,12 +48,12 @@ var hashToDistinctIndices = exports.hashToDistinctIndices = function hashToDisti
 };
 
 var IBFUnion = exports.IBFUnion = function IBFUnion(ibf, id, insert) {
-  var m = void 0;var n = ibf.n;
-  var length = ibf.length;
-  var k = ibf.k;
-  var seed = ibf.seed;
-  var B = ibf.B;
-
+  var m = void 0,
+      n = ibf.n,
+      length = ibf.length,
+      k = ibf.k,
+      seed = ibf.seed,
+      B = ibf.B;
 
   var indices = hashToDistinctIndices(id, k, n, seed);
   indices.forEach(function (j) {
@@ -86,9 +86,9 @@ var IBFSubtract = exports.IBFSubtract = function IBFSubtract(ibf1, ibf2) {
 
   var ibf = createIBF((0, _log2.default)(ibf1.n), ibf1.length, ibf1.k, ibf1.seed);
 
-  var n = ibf.n;
-  var length = ibf.length;
-  var B = ibf.B;
+  var n = ibf.n,
+      length = ibf.length,
+      B = ibf.B;
 
   var B1 = ibf1.B,
       B2 = ibf2.B;
@@ -107,9 +107,9 @@ var IBFSubtract = exports.IBFSubtract = function IBFSubtract(ibf1, ibf2) {
 };
 
 var isPure = function isPure(u, seed) {
-  var idSum = u.idSum;
-  var hashSum = u.hashSum;
-  var count = u.count;
+  var idSum = u.idSum,
+      hashSum = u.hashSum,
+      count = u.count;
 
 
   if (count === 1 || count === -1) {
@@ -120,10 +120,11 @@ var isPure = function isPure(u, seed) {
 };
 
 var isZero = exports.isZero = function isZero(ibf) {
-  var i = void 0;var m = void 0;var n = ibf.n;
-  var length = ibf.length;
-  var B = ibf.B;
-
+  var i = void 0,
+      m = void 0,
+      n = ibf.n,
+      length = ibf.length,
+      B = ibf.B;
   for (i = 0; i < n; i++) {
     for (m = 0; m < length; m++) {
       if (B[i].idSum[m] !== 0) return false;
@@ -136,11 +137,11 @@ var isZero = exports.isZero = function isZero(ibf) {
 };
 
 var IBFDecode = exports.IBFDecode = function IBFDecode(ibf) {
-  var n = ibf.n;
-  var length = ibf.length;
-  var k = ibf.k;
-  var seed = ibf.seed;
-  var B = ibf.B;
+  var n = ibf.n,
+      length = ibf.length,
+      k = ibf.k,
+      seed = ibf.seed,
+      B = ibf.B;
 
   var pureList = [];
   var DAB = [],

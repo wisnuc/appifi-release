@@ -40,7 +40,7 @@ var task = function (_events) {
   function task(type, id, parent) {
     (0, _classCallCheck3.default)(this, task);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(task).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (task.__proto__ || (0, _getPrototypeOf2.default)(task)).call(this));
 
     _this.parent = parent;
     _this.type = type;

@@ -115,6 +115,7 @@ var Card = function (_Component) {
         if (doClone) {
           element = _react2.default.cloneElement(currentChild, newProps, currentChild.props.children, newChild);
         }
+        lastElement = element;
         return element;
       }, this);
 

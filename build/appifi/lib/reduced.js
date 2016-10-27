@@ -43,7 +43,7 @@ var createStore = function createStore(reducer) {
 
 var combineReducers = function combineReducers(reducers) {
   return function () {
-    var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+    var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
     var action = arguments[1];
 
     return (0, _keys2.default)(reducers).reduce(function (nextState, key) {

@@ -11,8 +11,6 @@ var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
 
 var _bluebird = require('bluebird');
 
-var _bluebird2 = _interopRequireDefault(_bluebird);
-
 var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
@@ -20,10 +18,9 @@ var _regenerator2 = _interopRequireDefault(_regenerator);
 /*
  * return {pid, volume, listener} or null
  */
-
 var daemonStart = function () {
   var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(uuid) {
-    var out, err, mountpoint, execRootDir, graphDir, appDataDir, fruitmixDir, opts, args, dockerDaemon, agent;
+    var out, err, mountpoint, execRootDir, graphDir, appDataDir, opts, args, dockerDaemon, agent;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
@@ -34,23 +31,18 @@ var daemonStart = function () {
             execRootDir = mountpoint + '/wisnuc/r';
             graphDir = mountpoint + '/wisnuc/g';
             appDataDir = dockerVolumesDir + '/' + uuid + '/wisnuc/appdata';
-            fruitmixDir = dockerVolumesDir + '/' + uuid + '/wisnuc/fruitmix';
-            _context.next = 9;
+            _context.next = 8;
             return mkdirpAsync(execRootDir);
 
-          case 9:
-            _context.next = 11;
+          case 8:
+            _context.next = 10;
             return mkdirpAsync(graphDir);
 
-          case 11:
-            _context.next = 13;
+          case 10:
+            _context.next = 12;
             return mkdirpAsync(appDataDir);
 
-          case 13:
-            _context.next = 15;
-            return mkdirpAsync(fruitmixDir);
-
-          case 15:
+          case 12:
             opts = {
               cwd: mountpoint,
               detached: true,
@@ -61,7 +53,6 @@ var daemonStart = function () {
 
 
             dockerDaemon.on('error', function (err) {
-
               console.log('dockerDaemon error >>>>');
               console.log(err);
               console.log('dockerDaemon error <<<<');
@@ -73,29 +64,29 @@ var daemonStart = function () {
               if (signal !== undefined) console.log('daemon exits with signal ' + signal);
             });
 
-            _context.next = 22;
-            return (0, _utils.delay)(3000);
+            _context.next = 19;
+            return (0, _bluebird.delay)(3000);
 
-          case 22:
+          case 19:
             if (!(dockerDaemon === null)) {
-              _context.next = 24;
+              _context.next = 21;
               break;
             }
 
             throw 'docker daemon stopped right after started';
 
-          case 24:
+          case 21:
             dockerDaemon.unref();
 
-            _context.next = 27;
+            _context.next = 24;
             return (0, _dockerEvents.dockerEventsAgent)();
 
-          case 27:
+          case 24:
             agent = _context.sent;
 
             dispatchDaemonStart(uuid, agent);
 
-          case 29:
+          case 26:
           case 'end':
             return _context.stop();
         }
@@ -163,99 +154,121 @@ var appInstall = function () {
 
 var initAsync = function () {
   var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee2() {
-    var daemon, agent, lastUsedVolume, storage, volume;
+    var sysboot, rootDir, daemon, agent, lastUsedVolume, storage, volume;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return new _bluebird2.default(function (resolve, reject) {
-              _child_process2.default.exec('mkdir -p /run/wisnuc/app', function (err, stdout, stderr) {
-                err ? reject(stderr) : resolve(stdout);
-              });
-            });
+            return mkdirpAsync('/run/wisnuc/app');
 
           case 2:
-            _context2.next = 4;
+            sysboot = (0, _reducers.storeState)().sysboot;
+
+            if (!(!sysboot || !sysboot.currentFileSystem)) {
+              _context2.next = 6;
+              break;
+            }
+
+            console.log('[docker]: currentFileSystem not set, return');
+            return _context2.abrupt('return');
+
+          case 6:
+            rootDir = void 0;
+            _context2.prev = 7;
+            _context2.next = 10;
+            return probeDaemonRootAsync();
+
+          case 10:
+            rootDir = _context2.sent;
+            _context2.next = 15;
+            break;
+
+          case 13:
+            _context2.prev = 13;
+            _context2.t0 = _context2['catch'](7);
+
+          case 15:
+            _context2.next = 17;
             return probeDaemon();
 
-          case 4:
+          case 17:
             daemon = _context2.sent;
 
             if (!daemon.running) {
-              _context2.next = 12;
+              _context2.next = 25;
               break;
             }
 
             info('daemon already running with pid ' + daemon.pid + ' and volume ' + daemon.volume);
 
-            _context2.next = 9;
+            _context2.next = 22;
             return (0, _dockerEvents.dockerEventsAgent)();
 
-          case 9:
+          case 22:
             agent = _context2.sent;
 
             dispatchDaemonStart(daemon.volume, agent);
             return _context2.abrupt('return');
 
-          case 12:
-            lastUsedVolume = (0, _appifiConfig.getConfig)('lastUsedVolume');
+          case 25:
+            lastUsedVolume = _sysconfig2.default.get('lastUsedVolume');
 
             if (lastUsedVolume) {
-              _context2.next = 16;
+              _context2.next = 29;
               break;
             }
 
             info('last used volume not set, docker daemon not started');
             return _context2.abrupt('return');
 
-          case 16:
+          case 29:
             if ((0, _reducers.storeState)().storage) {
-              _context2.next = 22;
+              _context2.next = 35;
               break;
             }
 
             info('wait 500ms for storage module init');
-            _context2.next = 20;
-            return (0, _utils.delay)(500);
+            _context2.next = 33;
+            return (0, _bluebird.delay)(500);
 
-          case 20:
-            _context2.next = 16;
+          case 33:
+            _context2.next = 29;
             break;
 
-          case 22:
+          case 35:
             storage = (0, _reducers.storeState)().storage;
             volume = storage.volumes.find(function (vol) {
               return vol.uuid === lastUsedVolume;
             });
 
             if (volume) {
-              _context2.next = 27;
+              _context2.next = 40;
               break;
             }
 
             info('last used volume (' + lastUsedVolume + ') not found, docker daemon not started');
             return _context2.abrupt('return');
 
-          case 27:
+          case 40:
             if (!volume.missing) {
-              _context2.next = 30;
+              _context2.next = 43;
               break;
             }
 
             info('last used volume (' + lastUsedVolume + ') has missing drive, docker daemon not started');
             return _context2.abrupt('return');
 
-          case 30:
-            _context2.next = 32;
+          case 43:
+            _context2.next = 45;
             return daemonStart(volume.uuid);
 
-          case 32:
+          case 45:
           case 'end':
             return _context2.stop();
         }
       }
-    }, _callee2, this);
+    }, _callee2, this, [[7, 13]]);
   }));
 
   return function initAsync() {
@@ -656,17 +669,15 @@ var _superagent = require('superagent');
 
 var _superagent2 = _interopRequireDefault(_superagent);
 
-var _utils = require('../lib/utils');
-
-var _reduced = require('../lib/reduced');
-
 var _appstore = require('./appstore');
 
 var _appstore2 = _interopRequireDefault(_appstore);
 
 var _dockerapi = require('./dockerapi');
 
-var _appifiConfig = require('./appifiConfig');
+var _sysconfig = require('../../system/sysconfig');
+
+var _sysconfig2 = _interopRequireDefault(_sysconfig);
 
 var _dockerEvents = require('./dockerEvents');
 
@@ -678,9 +689,7 @@ var _reducers = require('../lib/reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// TODO
-
-var debug = (0, _debug2.default)('docker');
+var debug = (0, _debug2.default)('appifi:docker'); // TODO
 
 var dockerUrl = 'http://127.0.0.1:1688';
 var dockerPidFile = '/run/wisnuc/app/docker.pid';
@@ -705,18 +714,68 @@ var info = function info(message) {
 var mkdirpAsync = (0, _bluebird.promisify)(_mkdirp2.default);
 (0, _bluebird.promisifyAll)(_fs2.default);
 
+var parseDockerRootDir = function parseDockerRootDir(rootDir) {
+
+  if (!rootDir.endsWith('/wisnuc/r')) return null;
+
+  var mp = rootDir.slice(0, -9);
+
+  var _storeState = (0, _reducers.storeState)(),
+      storage = _storeState.storage,
+      sysboot = _storeState.sysboot;
+
+  var blocks = storage.blocks,
+      volumes = storage.volumes;
+
+
+  var volume = volumes.find(function (vol) {
+    return vol.stats.mountpoint === mp;
+  });
+  if (volume) {
+    return {
+      type: volume.stats.fileSystemType,
+      uuid: volume.stats.fileSystemUUID,
+      mountpoint: volume.stats.mountpoint
+    };
+  }
+
+  var block = blocks.find(function (blk) {
+    return !blk.stats.isVolume && blk.stas.mountpoint === mp;
+  });
+  if (block) {
+    return {
+      type: block.stats.fileSystemType,
+      uuid: block.stats.fileSystemUUID,
+      mountpoint: volume.stats.mountpoint
+    };
+  }
+};
+
+var probeDaemonRoot = function probeDaemonRoot(callback) {
+  return _superagent2.default.get('http://localhost:1688/info').set('Accept', 'application/json').end(function (err, res) {
+    if (err) return callback(err);
+    if (!res.ok) return callback(new Error('request res not ok'));
+    callback(null, res.body.DockerRootDir);
+  });
+};
+
+var probeDaemonRootAsync = (0, _bluebird.promisify)(probeDaemonRoot);
+
 var probeDaemon2 = function probeDaemon2(callback) {
-  _superagent2.default.get('http://localhost:1688/info').set('Accept', 'application/json').end(function (err, res) {
-    if (err || !res.ok) {
-      callback(null, { running: false });
-    } else {
-      var volume = res.body.DockerRootDir.split('/')[4];
-      console.log('probeDaemon Success, volume: ' + volume);
-      callback(null, {
-        running: true,
-        volume: volume
-      });
-    }
+  return _superagent2.default.get('http://localhost:1688/info').set('Accept', 'application/json').end(function (err, res) {
+
+    if (err || !res.ok) return callback(null, { running: false });
+
+    var rootDir = res.body.DockerRootDir;
+
+    debug('probeDaemon, dockerRootDir: ', rootDir);
+
+    var volume = rootDir.split('/')[4];
+    console.log('probeDaemon Success, volume: ' + volume);
+    callback(null, {
+      running: true,
+      volume: volume
+    });
   });
 };
 
@@ -738,7 +797,8 @@ function dispatchDaemonStart(volume, agent) {
     });
   });
 
-  (0, _appifiConfig.setConfig)('lastUsedVolume', volume);
+  // setConfig('lastUsedVolume', volume)
+  _sysconfig2.default.set('lastUsedVolume', volume);
 
   (0, _reducers.storeDispatch)({
     type: 'DAEMON_START',
@@ -771,7 +831,15 @@ var daemonStop2 = function daemonStop2(volume, callback) {
   });
 };
 
-var daemonStop = (0, _bluebird.promisify)(daemonStop2);
+var daemonStopCmd = 'start-stop-daemon --stop --pidfile "/run/wisnuc/app/docker.pid" --retry 3';
+var daemonStop3 = function daemonStop3(volume, callback) {
+  return _child_process2.default.exec(daemonStopCmd, function (err, stdout, stderr) {
+    if (err) console.log('[docker] daemonStop:', err, stdout, stderr);else console.log('[docker] daemonStop: success');
+    callback(err);
+  });
+};
+
+var daemonStop = (0, _bluebird.promisify)(daemonStop3);
 
 function appStatus(recipeKeyString) {
 

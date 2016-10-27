@@ -132,8 +132,9 @@ var DatePickerDialog = function (_Component) {
       var shouldDisableDate = _props.shouldDisableDate;
       var style = _props.style;
       var wordings = _props.wordings;
+      var animation = _props.animation;
 
-      var other = _objectWithoutProperties(_props, ['DateTimeFormat', 'autoOk', 'cancelLabel', 'container', 'containerStyle', 'disableYearSelection', 'initialDate', 'firstDayOfWeek', 'locale', 'maxDate', 'minDate', 'mode', 'okLabel', 'onAccept', 'onDismiss', 'onShow', 'shouldDisableDate', 'style', 'wordings']);
+      var other = _objectWithoutProperties(_props, ['DateTimeFormat', 'autoOk', 'cancelLabel', 'container', 'containerStyle', 'disableYearSelection', 'initialDate', 'firstDayOfWeek', 'locale', 'maxDate', 'minDate', 'mode', 'okLabel', 'onAccept', 'onDismiss', 'onShow', 'shouldDisableDate', 'style', 'wordings', 'animation']);
 
       var open = this.state.open;
 
@@ -158,7 +159,7 @@ var DatePickerDialog = function (_Component) {
           Container,
           {
             anchorEl: this.refs.root // For Popover
-            , animation: _PopoverAnimationVertical2.default // For Popover
+            , animation: animation || _PopoverAnimationVertical2.default // For Popover
             , bodyStyle: styles.dialogBodyContent,
             contentStyle: styles.dialogContent,
             ref: 'dialog',
@@ -201,6 +202,7 @@ var DatePickerDialog = function (_Component) {
 
 DatePickerDialog.propTypes = {
   DateTimeFormat: _react.PropTypes.func,
+  animation: _react.PropTypes.func,
   autoOk: _react.PropTypes.bool,
   cancelLabel: _react.PropTypes.node,
   container: _react.PropTypes.oneOf(['dialog', 'inline']),

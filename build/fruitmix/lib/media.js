@@ -4,6 +4,10 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
+var _from = require('babel-runtime/core-js/array/from');
+
+var _from2 = _interopRequireDefault(_from);
+
 var _set = require('babel-runtime/core-js/set');
 
 var _set2 = _interopRequireDefault(_set);
@@ -39,6 +43,10 @@ var _typeof3 = _interopRequireDefault(_typeof2);
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
 var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
+
+var _crypto = require('crypto');
+
+var _crypto2 = _interopRequireDefault(_crypto);
 
 var _events = require('events');
 
@@ -94,6 +102,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
       ... // a share doc
     }
   }
+
+
 **/
 
 var isUUID = function isUUID(uuid) {
@@ -103,13 +113,21 @@ var isSHA256 = function isSHA256(sha256) {
   return typeof sha256 === 'string' ? /[a-f0-9]{64}/.test(sha256) : false;
 };
 
+var sha1comments = function sha1comments(comments) {
+  var hash = _crypto2.default.createHash('sha1');
+  comments.forEach(function (cmt) {
+    return hash.update(cmt.author + cmt.datetime + cmt.text);
+  });
+  return hash.digest('hex');
+};
+
 // this function generate a mediashare doc
 var createMediaShareDoc = function createMediaShareDoc(userUUID, obj) {
-  var maintainers = obj.maintainers;
-  var viewers = obj.viewers;
-  var album = obj.album;
-  var sticky = obj.sticky;
-  var contents = obj.contents;
+  var maintainers = obj.maintainers,
+      viewers = obj.viewers,
+      album = obj.album,
+      sticky = obj.sticky,
+      contents = obj.contents;
 
   // FIXME
 
@@ -241,11 +259,11 @@ var addUUIDArray = function addUUIDArray(a, b) {
 var updateMediaShareDoc = function updateMediaShareDoc(userUUID, doc, ops) {
 
   var op = void 0;
-  var maintainers = doc.maintainers;
-  var viewers = doc.viewers;
-  var album = doc.album;
-  var sticky = doc.sticky;
-  var contents = doc.contents;
+  var maintainers = doc.maintainers,
+      viewers = doc.viewers,
+      album = doc.album,
+      sticky = doc.sticky,
+      contents = doc.contents;
 
 
   if (userUUID === doc.author) {
@@ -363,7 +381,7 @@ var updateMediaShareDoc = function updateMediaShareDoc(userUUID, doc, ops) {
     doctype: doc.doctype,
     docversion: doc.docversion,
     uuid: doc.uuid,
-    author: doc.userUUID,
+    author: doc.author,
     maintainers: maintainers,
     viewers: viewers,
     album: album,
@@ -373,21 +391,63 @@ var updateMediaShareDoc = function updateMediaShareDoc(userUUID, doc, ops) {
     contents: contents
   };
 
-  // console.log(update)
   return update;
 };
+
+var userViewable = function userViewable(share, userUUID) {
+  return share.doc.author === userUUID || share.doc.maintainers.indexOf(userUUID) !== -1 || share.doc.viewers.indexOf(userUUID) !== -1;
+};
+
+/** 
+
+  The structure of a mediaTalk object should be
+
+  {
+    doc: {
+      owner: <UUID, string>,
+      digest: <SHA256, string>,
+      comments: [ // sorted by time
+        {
+          author: <UUID, string>,
+          time: <Integer, number>,
+          text: <String>
+        },
+        ...
+      ]
+    },
+    commentHashMap: null or Map(), author => comment hash    
+    digest: document hash
+  }
+
+  the property inside doc should be structurally stable (canonicalized)
+  the comments should be sorted in creation order (not strictly by time, if time is wrong)
+
+**/
+
+/*****************************************************************************
+
+  shareMap is something like uuid map in forest
+
+    share.doc.uuid => share
+
+  mediaMap is like the digeset => digestObj map in forest, instead of array 
+  for nodes, it uses JavaScript Set as collection object for shares
+
+    for each item in a share's contents array
+
+    item.digest => shareSet, which is collections of share  
+
+ *****************************************************************************/
 
 var Media = function (_EventEmitter) {
   (0, _inherits3.default)(Media, _EventEmitter);
 
-
   // shareMap stores uuid (key) => share (value)
   // mediaMap stores media/content digest (key) => (containing) share Set (value), each containing share Set contains share
-
   function Media(shareStore, talkStore) {
     (0, _classCallCheck3.default)(this, Media);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(Media).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (Media.__proto__ || (0, _getPrototypeOf2.default)(Media)).call(this));
 
     _this.shareStore = shareStore;
     _this.talkStore = talkStore;
@@ -396,24 +456,113 @@ var Media = function (_EventEmitter) {
     _this.shareMap = new _map2.default();
     // using an map instead of an array
     _this.mediaMap = new _map2.default();
+
     // each (local) talk has its creator and media digest, as its unique identifier
     _this.talks = [];
+
+    // 
+    // suspicious
+    //
     // each remote talk has its viewer (a local user), creator, and media digest, as its unique identifier
     _this.remoteMap = new _map2.default(); // user -> user's remote talks
-    // each talsk has creator and media digest as its unique identifier
+    // each talk has creator and media digest as its unique identifier
+
+    // when user V retrieve talks
+    // traverse all talks 
+    // supposing talk has owner U and digest D
+    //   traversing shareSet from mediaMap D => shareSet
+    //   if a share author = U, with V as viewable, then add all viewers for this set to SET
+    //   this new SET(U, D) containers all authors whose comments can be viewed by V.
+    // then XOR hash of user belong to such set 
+
+    // then should we differentiate local and remote users? I think not.
+
     return _this;
   }
 
   (0, _createClass3.default)(Media, [{
+    key: 'getTalks',
+    value: function getTalks(userUUID) {
+      var _this2 = this;
+
+      var SHA1 = function SHA1(comments) {
+
+        var hash = _crypto2.default.createHash('sha1');
+
+        filtered.forEach(function (cmt) {
+          hash.update(cmt.author);
+          hash.update(cmt.datetime);
+          hash.update(cmt.text);
+        });
+
+        return hash.digest('hex');
+      };
+
+      var arr = [];
+      this.talks.forEach(function (talk) {
+        var _talk$doc = talk.doc,
+            owner = _talk$doc.owner,
+            digest = _talk$doc.digest;
+
+        if (owner === userUUID) {
+          arr.push({ owner: owner, digest: digest, comments: talk.doc.comments, sha1: SHA1(talk.doc.comments) });
+        } else {
+          var _ret4 = function () {
+
+            var shareSet = _this2.mediaMap.get(digest);
+            if (!shareSet) return {
+                v: void 0
+              };
+
+            // fellows (mutual, reciprocal.... see thesaurus.com for more approriate words)
+            var fellows = new _set2.default();
+            shareSet.forEach(function (share) {
+              if (owner === share.doc.author && userViewable(share, userUUID)) {
+                fellows.add(share.doc.author);
+                share.doc.maintainers.forEach(function (u) {
+                  return fellows.add(u);
+                });
+                share.doc.viewers.forEach(function (u) {
+                  return fellows.add(u);
+                });
+              }
+            });
+
+            // the talk owner did not share anything with you, otherwise, at least himself and you will
+            // be in fellows
+            if (fellows.size === 0) return {
+                v: void 0
+              };
+
+            var comments = talk.doc.comments.filter(function (cmt) {
+              return fellows.has(cmt.author);
+            });
+            var sha1 = SHA1(comments);
+            arr.push({ owner: owner, digest: digest, comments: comments, sha1: sha1 });
+          }();
+
+          if ((typeof _ret4 === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret4)) === "object") return _ret4.v;
+        }
+      });
+
+      return arr;
+    }
+  }, {
     key: 'load',
     value: function load() {
-      var _this2 = this;
+      var _this3 = this;
 
       this.shareStore.retrieveAll(function (err, shares) {
         shares.forEach(function (share) {
-          _this2.indexShare(share);
+          _this3.indexShare(share);
         });
-        _this2.emit('shareStoreLoaded');
+        _this3.emit('shareStoreLoaded');
+      });
+
+      this.talkStore.retrieveAll(function (err, talks) {
+        talks.forEach(function (talk) {
+          _this3.indexTalk(talk);
+        });
       });
     }
 
@@ -422,17 +571,17 @@ var Media = function (_EventEmitter) {
   }, {
     key: 'indexShare',
     value: function indexShare(share) {
-      var _this3 = this;
+      var _this4 = this;
 
       this.shareMap.set(share.doc.uuid, share);
       share.doc.contents.forEach(function (item) {
-        var shareSet = _this3.mediaMap.get(item.digest);
+        var shareSet = _this4.mediaMap.get(item.digest);
         if (shareSet) {
           shareSet.add(share);
         } else {
           shareSet = new _set2.default();
           shareSet.add(share);
-          _this3.mediaMap.set(item.digest, shareSet);
+          _this4.mediaMap.set(item.digest, shareSet);
         }
       });
     }
@@ -442,11 +591,11 @@ var Media = function (_EventEmitter) {
   }, {
     key: 'unindexShare',
     value: function unindexShare(share) {
-      var _this4 = this;
+      var _this5 = this;
 
       this.shareMap.delete(share.doc.uuid);
       share.doc.contents.forEach(function (item) {
-        var shareSet = _this4.mediaMap.get(item.digest);
+        var shareSet = _this5.mediaMap.get(item.digest);
         shareSet.delete(share);
       });
     }
@@ -457,7 +606,7 @@ var Media = function (_EventEmitter) {
   }, {
     key: 'createMediaShare',
     value: function createMediaShare(userUUID, obj, callback) {
-      var _this5 = this;
+      var _this6 = this;
 
       try {
         var doc = createMediaShareDoc(userUUID, obj);
@@ -467,7 +616,7 @@ var Media = function (_EventEmitter) {
 
         this.shareStore.store(doc, function (err, share) {
           if (err) return callback(err);
-          _this5.indexShare(share);
+          _this6.indexShare(share);
           callback(null, share);
         });
       } catch (e) {
@@ -480,12 +629,12 @@ var Media = function (_EventEmitter) {
   }, {
     key: 'updateMediaShare',
     value: function updateMediaShare(userUUID, shareUUID, ops, callback) {
-      var _this6 = this;
+      var _this7 = this;
 
       try {
-        var _ret4 = function () {
+        var _ret5 = function () {
 
-          var share = _this6.shareMap.get(shareUUID);
+          var share = _this7.shareMap.get(shareUUID);
           if (!share) return {
               v: callback('ENOENT')
             }; // FIXME
@@ -499,15 +648,15 @@ var Media = function (_EventEmitter) {
               v: callback(null, share)
             };
 
-          _this6.shareStore.store(doc, function (err, newShare) {
+          _this7.shareStore.store(doc, function (err, newShare) {
             if (err) return callback(err);
-            _this6.unindexShare(share);
-            _this6.indexShare(newShare);
+            _this7.unindexShare(share);
+            _this7.indexShare(newShare);
             callback(null, newShare);
           });
         }();
 
-        if ((typeof _ret4 === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret4)) === "object") return _ret4.v;
+        if ((typeof _ret5 === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret5)) === "object") return _ret5.v;
       } catch (e) {
         console.log(e);
       }
@@ -519,22 +668,22 @@ var Media = function (_EventEmitter) {
   }, {
     key: 'deleteMediaShare',
     value: function deleteMediaShare(userUUID, shareUUID, callback) {
-      var _this7 = this;
+      var _this8 = this;
 
       var share = this.shareMap.get(shareUUID);
       if (!share) return callback('ENOENT');
 
       this.shareStore.archive(shareUUID, function (err) {
         if (err) return callback(err);
-        _this7.unindexShare(share);
-        _this7.shareMap.delete(shareUUID);
+        _this8.unindexShare(share);
+        _this8.shareMap.delete(shareUUID);
         callback(null);
       });
     }
 
     // my share is the one I myself is the creator
-    // locally shared to me is the one that I am the viewer but not creator, the creator is a local user
-    // remotely shared to me is the one that I am the viewer but not creator, the creator is a remote user
+    // locally shared with me is the one that I am the viewer but not creator, the creator is a local user
+    // remotely shared with me is the one that I am the viewer but not creator, the creator is a remote user
 
   }, {
     key: 'getUserShares',
@@ -567,6 +716,165 @@ var Media = function (_EventEmitter) {
         // push to queue
       });
       return localTalks + remoteTalks;
+    }
+  }, {
+    key: 'fillMediaMetaMap',
+    value: function fillMediaMetaMap(mediaMap, userUUID, filer) {
+
+      this.mediaMap.forEach(function (shareSet, digest) {
+
+        var digestObj = filer.hashMap.get(digest);
+        if (!digestObj) return;
+
+        var shareArr = (0, _from2.default)(shareSet);
+
+        // sharedWithOthers if author === userUUID && readable(userUUID), sharedWithOthers 
+        // sharedWithMe if author !== userUUID && userUUID viewable && readable(
+        var viewable = false;
+        var swo = false;
+        var swm = false;
+
+        for (var i = 0; i < shareArr.length; i++) {
+
+          if (viewable && swo && swm) break;
+
+          if (userViewable(shareArr[i], userUUID)) viewable = true;else continue;
+
+          var contents = shareArr[i].doc.contents;
+
+          if (!swo && mediaMap.has(digest)) {
+            if (contents.find(function (c) {
+              return c.digest === digest && c.creator === userUUID;
+            })) swo = true;
+          }
+
+          if (!swm) {
+            if (contents.find(function (c) {
+              return c.digest === digest && c.creator !== userUUID && filer.mediaUserReadable(digest, c.creator);
+            })) swm = true;
+          }
+        }
+
+        if (viewable) {
+          var obj = mediaMap.get(digest);
+          if (obj) {
+            obj.sharing = 1 | (swo ? 2 : 0) | (swm ? 4 : 0);
+          } else {
+            obj = { digest: digest, type: digestObj.type, meta: digestObj.meta };
+            obj.sharing = swm ? 4 : 0;
+            mediaMap.set(digest, obj);
+          }
+        }
+      });
+    }
+
+    /////////////////////////////////////////////////////////////////////////////
+
+  }, {
+    key: 'fellowSet',
+    value: function fellowSet(userUUID, owner, digest) {
+
+      var fellows = new _set2.default();
+
+      var shareSet = this.mediaMap.get(digest);
+      if (!shareSet) return fellows;
+
+      shareSet.forEach(function (share) {
+        if (owner === share.doc.author && userViewable(share, userUUID)) {
+          fellows.add(share.doc.author);
+          share.doc.maintainers.forEach(function (u) {
+            return follows.add(u);
+          });
+          share.doc.viewers.forEach(function (u) {
+            return fellows.add(u);
+          });
+        }
+      });
+
+      return fellows;
+    }
+  }, {
+    key: 'retrieveTalk',
+    value: function retrieveTalk(userUUID, owner, digest) {
+
+      var talk = this.talks.find(function (t) {
+        return t.doc.owner === owner && t.doc.digest === digest;
+      });
+
+      if (!talk) return;
+
+      var fellows = this.fellowSet(userUUID, owner, digest);
+
+      if (userUUID === owner) fellows.add(userUUID);
+
+      var comments = talk.doc.comments.filter(function (cmt) {
+        return fellows.has(cmt.author);
+      });
+      var sha1 = sha1comments(comments);
+      return { owner: owner, digest: digest, comments: comments, sha1: sha1 };
+    }
+  }, {
+    key: 'addComment',
+    value: function addComment(userUUID, owner, digest, text, callback) {
+      var _this9 = this;
+
+      // first, there exists a photo with given digest for owner (no it is bypassed) TODO
+      // second, there exists a share that AUTHORIZE userUUID to comment on such photo
+
+      var talk = void 0;
+
+      if (userUUID === owner) {} else {
+        var shareSet = this.mediaMap.get(digest);
+        if (!shareSet) return callback(new Error('not found'));
+
+        var allowed = (0, _from2.default)(shareSet).find(function (share) {
+          return share.doc.author === owner || userViewable(share, userUUID);
+        });
+
+        if (!allowed) return callback(new Error('not permitted'));
+
+        talk = this.talks.find(function (talk) {
+          return talk.doc.owner === owner && talk.doc.digest === digest;
+        });
+      }
+
+      var doc = void 0;
+      if (talk) {
+        // found 
+        doc = {
+          owner: doc.owner,
+          digest: doc.digest,
+          comments: [].concat((0, _toConsumableArray3.default)(doc.comments), [{
+            author: userUUID,
+            datetime: new Date().toJSON(),
+            text: text
+          }])
+        };
+
+        this.talkStore.store(doc, function (err, dgdoc) {
+          if (err) return callback(err);
+          talk.digest = dgdoc.digest;
+          talk.doc = dgdoc.doc;
+          callback(null, _this9.retrieveTalk(userUUID, owner, digeset));
+        });
+      } else {
+
+        doc = {
+          owner: owner,
+          digest: digest,
+          comments: [{
+            author: userUUID,
+            datetime: new Date().toJSON(),
+            text: text
+          }]
+        };
+
+        this.talkStore.store(doc, function (err, newtalk) {
+          if (err) return callback(err);
+          _this9.talks.push(newtalk);
+          callback(null, _this9.retrieveTalk(userUUID, owner, digest));
+        });
+      }
     }
   }]);
   return Media;

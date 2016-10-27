@@ -75,7 +75,7 @@ var ImageCreateTask = function (_task) {
   function ImageCreateTask(name, tag, parent) {
     (0, _classCallCheck3.default)(this, ImageCreateTask);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(ImageCreateTask).call(this, 'imageCreate', name + ':' + tag, parent));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (ImageCreateTask.__proto__ || (0, _getPrototypeOf2.default)(ImageCreateTask)).call(this, 'imageCreate', name + ':' + tag, parent));
 
     info('imageCreate ' + name + ':' + tag);
     _this.data = null;
@@ -137,7 +137,7 @@ var AppInstallTask = function (_task2) {
 
     info('appInstall ' + recipe.appname);
 
-    var _this2 = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(AppInstallTask).call(this, 'appInstall', '' + recipe.appname, null));
+    var _this2 = (0, _possibleConstructorReturn3.default)(this, (AppInstallTask.__proto__ || (0, _getPrototypeOf2.default)(AppInstallTask)).call(this, 'appInstall', '' + recipe.appname, null));
 
     _this2.recipe = recipe;
     _this2.id = (0, _dockerApps.calcRecipeKeyString)(recipe);
@@ -203,14 +203,16 @@ var AppInstallTask = function (_task2) {
   (0, _createClass3.default)(AppInstallTask, [{
     key: 'processBinds',
     value: function processBinds(recipeKeyString, opt) {
-
-      // dirty works TODO
-      if (recipeKeyString === 'dockerhub:wisnuc:sambad:latest:vanilla') {
-        opt.HostConfig.Binds = [(0, _docker.dockerFruitmixDir)() + '/drives:/drives'];
-
-        return opt;
-      }
-
+      /**
+          // dirty works TODO
+          if (recipeKeyString === 'dockerhub:wisnuc:sambad:latest:vanilla') {
+            opt.HostConfig.Binds = [
+              dockerFruitmixDir() + '/drives:/drives'
+            ]
+      
+            return opt
+          }
+      **/
       if (!opt || !opt.HostConfig || !opt.HostConfig.Binds) return opt;
 
       var subpath = recipeKeyString.replace(/:/g, '/');
@@ -225,7 +227,7 @@ var AppInstallTask = function (_task2) {
       return opt;
     }
 
-    //
+    // 
 
   }, {
     key: 'createAndStartContainers',

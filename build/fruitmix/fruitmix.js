@@ -45,6 +45,8 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
+var _reducers = require('../appifi/lib/reducers');
+
 var _system = require('./lib/system');
 
 var _system2 = _interopRequireDefault(_system);
@@ -57,6 +59,8 @@ var _app = require('./app');
 
 var _app2 = _interopRequireDefault(_app);
 
+var _samba = require('./lib/samba');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('fruitmix:createFruitmix');
@@ -64,23 +68,23 @@ var debug = (0, _debug2.default)('fruitmix:createFruitmix');
 var Fruitmix = function (_EventEmitter) {
   (0, _inherits3.default)(Fruitmix, _EventEmitter);
 
-  function Fruitmix(system, app, server, udp) {
+  function Fruitmix(system, app, server, smbAudit) {
     (0, _classCallCheck3.default)(this, Fruitmix);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(Fruitmix).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (Fruitmix.__proto__ || (0, _getPrototypeOf2.default)(Fruitmix)).call(this));
 
     _this.system = system;
     _this.app = app;
     _this.server = server;
-    _this.udp = udp;
+    _this.smbAudit = smbAudit;
     return _this;
   }
 
   (0, _createClass3.default)(Fruitmix, [{
     key: 'stop',
     value: function stop() {
+
       this.server.close();
-      this.udp.close();
       this.system.deinit();
     }
   }]);
@@ -88,8 +92,6 @@ var Fruitmix = function (_EventEmitter) {
 }(_events2.default);
 
 var createFruitmix = function createFruitmix(sysroot) {
-
-  debug(sysroot);
 
   var server = void 0,
       port = 3721;
@@ -122,32 +124,19 @@ var createFruitmix = function createFruitmix(sysroot) {
   });
 
   server.on('listening', function () {
-    return debug('Http Server Listening on Port ' + port);
+    return console.log('[fruitmix] Http Server Listening on Port ' + port);
   });
   server.on('close', function () {
-    return debug('Http Server Closed');
+    return console.log('[fruitmix] Http Server Closed');
   });
 
   server.listen(port);
 
-  var udp = _dgram2.default.createSocket('udp4');
-
-  udp.on('listening', function () {
-    var address = udp.address();
-    debug('UDP Server listening on ' + address.address + ":" + address.port);
+  var smbaudit = (0, _samba.createSmbAudit)(function (err) {
+    console.log('smb audit created');
   });
 
-  udp.on('message', function (message, remote) {
-    debug(remote.address + ':' + remote.port + ' - ' + message);
-  });
-
-  udp.on('close', function () {
-    return debug('UDP Server closed');
-  });
-
-  udp.bind(port);
-
-  return new Fruitmix(_system2.default, _app2.default, server, udp);
+  return new Fruitmix(_system2.default, _app2.default, server, smbaudit);
 };
 
 exports.createFruitmix = createFruitmix;

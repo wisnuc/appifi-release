@@ -21,10 +21,12 @@ router.get('/', function (req, res) {
     return {
       uuid: usr.uuid,
       username: usr.username,
-      avatar: usr.avatar
+      avatar: usr.avatar,
+      unixUID: usr.unixUID
     };
   });
 
+  res.nolog = true;
   res.status(200).json(mapped);
 });
 

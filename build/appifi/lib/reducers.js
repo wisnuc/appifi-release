@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.testing = exports.storeSubscribe = exports.storeDispatch = exports.storeState = undefined;
+exports.testing = exports.storeSubscribe = exports.storeDispatch = exports.storeState = exports.observeDocker = undefined;
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
@@ -17,14 +17,10 @@ var _redux = require('redux');
 
 var _dockerApps = require('./dockerApps');
 
-var _dockerStateObserver = require('./dockerStateObserver');
-
-var _dockerStateObserver2 = _interopRequireDefault(_dockerStateObserver);
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var serverConfig = function serverConfig() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var action = arguments[1];
 
 
@@ -38,7 +34,7 @@ var serverConfig = function serverConfig() {
 };
 
 var storage = function storage() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
   var action = arguments[1];
 
 
@@ -51,8 +47,28 @@ var storage = function storage() {
   }
 };
 
+var sysboot = function sysboot() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'UPDATE_SYSBOOT':
+      return action.data;
+
+    default:
+      return state;
+  }
+};
+
+var dockerObservers = [];
+
+var observeDocker = exports.observeDocker = function observeDocker(f) {
+  return dockerObservers.push(f);
+};
+
 var docker = function docker() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
   var action = arguments[1];
 
 
@@ -88,14 +104,16 @@ var docker = function docker() {
       break;
   }
 
-  process.nextTick(function () {
-    return (0, _dockerStateObserver2.default)(newState, state);
+  dockerObservers.forEach(function (observe) {
+    return process.nextTick(function () {
+      return observe(newState, state);
+    });
   });
   return newState;
 };
 
 var tasks = function tasks() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? [] : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : [];
   var action = arguments[1];
 
 
@@ -131,7 +149,7 @@ var tasks = function tasks() {
 };
 
 var appstore = function appstore() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
   var action = arguments[1];
 
 
@@ -145,7 +163,7 @@ var appstore = function appstore() {
 };
 
 var increment = function increment() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? 0 : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 0;
   var action = arguments[1];
 
 
@@ -159,7 +177,7 @@ var increment = function increment() {
 };
 
 var network = function network() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
   var action = arguments[1];
 
 
@@ -172,7 +190,7 @@ var network = function network() {
 };
 
 var timeDate = function timeDate() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? null : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
   var action = arguments[1];
 
 
@@ -185,7 +203,7 @@ var timeDate = function timeDate() {
 };
 
 var barcelona = function barcelona() {
-  var state = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var action = arguments[1];
 
 
@@ -203,6 +221,7 @@ var store = (0, _redux.createStore)((0, _redux.combineReducers)({
   increment: increment,
   serverConfig: serverConfig,
   storage: storage,
+  sysboot: sysboot,
   docker: docker,
   appstore: appstore,
   tasks: tasks,

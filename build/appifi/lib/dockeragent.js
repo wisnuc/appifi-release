@@ -48,14 +48,13 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
  * This class uses a transform as input inot which user write data, and redirect data
  * to readline, emit parsed json object 
  */
-
 var connection = function (_events) {
   (0, _inherits3.default)(connection, _events);
 
   function connection(response) {
     (0, _classCallCheck3.default)(this, connection);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(connection).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (connection.__proto__ || (0, _getPrototypeOf2.default)(connection)).call(this));
 
     _this.response = response;
     _this.transform = new _stream2.default.Transform({
@@ -103,7 +102,7 @@ var agent = function (_events2) {
   function agent(method, path, callback) {
     (0, _classCallCheck3.default)(this, agent);
 
-    var _this2 = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(agent).call(this));
+    var _this2 = (0, _possibleConstructorReturn3.default)(this, (agent.__proto__ || (0, _getPrototypeOf2.default)(agent)).call(this));
 
     var options = {
       hostname: '127.0.0.1',

@@ -158,13 +158,14 @@ var FlatButton = function (_Component) {
       var labelStyleIcon = {};
 
       if (icon) {
+        var iconStyles = (0, _simpleAssign2.default)({
+          verticalAlign: 'middle',
+          marginLeft: label && labelPosition !== 'before' ? 12 : 0,
+          marginRight: label && labelPosition === 'before' ? 12 : 0
+        }, icon.props.style);
         iconCloned = _react2.default.cloneElement(icon, {
           color: icon.props.color || mergedRootStyles.color,
-          style: {
-            verticalAlign: 'middle',
-            marginLeft: label && labelPosition !== 'before' ? 12 : 0,
-            marginRight: label && labelPosition === 'before' ? 12 : 0
-          }
+          style: iconStyles
         });
 
         if (labelPosition === 'before') {

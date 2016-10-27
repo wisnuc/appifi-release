@@ -8,6 +8,10 @@ var _typeof2 = require('babel-runtime/helpers/typeof');
 
 var _typeof3 = _interopRequireDefault(_typeof2);
 
+var _from = require('babel-runtime/core-js/array/from');
+
+var _from2 = _interopRequireDefault(_from);
+
 var _express = require('express');
 
 var _auth = require('../middleware/auth');
@@ -24,21 +28,28 @@ var router = (0, _express.Router)();
 
 // return meta data of all I can view
 router.get('/', _auth2.default.jwt(), function (req, res) {
+  try {
+    var filer = _models2.default.getModel('filer');
+    var media = _models2.default.getModel('media');
+    var user = req.user;
 
-  var forest = _models2.default.getModel('forest');
-  var user = req.user;
-
-  var media = forest.getMedia(user.uuid);
-  res.status(200).json(media);
+    // metamap
+    var mediaMetaMap = filer.initMediaMap(user.uuid);
+    media.fillMediaMetaMap(mediaMetaMap, user.uuid, filer);
+    res.status(200).json((0, _from2.default)(mediaMetaMap.values()));
+  } catch (e) {
+    console.log(e);
+    res.status(500).end();
+  }
 });
 
 router.get('/:digest/download', _auth2.default.jwt(), function (req, res) {
 
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
   var digest = req.params.digest;
 
-  var filepath = forest.readMedia(user.uuid, digest);
+  var filepath = filer.readMedia(user.uuid, digest);
 
   if (!filepath) return res.status(404).json({});
 
@@ -66,10 +77,6 @@ router.get('/:digest/thumbnail', function (req, res) {
 
   var thumbnailer = _models2.default.getModel('thumbnailer');
   thumbnailer.request(digest, query, function (err, ret) {
-
-    console.log('>>>>');
-    console.log(err || ret);
-    console.log('<<<<');
 
     if (err) return res.status(500).json(err);
 

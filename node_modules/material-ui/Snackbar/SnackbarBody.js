@@ -35,9 +35,11 @@ function getStyles(props, context) {
   var open = props.open;
   var width = props.width;
   var _context$muiTheme = context.muiTheme;
-  var _context$muiTheme$bas = _context$muiTheme.baseTheme.spacing;
-  var desktopGutter = _context$muiTheme$bas.desktopGutter;
-  var desktopSubheaderHeight = _context$muiTheme$bas.desktopSubheaderHeight;
+  var _context$muiTheme$bas = _context$muiTheme.baseTheme;
+  var _context$muiTheme$bas2 = _context$muiTheme$bas.spacing;
+  var desktopGutter = _context$muiTheme$bas2.desktopGutter;
+  var desktopSubheaderHeight = _context$muiTheme$bas2.desktopSubheaderHeight;
+  var fontFamily = _context$muiTheme$bas.fontFamily;
   var _context$muiTheme$sna = _context$muiTheme.snackbar;
   var backgroundColor = _context$muiTheme$sna.backgroundColor;
   var textColor = _context$muiTheme$sna.textColor;
@@ -48,6 +50,7 @@ function getStyles(props, context) {
 
   var styles = {
     root: {
+      fontFamily: fontFamily,
       backgroundColor: backgroundColor,
       padding: '0 ' + desktopGutter + 'px',
       height: desktopSubheaderHeight,
@@ -116,7 +119,7 @@ SnackbarBody.propTypes = {
   /**
    * The label for the action on the snackbar.
    */
-  action: _react.PropTypes.string,
+  action: _react.PropTypes.node,
   /**
    * The message to be displayed.
    *

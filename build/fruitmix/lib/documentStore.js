@@ -5,10 +5,6 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.createDocumentStore = undefined;
 
-var _stringify = require('babel-runtime/core-js/json/stringify');
-
-var _stringify2 = _interopRequireDefault(_stringify);
-
 var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
 
 var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
@@ -37,14 +33,21 @@ var _mkdirp = require('mkdirp');
 
 var _mkdirp2 = _interopRequireDefault(_mkdirp);
 
+var _canonicalJson = require('canonical-json');
+
+var _canonicalJson2 = _interopRequireDefault(_canonicalJson);
+
 var _util = require('./util');
+
+var _paths = require('./paths');
+
+var _paths2 = _interopRequireDefault(_paths);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var DocumentStore = function () {
 
   // the factory must assure the tmp folder exists !
-
   function DocumentStore(dir, tmpdir) {
     (0, _classCallCheck3.default)(this, DocumentStore);
 
@@ -63,7 +66,13 @@ var DocumentStore = function () {
           filepath = void 0,
           tmppath = void 0;
 
-      text = (0, _stringify2.default)(object);
+      // text = JSON.stringify(object)
+      try {
+        text = (0, _canonicalJson2.default)(object);
+      } catch (e) {
+        return callback(e);
+      }
+
       hash = _crypto2.default.createHash('sha256');
       hash.update(text);
       digest = hash.digest().toString('hex');
@@ -89,7 +98,6 @@ var DocumentStore = function () {
   }, {
     key: 'retrieve',
     value: function retrieve(digest, callback) {
-
       var filepath = void 0;
 
       if (/[0-9a-f]{64}/.test(digest) === false) {
@@ -99,7 +107,9 @@ var DocumentStore = function () {
       }
 
       filepath = _path2.default.join(this.rootdir, digest.slice(0, 2), digest.slice(2));
+
       _fs2.default.readFile(filepath, function (err, data) {
+
         if (err) return callback(err);
         try {
           callback(null, JSON.parse(data.toString()));
@@ -112,24 +122,18 @@ var DocumentStore = function () {
   return DocumentStore;
 }();
 
-var createDocumentStore = function createDocumentStore(dir, tmpdir, callback) {
+var createDocumentStore = function createDocumentStore(callback) {
 
-  if (!_path2.default.isAbsolute(dir)) {
-    return process.nextTick(function () {
-      return callback(new Error('require absolute path'));
-    });
-  }
+  var dir = _paths2.default.get('documents');
+  var tmpdir = _paths2.default.get('tmp');
 
   _fs2.default.stat(dir, function (err, stats) {
 
     if (err) return callback(err);
     if (!stats.isDirectory()) return callback(new Error('path must be folder'));
 
-    (0, _rimraf2.default)(_path2.default.join(dir, 'tmp'), function (err) {
-      (0, _mkdirp2.default)(_path2.default.join(dir, 'tmp'), function (err) {
-        callback(null, new DocumentStore(dir, tmpdir));
-      });
-    });
+    // no clean
+    return callback(null, new DocumentStore(dir, tmpdir));
   });
 };
 

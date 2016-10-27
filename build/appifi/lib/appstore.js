@@ -22,7 +22,6 @@ var _regenerator = require('babel-runtime/regenerator');
 var _regenerator2 = _interopRequireDefault(_regenerator);
 
 // retrieve text/plain file from url
-
 var retrieveText = function () {
   var _ref = (0, _bluebird.method)(function (url) {
     return new _bluebird2.default(function (resolve, reject) {
@@ -112,7 +111,6 @@ var retrieveRecipes = function () {
 
 
 // retrieve all repos for all recipes, return component -> repo map
-
 var retrieveRepoMap = function () {
   var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee2(recipes) {
     var compos, repos, map, i;
@@ -172,7 +170,7 @@ var retrieveRepoMap = function () {
 //    errcode: ERROR only
 //    errMessage: ERROR only
 //    result: LOADED only
-// }
+// } 
 //
 
 var refreshAppStore = exports.refreshAppStore = function () {
@@ -283,9 +281,6 @@ var _dockerApps = require('../lib/dockerApps');
 var _reducers = require('../lib/reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// import localRecipes from '../hosted/apps'
-
 
 function info(text) {
   console.log('[appstore] ' + text);

@@ -90,7 +90,7 @@ var Collection = function () {
                 return _fs2.default.renameAsync(tmpfile, this.filepath);
 
               case 13:
-                _fs2.default.rmdir(tmpSubFolder, function () {}); // it doesn't matter if this fails
+                _fs2.default.rmdir(tmpSubFolder, function () {}); // it doesn't matter if this fails 
                 this.locked = false;
                 this.list = newlist;
                 _context.next = 22;

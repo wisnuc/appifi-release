@@ -16,10 +16,6 @@ var _deepEqual = require('deep-equal');
 
 var _deepEqual2 = _interopRequireDefault(_deepEqual);
 
-var _fruitmix = require('../../fruitmix/fruitmix');
-
-var _docker = require('./docker');
-
 var _advertiser = require('./advertiser');
 
 var _advertiser2 = _interopRequireDefault(_advertiser);
@@ -32,7 +28,7 @@ var appifiAdvertiser = (0, _advertiser2.default)('WISNUC AppStation', 3000);
 
 var appAdvertisers = [];
 
-// used for map
+// used for map // TODO why placed here
 var openable = function openable(installed) {
 
   var container = installed.containers[0];
@@ -47,7 +43,7 @@ var openable = function openable(installed) {
   });
   if (!Port) return null;
 
-  // console.log(typeof Port.PublicPort) is 'number'
+  // console.log(typeof Port.PublicPort) is 'number' 
   return {
     appname: installed.recipe.appname,
     open: Port.PublicPort
@@ -90,25 +86,7 @@ var addAdvertising = function addAdvertising(advertising, services) {
   return advertising;
 };
 
-var fruitmixInstance = null;
-
 var dockerStateObserver = function dockerStateObserver(newState, state) {
-
-  var cvol = state && state.volume;
-  var nvol = newState && newState.volume;
-
-  if (cvol !== nvol) {
-
-    debug('current: ' + cvol + ', new: ' + nvol);
-
-    if (cvol === null) {
-      var fruitdir = (0, _docker.dockerFruitmixDir)(nvol);
-      fruitmixInstance = (0, _fruitmix.createFruitmix)(fruitdir);
-    } else {
-      fruitmixInstance.stop();
-      fruitmixInstance = null;
-    }
-  }
 
   if (newState !== null && newState.data !== null && newState.computed !== null) {
 

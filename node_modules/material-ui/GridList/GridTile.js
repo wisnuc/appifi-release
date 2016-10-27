@@ -104,14 +104,22 @@ var GridTile = function (_Component) {
   }, {
     key: 'ensureImageCover',
     value: function ensureImageCover() {
+      var _this2 = this;
+
       var imgEl = this.refs.img;
 
       if (imgEl) {
         (function () {
           var fit = function fit() {
             if (imgEl.offsetWidth < imgEl.parentNode.offsetWidth) {
+              var isRtl = _this2.context.muiTheme.isRtl;
+
               imgEl.style.height = 'auto';
-              imgEl.style.left = '0';
+              if (isRtl) {
+                imgEl.style.right = '0';
+              } else {
+                imgEl.style.left = '0';
+              }
               imgEl.style.width = '100%';
               imgEl.style.top = '50%';
               imgEl.style.transform = imgEl.style.WebkitTransform = 'translateY(-50%)';

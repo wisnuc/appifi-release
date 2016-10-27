@@ -20,7 +20,7 @@ var udevInfo = function () {
         switch (_context.prev = _context.next) {
           case 0:
 
-            // The P, S, E, N prefix is `query type`, see manpage
+            // The P, S, E, N prefix is `query type`, see manpage 
             result = { path: null, symlinks: [], name: null, props: {} };
             _context.next = 3;
             return new _bluebird2.default(function (resolve, reject) {

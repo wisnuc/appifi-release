@@ -48,6 +48,10 @@ var _files = require('./routes/files');
 
 var _files2 = _interopRequireDefault(_files);
 
+var _meta = require('./routes/meta');
+
+var _meta2 = _interopRequireDefault(_meta);
+
 var _share = require('./routes/share');
 
 var _share2 = _interopRequireDefault(_share);
@@ -82,14 +86,18 @@ var app = (0, _express2.default)();
 
 var env = app.get('env');
 if (env !== 'production' && env !== 'development' && env !== 'test') {
-  console.log('Unrecognized NODE_ENV string: ' + env + ', exit');
+  console.log('[fruitmix] Unrecognized NODE_ENV string: ' + env + ', exit');
   process.exit(1);
 } else {
-  console.log('NODE_ENV is set to ' + env);
+  console.log('[fruitmix] NODE_ENV is set to ' + env);
 }
 
-// TODO: logger should be moved to main
-if (env !== 'test') app.use((0, _morgan2.default)('dev'));
+app.use((0, _morgan2.default)('dev', {
+  skip: function skip(req, res) {
+    return res.nolog === true;
+  }
+}));
+
 app.use(_bodyParser2.default.json());
 app.use(_bodyParser2.default.urlencoded({ extended: false }));
 app.use(_auth2.default.init());
@@ -105,6 +113,7 @@ app.use('/users', _users2.default);
 app.use('/libraries', _libraries2.default);
 app.use('/drives', _drives2.default);
 app.use('/files', _files2.default);
+app.use('/meta', _meta2.default);
 app.use('/share', _share2.default);
 app.use('/media', _media2.default);
 app.use('/mediashare', _mediashare2.default);

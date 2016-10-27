@@ -225,7 +225,7 @@ var Drawer = function (_Component) {
           zIndex: muiTheme.zIndex.drawer,
           left: 0,
           top: 0,
-          transform: 'translate3d(' + x + 'px, 0, 0)',
+          transform: 'translate(' + x + 'px, 0)',
           transition: !this.state.swiping && _transitions2.default.easeOut(null, 'transform', null),
           backgroundColor: theme.color,
           overflow: 'auto',
@@ -295,7 +295,7 @@ var Drawer = function (_Component) {
     key: 'setPosition',
     value: function setPosition(translateX) {
       var drawer = _reactDom2.default.findDOMNode(this.refs.clickAwayableElement);
-      var transformCSS = 'translate3d(' + this.getTranslateMultiplier() * translateX + 'px, 0, 0)';
+      var transformCSS = 'translate(' + this.getTranslateMultiplier() * translateX + 'px, 0)';
       this.refs.overlay.setOpacity(1 - translateX / this.getMaxTranslateX());
       _autoPrefix2.default.set(drawer.style, 'transform', transformCSS);
     }

@@ -42,12 +42,12 @@ var router = (0, _express.Router)();
 // acturally a list of folders inside the library drive
 router.get('/', _auth2.default.jwt(), function (req, res) {
 
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
 
   var userUUID = req.user.uuid;
   var folderUUID = req.user.library;
 
-  var list = forest.listFolder(userUUID, folderUUID).filter(function (n) {
+  var list = filer.listFolder(userUUID, folderUUID).filter(function (n) {
     return n.type === 'folder';
   }).map(function (n) {
     return n.uuid;
@@ -60,12 +60,12 @@ router.get('/', _auth2.default.jwt(), function (req, res) {
 // folder
 router.post('/', _auth2.default.jwt(), function (req, res) {
 
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
 
   var folderUUID = req.user.library;
-  var node = forest.findNodeByUUID(folderUUID);
+  var node = filer.findNodeByUUID(folderUUID);
 
-  forest.createFolder(req.user.uuid, node, _nodeUuid2.default.v4(), function (err, newNode) {
+  filer.createFolder(req.user.uuid, node, _nodeUuid2.default.v4(), function (err, newNode) {
     if (err) return res.status(500).json({
       code: err.code,
       message: err.message
@@ -84,12 +84,12 @@ router.post('/:libUUID', _auth2.default.jwt(), function (req, res) {
 
   var repo = _models2.default.getModel('repo');
 
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var log = _models2.default.getModel('log');
   var user = req.user;
   var libUUID = req.params.libUUID;
 
-  var node = forest.findNodeByUUID(libUUID);
+  var node = filer.findNodeByUUID(libUUID);
 
   // FIXME node parent must be users lib
   // node must be folder
@@ -101,12 +101,12 @@ router.post('/:libUUID', _auth2.default.jwt(), function (req, res) {
   form.hash = 'sha256';
 
   form.on('field', function (name, value) {
-    console.log('field ' + name + ' ' + value);
+    // console.log('field ' + name + ' ' + value)
     if (name === 'sha256') sha256 = value;
   });
 
   form.on('fileBegin', function (name, file) {
-    console.log('fileBegin ' + name);
+    // console.log('fileBegin ' + name)
     file.path = _path2.default.join(repo.getTmpFolderForNode(node), _nodeUuid2.default.v4());
   });
 
@@ -121,7 +121,7 @@ router.post('/:libUUID', _auth2.default.jwt(), function (req, res) {
       });
     }
 
-    forest.createFile(user.uuid, file.path, node, '' + sha256, function (err, newNode) {
+    filer.createFile(user.uuid, file.path, node, '' + sha256, function (err, newNode) {
       // check error code FIXME should return success if EEXIST
       if (err) return res.status(500).json({}); // TODO
 
@@ -152,10 +152,10 @@ router.get('/:libUUID/log', _auth2.default.jwt(), function (req, res) {
   var libUUID = req.params.libUUID;
 
   var log = _models2.default.getModel('log');
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var repo = _models2.default.getModel('repo');
 
-  var node = forest.findNodeByUUID(libUUID);
+  var node = filer.findNodeByUUID(libUUID);
 
   if (!node) return res.status(404).json({});
   if (node.parent.uuid !== user.library) return res.status(404).json({}); // FIXME

@@ -61,10 +61,10 @@ var router = (0, _express.Router)();
 router.get('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
 
   var repo = _models2.default.getModel('repo');
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
 
-  var node = forest.findNodeByUUID(req.params.nodeUUID);
+  var node = filer.findNodeByUUID(req.params.nodeUUID);
   if (!node) {
     return res.status(500).json({
       code: 'ENOENT',
@@ -73,7 +73,7 @@ router.get('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
   }
 
   if (node.isDirectory()) {
-    var ret = forest.listFolder(user.uuid, node.uuid);
+    var ret = filer.listFolder(user.uuid, node.uuid);
     if (ret instanceof Error) {
       res.status(500).json({
         code: ret.code,
@@ -83,7 +83,7 @@ router.get('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
       res.status(200).json(ret);
     }
   } else if (node.isFile()) {
-    var filepath = forest.readFile(user.uuid, node.uuid);
+    var filepath = filer.readFile(user.uuid, node.uuid);
     res.status(200).sendFile(filepath);
   } else {
     res.status(404).end(); // TODO
@@ -95,10 +95,10 @@ router.get('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
 router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
 
   var repo = _models2.default.getModel('repo');
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
 
-  var node = forest.findNodeByUUID(req.params.nodeUUID);
+  var node = filer.findNodeByUUID(req.params.nodeUUID);
   if (!node) {
     return res.status(500).json({ // TODO
       code: 'ENOENT'
@@ -145,7 +145,7 @@ router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
             });
           }
 
-          forest.createFile(user.uuid, file.path, node, file.name, function (err, newNode) {
+          filer.createFile(user.uuid, file.path, node, file.name, function (err, newNode) {
             return res.status(200).json((0, _assign2.default)({}, newNode, {
               parent: newNode.parent.uuid
             }));
@@ -171,7 +171,7 @@ router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
         return res.status(500).json({}); // TODO
       }
 
-      forest.createFolder(user.uuid, node, name, function (err, newNode) {
+      filer.createFolder(user.uuid, node, name, function (err, newNode) {
         if (err) return res.status(500).json({}); // TODO
         res.status(200).json((0, _assign2.default)({}, newNode, {
           parent: newNode.parent.uuid
@@ -205,7 +205,7 @@ router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
             });
           }
 
-          forest.overwriteFile(user.uuid, file.path, node, function (err, newNode) {
+          filer.overwriteFile(user.uuid, file.path, node, function (err, newNode) {
             if (err) return res.status(500).json({}); // TODO
             res.status(200).json((0, _assign2.default)({}, newNode, {
               parent: newNode.parent.uuid
@@ -232,7 +232,7 @@ router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
 });
 
 // rename file or folder inside a folder
-//
+// 
 router.patch('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res) {
 
   var isUUID = function isUUID(uuid) {
@@ -252,7 +252,7 @@ router.patch('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res)
   };
 
   var repo = _models2.default.getModel('repo');
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
 
   var folderUUID = req.params.folderUUID;
@@ -263,8 +263,8 @@ router.patch('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res)
     message: 'malformed folder uuid or node uuid'
   });
 
-  var folder = forest.findNodeByUUID(folderUUID);
-  var node = forest.findNodeByUUID(nodeUUID);
+  var folder = filer.findNodeByUUID(folderUUID);
+  var node = filer.findNodeByUUID(nodeUUID);
   if (!folder || !node || node.parent !== folder) return res.stauts(404).json({
     code: 'ENOENT',
     message: 'either folder or child not found, or they are not parent-child'
@@ -283,7 +283,7 @@ router.patch('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res)
       message: 'bad name property'
     });
 
-    forest.rename(user.uuid, folder, node, obj.name, function (err, newNode) {
+    filer.rename(user.uuid, folder, node, obj.name, function (err, newNode) {
 
       if (err) return res.status(500).json({
         code: err.code,
@@ -306,7 +306,7 @@ router.patch('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res)
       obj.readlist = undefined;
     }
 
-    forest.updatePermission(user.uuid, folder, node, obj, function (err, newNode) {
+    filer.updatePermission(user.uuid, folder, node, obj, function (err, newNode) {
 
       if (err) return res.status(500).json({
         code: err.code,
@@ -330,16 +330,16 @@ router.patch('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res)
 router.delete('/:folderUUID/:nodeUUID', _auth2.default.jwt(), function (req, res) {
 
   var repo = _models2.default.getModel('repo');
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
 
   var folderUUID = req.params.folderUUID;
   var nodeUUID = req.params.nodeUUID;
 
-  var folder = forest.findNodeByUUID(folderUUID);
-  var node = forest.findNodeByUUID(nodeUUID);
+  var folder = filer.findNodeByUUID(folderUUID);
+  var node = filer.findNodeByUUID(nodeUUID);
 
-  forest.deleteFileOrFolder(user.uuid, folder, node, function (err) {
+  filer.deleteFileOrFolder(user.uuid, folder, node, function (err) {
     if (err) res.status(500).json(null);
     res.status(200).json(null);
   });

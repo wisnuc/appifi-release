@@ -77,7 +77,7 @@ function getStyles(props, context, state) {
     rootWhenShown: {
       top: verticalPosition === 'top' ? touchOffsetTop : 36,
       opacity: 0.9,
-      transform: 'translate3d(0px, ' + offset + 'px, 0px)',
+      transform: 'translate(0px, ' + offset + 'px)',
       transition: _transitions2.default.easeOut('0ms', 'top', '0ms') + ', ' + _transitions2.default.easeOut('450ms', 'transform', '0ms') + ', ' + _transitions2.default.easeOut('450ms', 'opacity', '0ms')
     },
     rootWhenTouched: {

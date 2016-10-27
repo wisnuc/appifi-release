@@ -40,7 +40,7 @@ var advertiser = function (_events) {
   function advertiser(name, port) {
     (0, _classCallCheck3.default)(this, advertiser);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(advertiser).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (advertiser.__proto__ || (0, _getPrototypeOf2.default)(advertiser)).call(this));
 
     _this.name = name;
     _this.port = port;

@@ -76,29 +76,37 @@ var CardMedia = function (_Component) {
     key: 'render',
     value: function render() {
       var _props = this.props;
+      var actAsExpander = _props.actAsExpander;
+      var children = _props.children;
+      var expandable = _props.expandable;
+      var mediaStyle = _props.mediaStyle;
       var overlay = _props.overlay;
+      var overlayContainerStyle = _props.overlayContainerStyle;
+      var overlayContentStyle = _props.overlayContentStyle;
+      var overlayStyle = _props.overlayStyle;
+      var style = _props.style;
 
-      var other = _objectWithoutProperties(_props, ['overlay']);
+      var other = _objectWithoutProperties(_props, ['actAsExpander', 'children', 'expandable', 'mediaStyle', 'overlay', 'overlayContainerStyle', 'overlayContentStyle', 'overlayStyle', 'style']);
 
       var prepareStyles = this.context.muiTheme.prepareStyles;
 
       var styles = getStyles(this.props, this.context);
-      var rootStyle = (0, _simpleAssign2.default)(styles.root, this.props.style);
-      var mediaStyle = (0, _simpleAssign2.default)(styles.media, this.props.mediaStyle);
-      var overlayContainerStyle = (0, _simpleAssign2.default)(styles.overlayContainer, this.props.overlayContainerStyle);
-      var overlayContentStyle = (0, _simpleAssign2.default)(styles.overlayContent, this.props.overlayContentStyle);
-      var overlayStyle = (0, _simpleAssign2.default)(styles.overlay, this.props.overlayStyle);
+      var rootStyle = (0, _simpleAssign2.default)(styles.root, style);
+      var extendedMediaStyle = (0, _simpleAssign2.default)(styles.media, mediaStyle);
+      var extendedOverlayContainerStyle = (0, _simpleAssign2.default)(styles.overlayContainer, overlayContainerStyle);
+      var extendedOverlayContentStyle = (0, _simpleAssign2.default)(styles.overlayContent, overlayContentStyle);
+      var extendedOverlayStyle = (0, _simpleAssign2.default)(styles.overlay, overlayStyle);
       var titleColor = this.context.muiTheme.cardMedia.titleColor;
       var subtitleColor = this.context.muiTheme.cardMedia.subtitleColor;
       var color = this.context.muiTheme.cardMedia.color;
 
-      var children = _react2.default.Children.map(this.props.children, function (child) {
+      var styledChildren = _react2.default.Children.map(children, function (child) {
         return _react2.default.cloneElement(child, {
           style: prepareStyles((0, _simpleAssign2.default)({}, styles.mediaChild, child.props.style))
         });
       });
 
-      var overlayChildren = _react2.default.Children.map(this.props.overlay, function (child) {
+      var overlayChildren = _react2.default.Children.map(overlay, function (child) {
         if (child.type.muiName === 'CardHeader' || child.type.muiName === 'CardTitle') {
           return _react2.default.cloneElement(child, {
             titleColor: titleColor,
@@ -118,18 +126,18 @@ var CardMedia = function (_Component) {
         _extends({}, other, { style: prepareStyles(rootStyle) }),
         _react2.default.createElement(
           'div',
-          { style: prepareStyles(mediaStyle) },
-          children
+          { style: prepareStyles(extendedMediaStyle) },
+          styledChildren
         ),
         overlay ? _react2.default.createElement(
           'div',
-          { style: prepareStyles(overlayContainerStyle) },
+          { style: prepareStyles(extendedOverlayContainerStyle) },
           _react2.default.createElement(
             'div',
-            { style: prepareStyles(overlayStyle) },
+            { style: prepareStyles(extendedOverlayStyle) },
             _react2.default.createElement(
               'div',
-              { style: prepareStyles(overlayContentStyle) },
+              { style: prepareStyles(extendedOverlayContentStyle) },
               overlayChildren
             )
           )

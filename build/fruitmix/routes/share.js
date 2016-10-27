@@ -20,17 +20,17 @@ var router = (0, _express.Router)();
 
 router.get('/sharedWithMe', _auth2.default.jwt(), function (req, res) {
 
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
-  var shared = forest.getSharedWithMe(user.uuid);
+  var shared = filer.getSharedWithMe(user.uuid);
   res.status(200).json(shared);
 });
 
 router.get('/sharedWithOthers', _auth2.default.jwt(), function (req, res) {
 
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
-  var shared = forest.getSharedWithOthers(user.uuid);
+  var shared = filer.getSharedWithOthers(user.uuid);
   res.status(200).json(shared);
 });
 

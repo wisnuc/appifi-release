@@ -65,6 +65,9 @@ var List = function (_Component) {
 
       var other = _objectWithoutProperties(_props, ['children', 'insetSubheader', 'style', 'subheader', 'subheaderStyle', 'zDepth']);
 
+      var prepareStyles = this.context.muiTheme.prepareStyles;
+
+
       process.env.NODE_ENV !== "production" ? (0, _warning2.default)(typeof zDepth === 'undefined', 'List no longer supports `zDepth`. Instead, wrap it in `Paper` ' + 'or another component that provides zDepth. It will be removed with v0.16.0.') : void 0;
 
       var hasSubheader = false;
@@ -72,8 +75,8 @@ var List = function (_Component) {
       if (subheader) {
         hasSubheader = true;
       } else {
-        var firstChild = _react2.default.Children.toArray(children)[0];
-        if (_react2.default.isValidElement(firstChild) && firstChild.type === _Subheader2.default) {
+        var firstChild = _react.Children.toArray(children)[0];
+        if ((0, _react.isValidElement)(firstChild) && firstChild.type === _Subheader2.default) {
           hasSubheader = true;
         }
       }
@@ -88,9 +91,7 @@ var List = function (_Component) {
 
       return _react2.default.createElement(
         'div',
-        _extends({}, other, {
-          style: (0, _simpleAssign2.default)(styles.root, style)
-        }),
+        _extends({}, other, { style: prepareStyles((0, _simpleAssign2.default)(styles.root, style)) }),
         subheader && _react2.default.createElement(
           _Subheader2.default,
           { inset: insetSubheader, style: subheaderStyle },

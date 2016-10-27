@@ -32,7 +32,7 @@ var scan = function scan(root, callback) {
       paths.push(sub.path);
     });
 
-    // now we have personal && shared paths
+    // now we have personal && shared paths 
     if (paths.length === 0) return callback(null, []);
     var count = paths.length;
     paths.forEach(function (dirpath) {

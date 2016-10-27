@@ -124,9 +124,11 @@ router.get('/conf', function (req, res) {
     '  path = ' + share.path + '\n') + // uuid path
     '  read only = no\n' + '  guest ok = no\n' + '  force user = root\n' + '  force group = root\n' + ('  valid users = ' + share.validUsers.join(', ') + '\n') + ( // valid users
     '  write list = ' + share.writelist.join(', ') + '\n') + // writelist
-    '  vfs objects = full_audit\n' + '  full_audit:prefix = %u|%U|%S|%P\n' + '  full_audit:success = mkdir rename rmdir unlink write pwrite \n' + // dont remove write !!!!
+    '  vfs objects = full_audit\n' + '  full_audit:prefix = %u|%U|%S|%P\n' + '  full_audit:success = create_file mkdir rename rmdir unlink write pwrite \n' + // dont remove write !!!!
     '  full_audit:failure = connect\n' + '  full_audit:facility = LOCAL7\n' + '  full_audit:priority = ALERT\n\n';
   };
+
+  // create_file issue multiple message
 
   var conf = global;
   shareList().forEach(function (share) {

@@ -22,14 +22,6 @@ var _fs2 = _interopRequireDefault(_fs);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// only inspect a folder
-// ENOTDIR
-
-// ENOENT
-// EMISMATCH
-
-// const EMISMATCH = 'EMISMATCH'
-
 var ERROR = function ERROR(code, _text) {
   return function (cb, text) {
     return cb((0, _assign2.default)(new Error(text || _text), { code: code }));
@@ -40,18 +32,18 @@ var ENOTDIR = ERROR('ENOTDIR', 'not a directory');
 var EMISMATCH = ERROR('EMISMATCH', 'uuid mismatch');
 var EAGAIN = ERROR('EAGAIN', 'try again');
 
-var inspect = function inspect(target, uuid, callback) {
+var inspect = function inspect(node, callback) {
 
-  var error = function error(text, code) {
-    return callback((0, _assign2.default)(new Error(text), { code: code }));
-  };
   var _abort = false;
 
+  var target = node.namepath();
+
+  // first check xstat
   readXstat(target, function (err, xstat) {
 
     if (_abort) return;
+    if (err) return callback(err);
     if (xstat.uuid !== uuid) return EMISMATCH(callback);
-    if (!xstat.isDirectory()) return ENOTDIR(callback);
 
     var timestamp = xstat.mtime.getTime();
 
@@ -80,7 +72,6 @@ var inspect = function inspect(target, uuid, callback) {
         if (_abort) return;
         if (err) return callback(err);
         if (xstat2.uuid !== uuid) return EMISMATCH(callback);
-        if (!xstat2.isDirectory()) return ENOTDIR(callback);
         if (xstat2.mtime.getTime() !== timestamp) return error('timestamp changed during operation', EAGAIN);
 
         callback(null, { timestamp: timestamp, xstats: xstats });

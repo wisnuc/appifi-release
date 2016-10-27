@@ -44,7 +44,7 @@ var HashMagic = function (_EventEmitter) {
   function HashMagic() {
     (0, _classCallCheck3.default)(this, HashMagic);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(HashMagic).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (HashMagic.__proto__ || (0, _getPrototypeOf2.default)(HashMagic)).call(this));
 
     _this.clear();
     return _this;
@@ -126,7 +126,7 @@ var HashMagic = function (_EventEmitter) {
       });
     }
 
-    // abort current job, won't fire 'end'
+    // abort current job, won't fire 'end' 
 
   }, {
     key: 'abort',

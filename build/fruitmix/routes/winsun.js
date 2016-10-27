@@ -72,7 +72,7 @@ router.post('/', function (req, res) {
   var vroot = _path2.default.resolve(fruit, '..', '..');
 
   var repo = _models2.default.getModel('repo');
-  var forest = _models2.default.getModel('forest');
+  var filer = _models2.default.getModel('filer');
   var user = req.user;
 
   /**
@@ -100,14 +100,14 @@ router.post('/', function (req, res) {
 
   if (!req.body || (0, _typeof3.default)(req.body) !== 'object') return res.status(500).end();
 
-  var _req$body = req.body;
-  var src = _req$body.src;
-  var dst = _req$body.dst;
+  var _req$body = req.body,
+      src = _req$body.src,
+      dst = _req$body.dst;
 
 
   if (!validateSrc(src) || !validateDst(dst)) return res.status(500).end();
 
-  var node = forest.findNodeByUUID(dst);
+  var node = filer.findNodeByUUID(dst);
   if (!node || !node.isDirectory()) return res.status(500).end();
 
   var dstDirPath = node.namepath();

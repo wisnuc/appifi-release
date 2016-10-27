@@ -27,6 +27,10 @@ var _nodeUuid2 = _interopRequireDefault(_nodeUuid);
 
 var _util = require('./util');
 
+var _paths = require('./paths');
+
+var _paths2 = _interopRequireDefault(_paths);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var MediaTalkStore = function () {
@@ -38,12 +42,16 @@ var MediaTalkStore = function () {
     this.docstore = docstore;
   }
 
+  // file is named as '{owner}.${digest}'
+
+
   (0, _createClass3.default)(MediaTalkStore, [{
     key: 'store',
     value: function store(doc, callback) {
       var _this = this;
 
       var name = doc.owner + '.' + doc.digest;
+
       this.docstore.store(doc, function (err, digest) {
         if (err) return callback(err);
         var tmppath = _path2.default.join(_this.tmpdir, _nodeUuid2.default.v4());
@@ -86,7 +94,9 @@ var MediaTalkStore = function () {
 
         var result = [];
         entries.forEach(function (entry) {
-          _this3.retrieve(entry, function (err, obj) {
+          var split = entry.split('.');
+          _this3.retrieve(split[0], split[1], function (err, obj) {
+
             if (!err) result.push(obj);
             if (! --count) callback(null, result);
           });
@@ -97,7 +107,10 @@ var MediaTalkStore = function () {
   return MediaTalkStore;
 }();
 
-var createMediaTalkStore = function createMediaTalkStore(rootdir, tmpdir, docstore) {
+var createMediaTalkStore = function createMediaTalkStore(docstore) {
+
+  var rootdir = _paths2.default.get('mediatalk');
+  var tmpdir = _paths2.default.get('tmp');
   return new MediaTalkStore(rootdir, tmpdir, docstore);
 };
 

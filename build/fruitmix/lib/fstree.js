@@ -31,7 +31,7 @@ _bluebird2.default.promisifyAll(_fs2.default);
 
 var listAsync = function () {
   var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(target) {
-    var level = arguments.length <= 1 || arguments[1] === undefined ? 0 : arguments[1];
+    var level = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
     var stat;
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {

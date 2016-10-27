@@ -705,7 +705,7 @@ var _initialiseProps = function _initialiseProps() {
         _this5.decrementKeyboardFocusIndex();
         break;
       default:
-        if (key.length === 1) {
+        if (key && key.length === 1) {
           var hotKeys = _this5.hotKeyHolder.append(key);
           if (_this5.setFocusIndexStartsWith(hotKeys)) {
             event.preventDefault();

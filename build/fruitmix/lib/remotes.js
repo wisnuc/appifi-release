@@ -20,8 +20,7 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // a local branch mirroring a remote one. This local branch is read-only,
 // can only be updated atomically from the remote server.
 // this is a simple model to avoid all the issues raised from inconsistent status
-// between two parties.
-
+// between two parties. 
 var Remote = function () {
   function Remote(myUUID) {
     (0, _classCallCheck3.default)(this, Remote);

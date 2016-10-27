@@ -10,8 +10,6 @@ var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
 
 var _bluebird = require('bluebird');
 
-var _bluebird2 = _interopRequireDefault(_bluebird);
-
 var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
@@ -23,6 +21,10 @@ var _assign2 = _interopRequireDefault(_assign);
 var _child_process = require('child_process');
 
 var _child_process2 = _interopRequireDefault(_child_process);
+
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
 
 var _reducers = require('./reducers');
 
@@ -36,7 +38,7 @@ var _eth = require('./eth');
 
 var _eth2 = _interopRequireDefault(_eth);
 
-var _barcelona = require('./barcelona');
+var _barcelona = require('../../system/barcelona');
 
 var _appstore = require('./appstore');
 
@@ -46,9 +48,9 @@ var _timedate = require('./timedate');
 
 var _timedate2 = _interopRequireDefault(_timedate);
 
-var _fruitmix = require('../../fruitmix/fruitmix');
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var debug = (0, _debug2.default)('system:server');
 
 var _status = 0;
 
@@ -58,7 +60,7 @@ var info = function info(text) {
 
 (0, _reducers.storeSubscribe)(function () {
   _status++;
-  console.log('[server] status updated: ' + _status);
+  debug('status update', _status);
 });
 
 var appstoreFacade = function appstoreFacade(appstore) {
@@ -69,9 +71,9 @@ var appstoreFacade = function appstoreFacade(appstore) {
 
   if (appstore.status === 'ERROR') return { status: 'ERROR', code: appstore.code, message: appstore.message };
 
-  var _appstore$result = appstore.result;
-  var recipes = _appstore$result.recipes;
-  var repoMap = _appstore$result.repoMap;
+  var _appstore$result = appstore.result,
+      recipes = _appstore$result.recipes,
+      repoMap = _appstore$result.repoMap;
 
   if (!repoMap) {
     return {
@@ -80,7 +82,7 @@ var appstoreFacade = function appstoreFacade(appstore) {
     };
   }
 
-  // be careful. if recipes are cloned first, then cloned
+  // be careful. if recipes are cloned first, then cloned 
   // recipes' components won't be the key in the map any more !!!
 
   var appended = [];
@@ -202,7 +204,7 @@ var timeDateUpdate = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return _bluebird2.default.promisify(_timedate2.default)();
+            return (0, _bluebird.promisify)(_timedate2.default)();
 
           case 2:
             _context2.t0 = _context2.sent;
@@ -251,39 +253,12 @@ var systemPowerOff = function () {
   };
 }();
 
-var daemonStartOp2 = function () {
-  var _ref5 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3(uuid) {
-    var fruitRoot, fruitmix;
+var operationAsync = function () {
+  var _ref5 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3(req) {
+    var f, args;
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
         switch (_context3.prev = _context3.next) {
-          case 0:
-            _context3.next = 2;
-            return (0, _docker.daemonStartOp)(uuid);
-
-          case 2:
-            fruitRoot = (0, _docker.dockerFruitmixDir)(uuid);
-            fruitmix = (0, _fruitmix.createFruitmix)(fruitRoot);
-
-          case 4:
-          case 'end':
-            return _context3.stop();
-        }
-      }
-    }, _callee3, undefined);
-  }));
-
-  return function daemonStartOp2(_x) {
-    return _ref5.apply(this, arguments);
-  };
-}();
-
-var operationAsync = function () {
-  var _ref6 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee4(req) {
-    var f, args;
-    return _regenerator2.default.wrap(function _callee4$(_context4) {
-      while (1) {
-        switch (_context4.prev = _context4.next) {
           case 0:
 
             info('operation: ' + req.operation);
@@ -291,112 +266,112 @@ var operationAsync = function () {
             f = void 0, args = void 0;
 
             if (!(req && req.operation)) {
-              _context4.next = 42;
+              _context3.next = 42;
               break;
             }
 
             args = req.args && Array.isArray(req.args) ? req.args : [];
 
-            _context4.t0 = req.operation;
-            _context4.next = _context4.t0 === 'daemonStart' ? 7 : _context4.t0 === 'daemonStop' ? 9 : _context4.t0 === 'containerStart' ? 11 : _context4.t0 === 'containerStop' ? 13 : _context4.t0 === 'containerDelete' ? 15 : _context4.t0 === 'installedStart' ? 17 : _context4.t0 === 'installedStop' ? 19 : _context4.t0 === 'appInstall' ? 21 : _context4.t0 === 'appUninstall' ? 23 : _context4.t0 === 'mkfs_btrfs' ? 25 : _context4.t0 === 'networkUpdate' ? 27 : _context4.t0 === 'barcelonaFanScaleUpdate' ? 29 : _context4.t0 === 'barcelonaFanSpeedUpdate' ? 31 : _context4.t0 === 'timeDateUpdate' ? 33 : _context4.t0 === 'systemReboot' ? 35 : _context4.t0 === 'systemPowerOff' ? 37 : _context4.t0 === 'appstoreRefresh' ? 39 : 41;
+            _context3.t0 = req.operation;
+            _context3.next = _context3.t0 === 'daemonStart' ? 7 : _context3.t0 === 'daemonStop' ? 9 : _context3.t0 === 'containerStart' ? 11 : _context3.t0 === 'containerStop' ? 13 : _context3.t0 === 'containerDelete' ? 15 : _context3.t0 === 'installedStart' ? 17 : _context3.t0 === 'installedStop' ? 19 : _context3.t0 === 'appInstall' ? 21 : _context3.t0 === 'appUninstall' ? 23 : _context3.t0 === 'mkfs_btrfs' ? 25 : _context3.t0 === 'networkUpdate' ? 27 : _context3.t0 === 'barcelonaFanScaleUpdate' ? 29 : _context3.t0 === 'barcelonaFanSpeedUpdate' ? 31 : _context3.t0 === 'timeDateUpdate' ? 33 : _context3.t0 === 'systemReboot' ? 35 : _context3.t0 === 'systemPowerOff' ? 37 : _context3.t0 === 'appstoreRefresh' ? 39 : 41;
             break;
 
           case 7:
             f = _docker.daemonStartOp;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 9:
             f = _docker.daemonStop;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 11:
             f = _docker.containerStart;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 13:
             f = _docker.containerStop;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 15:
             f = containerDeleteCommand;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 17:
             f = _docker.installedStart;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 19:
             f = _docker.installedStop;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 21:
             f = _docker.appInstall;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 23:
             f = _docker.appUninstall;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 25:
             f = _storage.mkfsBtrfsOperation;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 27:
             f = networkUpdate;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 29:
             f = _barcelona.setFanScale;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 31:
             f = _barcelona.updateFanSpeed;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 33:
             f = timeDateUpdate;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 35:
             f = systemReboot;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 37:
             f = systemPowerOff;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 39:
             f = _appstore2.default.reload;
-            return _context4.abrupt('break', 42);
+            return _context3.abrupt('break', 42);
 
           case 41:
             info('operation not implemented, ' + req.operation);
 
           case 42:
             if (!f) {
-              _context4.next = 46;
+              _context3.next = 46;
               break;
             }
 
-            _context4.next = 45;
+            _context3.next = 45;
             return f.apply(undefined, (0, _toConsumableArray3.default)(args));
 
           case 45:
-            return _context4.abrupt('return', _context4.sent);
+            return _context3.abrupt('return', _context3.sent);
 
           case 46:
-            return _context4.abrupt('return', null);
+            return _context3.abrupt('return', null);
 
           case 47:
           case 'end':
-            return _context4.stop();
+            return _context3.stop();
         }
       }
-    }, _callee4, undefined);
+    }, _callee3, undefined);
   }));
 
-  return function operationAsync(_x2) {
-    return _ref6.apply(this, arguments);
+  return function operationAsync(_x) {
+    return _ref5.apply(this, arguments);
   };
 }();
 

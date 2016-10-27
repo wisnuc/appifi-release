@@ -3,15 +3,13 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.testing = exports.createRepo = undefined;
+exports.createRepo = undefined;
 
 var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
 
 var _bluebird = require('bluebird');
-
-var _bluebird2 = _interopRequireDefault(_bluebird);
 
 var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
 
@@ -41,68 +39,36 @@ var _events = require('events');
 
 var _events2 = _interopRequireDefault(_events);
 
-var _mkdirp = require('mkdirp');
-
-var _mkdirp2 = _interopRequireDefault(_mkdirp);
-
 var _async = require('../util/async');
 
-var _xstat = require('./xstat');
+var _paths = require('./paths');
 
-var _drive = require('./drive');
+var _paths2 = _interopRequireDefault(_paths);
 
-var _hashMagic = require('./hashMagic');
+var _hashMagicBuilder = require('./hashMagicBuilder');
 
-var _hashMagic2 = _interopRequireDefault(_hashMagic);
+var _metaBuilder = require('./metaBuilder');
+
+var _filer = require('./filer');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 // repo is responsible for managing all drives
-
 var Repo = function (_EventEmitter) {
   (0, _inherits3.default)(Repo, _EventEmitter);
 
-
   // repo constructor
-
-  function Repo(paths, driveModel, forest) {
+  function Repo(driveModel, filer, hashMagicBuilder, metaBuilder) {
     (0, _classCallCheck3.default)(this, Repo);
 
-    var _this = (0, _possibleConstructorReturn3.default)(this, (0, _getPrototypeOf2.default)(Repo).call(this));
+    var _this = (0, _possibleConstructorReturn3.default)(this, (Repo.__proto__ || (0, _getPrototypeOf2.default)(Repo)).call(this));
 
-    _this.paths = paths;
     _this.driveModel = driveModel;
-    _this.forest = forest;
-
-    _this.forest.on('driveCached', function () {
-      return console.log('driveCached: ' + drive.uuid);
-    });
-    _this.forest.on('hashlessAdded', function (node) {
-      console.log('hashlessAdded drive: uuid:' + node.uuid + ' path:' + node.namepath());
-      _this.hashMagicWorker.start(node.namepath(), node.uuid);
-    });
+    _this.filer = filer;
+    _this.hashMagicBuilder = hashMagicBuilder;
+    _this.metaBuilder = metaBuilder;
 
     _this.state = 'IDLE'; // 'INITIALIZING', 'INITIALIZED', 'DEINITIALIZING',
-
-    _this.scanners = [];
-
-    _this.hashMagicWorker = (0, _hashMagic2.default)();
-    _this.hashMagicWorker.on('end', function (ret) {
-
-      if (_this.state === 'IDLE') return;
-
-      // find drive containing this uuid
-      _this.forest.updateHashMagic(ret.target, ret.uuid, ret.hash, ret.magic, ret.timestamp, function (err) {
-
-        if (_this.forest.hashless.size === 0) {
-          console.log('hashMagicWorkerStopped');
-          return _this.emit('hashMagicWorkerStopped');
-        }
-
-        var node = _this.forest.hashless.values().next().value;
-        _this.hashMagicWorker.start(node.namepath(), node.uuid);
-      });
-    });
     return _this;
   }
 
@@ -112,7 +78,7 @@ var Repo = function (_EventEmitter) {
       var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee() {
         var _this2 = this;
 
-        var dir, list, props, i, conf, stat, roots, promises;
+        var dir, list, props, i, conf, stat;
         return _regenerator2.default.wrap(function _callee$(_context) {
           while (1) {
             switch (_context.prev = _context.next) {
@@ -128,7 +94,7 @@ var Repo = function (_EventEmitter) {
 
                 this.state = 'INITIALIZING';
 
-                dir = this.paths.get('drives');
+                dir = _paths2.default.get('drives');
                 list = this.driveModel.collection.list;
                 props = [];
 
@@ -185,28 +151,13 @@ var Repo = function (_EventEmitter) {
               case 24:
                 // loop end
 
-                roots = props.map(function (prop) {
-                  return _this2.forest.createNode(null, prop);
+                props.forEach(function (prop) {
+                  return _this2.filer.createRoot(prop);
                 });
-                promises = roots.map(function (root) {
-                  return new _bluebird2.default(function (resolve) {
-                    return _this2.forest.scan(root, function () {
-                      console.log('[repo] init: scan root finished: ' + root.uuid);
-                      resolve();
-                    });
-                  });
-                });
-
-
-                _bluebird2.default.all(promises).then(function () {
-                  console.log('[repo] init: ' + roots.length + ' drives cached');
-                  _this2.emit('driveCached');
-                }).catch(function (e) {});
-
                 this.state = 'INITIALIZED';
-                console.log('[repo] init: initialized');
+                //     console.log('[repo] init: initialized')
 
-              case 29:
+              case 26:
               case 'end':
                 return _context.stop();
             }
@@ -238,7 +189,6 @@ var Repo = function (_EventEmitter) {
   }, {
     key: 'deinit',
     value: function deinit() {
-      this.hashMagicWorker.abort();
       this.state = 'IDLE';
     }
 
@@ -247,12 +197,12 @@ var Repo = function (_EventEmitter) {
   }, {
     key: 'getTmpDirForDrive',
     value: function getTmpDirForDrive(drive) {
-      return this.paths.get('tmp');
+      return _paths2.default.get('tmp');
     }
   }, {
     key: 'getTmpFolderForNode',
     value: function getTmpFolderForNode(node) {
-      return this.paths.get('tmp');
+      return _paths2.default.get('tmp');
     }
   }, {
     key: 'getDrives',
@@ -260,39 +210,28 @@ var Repo = function (_EventEmitter) {
       return this.driveModel.collection.list;
     }
 
-    //  label
-    //  fixedOwner: true
-    //  URI: fruitmix
-    //  uuid
-    //  owner
-    //  writelist
-    //  readlist
-    //  cache
+    //  label, fixedOwner: true, URI: fruitmix, uuid, owner, writelist, readlist, cache
 
   }, {
     key: 'createFruitmixDrive',
     value: function createFruitmixDrive(conf, callback) {
       var _this3 = this;
 
-      var dir = this.paths.get('drives');
+      var dir = _paths2.default.get('drives');
       var dpath = _path2.default.join(dir, conf.uuid);
 
-      (0, _mkdirp2.default)(dpath, function (err) {
+      (0, _async.mkdirp)(dpath, function (err) {
         if (err) return callback(err);
         _this3.driveModel.createDrive(conf, function (err) {
           if (err) return callback(err);
 
-          var root = _this3.forest.createNode(null, {
+          _this3.filer.createRoot({
             uuid: conf.uuid,
             type: 'folder',
             owner: conf.owner,
             writelist: conf.writelist,
             readlist: conf.readlist,
             name: dpath
-          });
-
-          _this3.forest.scan(root, function () {
-            return console.log('[repo] createFruitmidxDrive: scan (newly created) root finished: ' + root.uuid);
           });
 
           callback(null, conf);
@@ -335,23 +274,15 @@ var Repo = function (_EventEmitter) {
         });
       });
     }
-
-    ////////////////////////////////////////////////////////////////////////////////
-
-  }, {
-    key: 'inspect',
-    value: function inspect(uuid) {
-      console.log('something requested to inspect node with uuid: ' + uuid);
-    }
   }]);
   return Repo;
 }(_events2.default);
 
-var createRepo = function createRepo(paths, driveModel, forest) {
-  return new Repo(paths, driveModel, forest);
+var createRepo = exports.createRepo = function createRepo(driveModel) {
+
+  var filer = (0, _filer.createFiler)();
+  var hashMagicBuilder = (0, _hashMagicBuilder.createHashMagicBuilder)(filer);
+  var metaBuilder = (0, _metaBuilder.createMetaBuilder)(filer);
+
+  return new Repo(driveModel, filer, hashMagicBuilder, metaBuilder);
 };
-
-var testing = {};
-
-exports.createRepo = createRepo;
-exports.testing = testing;

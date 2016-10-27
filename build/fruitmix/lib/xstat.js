@@ -71,11 +71,11 @@ var EInvalid = function EInvalid(text) {
 };
 
 var InstanceMismatch = function InstanceMismatch(text) {
-  return (0, _assign2.default)(new Error(text || 'instance mismatch'), { code: 'EINSTANCEMISMATCH' });
+  return (0, _assign2.default)(new Error(text || 'instance mismatch'), { code: 'EMISMATCH' });
 };
 
 var TimestampMismatch = function TimestampMismatch(text) {
-  return (0, _assign2.default)(new Error(text || 'timestamp mismatch'), { code: 'ETIMESTAMPMISMATCH' });
+  return (0, _assign2.default)(new Error(text || 'timestamp mismatch'), { code: 'EOUTDATED' });
 };
 
 var readTimeStamp = function readTimeStamp(target, callback) {
@@ -132,7 +132,7 @@ var validateXattr = function validateXattr(attr, type, mtime) {
       if (attr.hasOwnProperty('hash') || attr.hasOwnProperty('htime')) {
         if (!isHashValid(attr.hash) || attr.htime !== mtime) {
           if (attr.hasOwnProperty('hash')) delete attr.hash;
-          if (attr.hasOwnProperty('magic')) delete attr.magic; // TODO workaround solution
+          if (attr.hasOwnProperty('magic')) delete attr.magic; // TODO workaround solution 
           if (attr.hasOwnProperty('htime')) delete attr.htime;
         }
       }
@@ -155,8 +155,8 @@ var validateXattr = function validateXattr(attr, type, mtime) {
 //    object: this object will be used as xattr, it's owner, writelist, readlist must all be uuid array (empty is fine)
 //    not provided: using default
 //
-// const readXstat = (target, opts, callback) =>
-// const readXstat = (target, callback) =>
+// const readXstat = (target, opts, callback) => 
+// const readXstat = (target, callback) => 
 // well - formatted
 
 var readXstat = function readXstat(target) {
@@ -215,10 +215,10 @@ var updateXattrOwner = function updateXattrOwner(target, uuid, owner, callback) 
   readXstat(target, function (err, xstat) {
     if (err) return callback(err);
     if (xstat.uuid !== uuid) return callback(InstanceMismatch());
-    var writelist = xstat.writelist;
-    var readlist = xstat.readlist;
-    var hash = xstat.hash;
-    var htime = xstat.htime;
+    var writelist = xstat.writelist,
+        readlist = xstat.readlist,
+        hash = xstat.hash,
+        htime = xstat.htime;
 
     var newAttr = { uuid: uuid, owner: owner, writelist: writelist, readlist: readlist, hash: hash, htime: htime };
     _fsXattr2.default.set(target, FRUITMIX, (0, _stringify2.default)(newAttr), function (err) {
@@ -232,10 +232,10 @@ var updateXattrPermission = function updateXattrPermission(target, uuid, writeli
   readXstat(target, function (err, xstat) {
     if (err) return callback(err);
     if (xstat.uuid !== uuid) return callback(InstanceMismatch());
-    var owner = xstat.owner;
-    var hash = xstat.hash;
-    var magic = xstat.magic;
-    var htime = xstat.htime;
+    var owner = xstat.owner,
+        hash = xstat.hash,
+        magic = xstat.magic,
+        htime = xstat.htime;
 
     var newAttr = { uuid: uuid, owner: owner, writelist: writelist, readlist: readlist, hash: hash, magic: magic, htime: htime };
     _fsXattr2.default.set(target, FRUITMIX, (0, _stringify2.default)(newAttr), function (err) {
@@ -249,9 +249,9 @@ var updateXattrHash = function updateXattrHash(target, uuid, hash, htime, callba
   readXstat(target, function (err, xstat) {
     if (err) return callback(err);
     if (xstat.uuid !== uuid) return callback(InstanceMismatch());
-    var owner = xstat.owner;
-    var writelist = xstat.writelist;
-    var readlist = xstat.readlist;
+    var owner = xstat.owner,
+        writelist = xstat.writelist,
+        readlist = xstat.readlist;
 
     var newAttr = { uuid: uuid, owner: owner, writelist: writelist, readlist: readlist, hash: hash, htime: htime };
     _fsXattr2.default.set(target, FRUITMIX, (0, _stringify2.default)(newAttr), function (err) {
@@ -272,9 +272,9 @@ var updateXattrHashMagic = function updateXattrHashMagic(target, uuid, hash, mag
     // timestamp mismatch
     if (xstat.mtime.getTime() !== htime) return callback(TimestampMismatch());
 
-    var owner = xstat.owner;
-    var writelist = xstat.writelist;
-    var readlist = xstat.readlist;
+    var owner = xstat.owner,
+        writelist = xstat.writelist,
+        readlist = xstat.readlist;
 
     var newXattr = { uuid: xstat.uuid, owner: owner, writelist: writelist, readlist: readlist, hash: hash, magic: magic, htime: htime };
     _fsXattr2.default.set(target, FRUITMIX, (0, _stringify2.default)(newXattr), function (err) {

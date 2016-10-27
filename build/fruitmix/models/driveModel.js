@@ -60,6 +60,16 @@ Schema
   cache: true or false
 }
 
+for usb drive 
+
+  label => folder name
+  fixedOwner: false
+  URI: 'partition uuid + fs uuid'
+  uuid: generate
+  owner: [*]
+  writelist: [*]
+  readlist: [*]
+
 **/
 
 var DriveModel = function () {
@@ -77,14 +87,14 @@ var DriveModel = function () {
   (0, _createClass3.default)(DriveModel, [{
     key: 'createDrive',
     value: function createDrive(_ref, callback) {
-      var label = _ref.label;
-      var fixedOwner = _ref.fixedOwner;
-      var URI = _ref.URI;
-      var uuid = _ref.uuid;
-      var owner = _ref.owner;
-      var writelist = _ref.writelist;
-      var readlist = _ref.readlist;
-      var cache = _ref.cache;
+      var label = _ref.label,
+          fixedOwner = _ref.fixedOwner,
+          URI = _ref.URI,
+          uuid = _ref.uuid,
+          owner = _ref.owner,
+          writelist = _ref.writelist,
+          readlist = _ref.readlist,
+          cache = _ref.cache;
 
 
       var conf = { label: label, fixedOwner: fixedOwner, URI: URI, uuid: uuid, owner: owner, writelist: writelist, readlist: readlist, cache: cache };

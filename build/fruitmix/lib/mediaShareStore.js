@@ -27,6 +27,10 @@ var _validator2 = _interopRequireDefault(_validator);
 
 var _util = require('./util');
 
+var _paths = require('./paths');
+
+var _paths2 = _interopRequireDefault(_paths);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var MediaShareStore = function () {
@@ -76,7 +80,6 @@ var MediaShareStore = function () {
       _fs2.default.readFile(srcpath, function (err, data) {
         if (err) return callback(err);
         var digest = data.toString();
-
         _this2.docstore.retrieve(digest, function (err, doc) {
           if (err) return callback(err);
           callback(null, { digest: digest, doc: doc });
@@ -107,7 +110,12 @@ var MediaShareStore = function () {
   return MediaShareStore;
 }();
 
-var createMediaShareStore = function createMediaShareStore(rootdir, arcdir, tmpdir, docstore) {
+var createMediaShareStore = function createMediaShareStore(docstore) {
+
+  var rootdir = _paths2.default.get('mediashare');
+  var arcdir = _paths2.default.get('mediashareArchive');
+  var tmpdir = _paths2.default.get('tmp');
+
   return new MediaShareStore(rootdir, arcdir, tmpdir, docstore);
 };
 
