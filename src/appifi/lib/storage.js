@@ -98,7 +98,7 @@ const mountVolumeAsync = async (uuid, mountpoint, opts) => {
 
   await mkdirpAsync(mountpoint)
   let cmd = opts ? 
-    `mount -t btrfs -o {opts} UUID=${uuid} ${mountpoint}` :
+    `mount -t btrfs -o ${opts} UUID=${uuid} ${mountpoint}` :
     `mount -t btrfs UUID=${uuid} ${mountpoint}`
 
   await child.execAsync(cmd) 
@@ -205,13 +205,20 @@ const statBlocks = (storage) => {
     if (blk.props.devtype === 'disk') { // start of device is disk
       blk.stats.isDisk = true
 
-      if (blk.props.id_fs_usage) { // id_fs_usage defined
+      // TODO id_part_table_type override id_fs_usage, to fix #16, not sure
+      if (blk.props.id_part_table_type) { // is partitioned disk
+        blk.stats.isPartitioned = true
+        blk.stats.partitionTableType = blk.props.id_part_table_type
+        blk.stats.partitionTableUUID = blk.props.id_part_table_uuid
+      }
+      else if (blk.props.id_fs_usage) { // id_fs_usage defined
         blk.stats.isUsedAsFileSystem = true
 
         if (blk.props.id_fs_usage === 'filesystem') { // used as file system
 
           blk.stats.isFileSystem = true
           blk.stats.fileSystemType = blk.props.id_fs_type
+          blk.stats.fileSystemUUID = blk.props.id_fs_uuid
 
           if (blk.props.id_fs_type === 'btrfs') { // is btrfs (volume device)
             blk.stats.isVolume = true
@@ -234,9 +241,7 @@ const statBlocks = (storage) => {
             default:
               break
             } 
-
-            blk.stats.fileSystemUUID = blk.props.id_fs_uuid
-          }
+         }
         }
         else if (blk.props.id_fs_usage === 'other') {
 
@@ -250,14 +255,9 @@ const statBlocks = (storage) => {
         else {
           blk.stats.isUnsupportedFileSystem = true
         }
-      } // end of used as file system
-      else if (blk.props.id_part_table_type) { // is partitioned disk
-        blk.stats.isPartitioned = true
-        blk.stats.partitionTableType = blk.props.id_part_table_type
-        blk.stats.partitionTableUUID = blk.props.id_part_table_uuid
-      }
+      } // end of id_fs_usage defined
       else {
-        blk.stats.noKnownFileSystemOrPartitionDetected = true
+        blk.stats.Unrecognized = true
       }
     } // end of 'device is disk'
     else if (blk.props.devtype === 'partition') { // is partitioned
@@ -273,9 +273,10 @@ const statBlocks = (storage) => {
       }
       else if (blk.props.id_fs_usage === 'filesystem') { // partition as file system
 
-        blk.stats.isFilesystem = true
+        blk.stats.isFileSystem = true
         let type = blk.stats.fileSystemType = blk.props.id_fs_type
-       
+        blk.stats.fileSystemUUID = blk.props.id_fs_uuid        
+
         switch (type) {
         case 'ext4':
           blk.stats.isExt4 = true
@@ -289,8 +290,6 @@ const statBlocks = (storage) => {
         default:
           break
         } 
-
-        blk.stats.fileSystemUUID = blk.props.id_fs_uuid        
       }
 
       let parent = arr.find(b => b.path === path.dirname(blk.path))
@@ -377,6 +376,7 @@ const statVolumes = (storage) => {
       vol.stats.fileSystemUUID = vol.uuid
       vol.stats.isMounted = true
       vol.stats.mountpoint = mount.mountpoint
+      vol.stats.isMissing = vol.missing
     }
   })
 }

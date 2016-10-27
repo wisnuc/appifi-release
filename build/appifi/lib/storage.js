@@ -788,7 +788,7 @@ var mountVolumeAsync = function () {
             return mkdirpAsync(mountpoint);
 
           case 2:
-            cmd = opts ? 'mount -t btrfs -o {opts} UUID=' + uuid + ' ' + mountpoint : 'mount -t btrfs UUID=' + uuid + ' ' + mountpoint;
+            cmd = opts ? 'mount -t btrfs -o ' + opts + ' UUID=' + uuid + ' ' + mountpoint : 'mount -t btrfs UUID=' + uuid + ' ' + mountpoint;
             _context4.next = 5;
             return _child_process2.default.execAsync(cmd);
 
@@ -910,7 +910,13 @@ var statBlocks = function statBlocks(storage) {
       // start of device is disk
       blk.stats.isDisk = true;
 
-      if (blk.props.id_fs_usage) {
+      // TODO id_part_table_type override id_fs_usage, to fix #16, not sure
+      if (blk.props.id_part_table_type) {
+        // is partitioned disk
+        blk.stats.isPartitioned = true;
+        blk.stats.partitionTableType = blk.props.id_part_table_type;
+        blk.stats.partitionTableUUID = blk.props.id_part_table_uuid;
+      } else if (blk.props.id_fs_usage) {
         // id_fs_usage defined
         blk.stats.isUsedAsFileSystem = true;
 
@@ -919,6 +925,7 @@ var statBlocks = function statBlocks(storage) {
 
           blk.stats.isFileSystem = true;
           blk.stats.fileSystemType = blk.props.id_fs_type;
+          blk.stats.fileSystemUUID = blk.props.id_fs_uuid;
 
           if (blk.props.id_fs_type === 'btrfs') {
             // is btrfs (volume device)
@@ -941,8 +948,6 @@ var statBlocks = function statBlocks(storage) {
               default:
                 break;
             }
-
-            blk.stats.fileSystemUUID = blk.props.id_fs_uuid;
           }
         } else if (blk.props.id_fs_usage === 'other') {
 
@@ -957,14 +962,9 @@ var statBlocks = function statBlocks(storage) {
         else {
             blk.stats.isUnsupportedFileSystem = true;
           }
-      } // end of used as file system
-      else if (blk.props.id_part_table_type) {
-          // is partitioned disk
-          blk.stats.isPartitioned = true;
-          blk.stats.partitionTableType = blk.props.id_part_table_type;
-          blk.stats.partitionTableUUID = blk.props.id_part_table_uuid;
-        } else {
-          blk.stats.noKnownFileSystemOrPartitionDetected = true;
+      } // end of id_fs_usage defined
+      else {
+          blk.stats.Unrecognized = true;
         }
     } // end of 'device is disk'
     else if (blk.props.devtype === 'partition') {
@@ -980,8 +980,9 @@ var statBlocks = function statBlocks(storage) {
         } else if (blk.props.id_fs_usage === 'filesystem') {
           // partition as file system
 
-          blk.stats.isFilesystem = true;
+          blk.stats.isFileSystem = true;
           var _type2 = blk.stats.fileSystemType = blk.props.id_fs_type;
+          blk.stats.fileSystemUUID = blk.props.id_fs_uuid;
 
           switch (_type2) {
             case 'ext4':
@@ -996,8 +997,6 @@ var statBlocks = function statBlocks(storage) {
             default:
               break;
           }
-
-          blk.stats.fileSystemUUID = blk.props.id_fs_uuid;
         }
 
         var parent = arr.find(function (b) {
@@ -1081,6 +1080,7 @@ var statVolumes = function statVolumes(storage) {
       vol.stats.fileSystemUUID = vol.uuid;
       vol.stats.isMounted = true;
       vol.stats.mountpoint = mount.mountpoint;
+      vol.stats.isMissing = vol.missing;
     }
   });
 };

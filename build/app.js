@@ -1,5 +1,9 @@
 'use strict';
 
+var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
+
+var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
+
 var _assign = require('babel-runtime/core-js/object/assign');
 
 var _assign2 = _interopRequireDefault(_assign);
@@ -110,94 +114,129 @@ process.argv.forEach(function (val, index, array) {
   }
 });
 
+var tryBoot = function tryBoot() {
+
+  var bootMode = _sysconfig2.default.get('bootMode');
+  var lastFileSystem = _sysconfig2.default.get('lastFileSystem');
+  var _storeState$storage = (0, _reducers.storeState)().storage,
+      blocks = _storeState$storage.blocks,
+      volumes = _storeState$storage.volumes;
+
+
+  if (bootMode === 'maintenance') {
+
+    debug('bootMode is set maintenance by user');
+    return {
+      state: 'maintenance',
+      bootMode: 'maintenance',
+      error: null,
+      currentFileSystem: null,
+      lastFileSystem: lastFileSystem
+    };
+  }
+
+  // find all file systems, including unmounted, missing, etc.
+  var fileSystems = [].concat((0, _toConsumableArray3.default)(blocks.filter(function (blk) {
+    return blk.stats.isFileSystem && !blk.stats.isVolume;
+  })), (0, _toConsumableArray3.default)(volumes.filter(function (vol) {
+    return vol.stats.isFileSystem;
+  })));
+
+  debug('tryBoot: all file systems', fileSystems);
+
+  if (lastFileSystem) {
+
+    var last = fileSystems.find(function (fsys) {
+      return fsys.stats.fileSystemType === lastFileSystem.type && fsys.stats.fileSystemUUID === lastFileSystem.uuid;
+    });
+
+    if (last) {
+
+      debug('last file system found', last);
+
+      var error = null;
+      if (!last.stats.isMounted) {
+        debug('last file system is not mounted');
+        error = 'EMOUNTFAIL';
+      } else if (last.stats.isVolume && last.stats.isMissing) {
+        debug('last file system is volume and has missing device');
+        error = 'EVOLUMEMISSING';
+      } else if (!last.stats.wisnucInstalled) {
+        debug('last file system has no wisnuc installed');
+        error = 'EWISNUCNOTFOUND';
+      }
+
+      var state = void 0,
+          _currentFileSystem = void 0;
+      if (err) {
+        state = 'maintenance', error, _currentFileSystem = null;
+      } else {
+        debug('last file system ready to boot');
+        state = 'normal', error, _currentFileSystem = {
+          type: last.stats.fileSystemType,
+          uuid: last.stats.fileSystemUUID,
+          mountpoint: last.stats.mountpoint
+        };
+      }
+
+      return { state: state, bootMode: bootMode, error: error, currentFileSystem: _currentFileSystem, lastFileSystem: lastFileSystem };
+    }
+  }
+
+  debug('no last fs in config or last fs not found');
+
+  // no lfs or lfs not found, try alternative
+  var alt = fileSystems.filter(function (fsys) {
+    return fsys.stats.isMounted && (fsys.stats.isVolume ? !fsys.stats.isMissing : true) && fsys.stats.wisnucInstalled;
+  });
+
+  debug('alternatives', alt);
+
+  if (alt.length === 1) {
+    return {
+      state: 'alternative',
+      bootMode: bootMode,
+      error: null,
+      currentFileSystem: {
+        type: alt[0].stats.fileSystemType,
+        uuid: alt[0].stats.fileSystemUUID,
+        mountpoint: alt[0].stats.mountpoint
+      },
+      lastFileSystem: lastFileSystem
+    };
+  } else {
+    return {
+      state: 'maintenance',
+      bootMode: bootMode,
+      error: alt.length === 0 ? 'ENOALT' : 'EMULTIALT',
+      currentFileSystem: null,
+      lastFileSystem: lastFileSystem
+    };
+  }
+};
+
 (0, _storage.refreshStorage)().asCallback(function (err) {
 
   if (err) {
-    console.log('failed to init storage, exit');
+    console.log('[app] failed to init storage, exit');
     console.log(err);
     process.exit(1);
   }
 
-  var fileSystem = null;
-  var mountpoint = null;
+  console.log('[app] updating sysboot', boot);
 
-  // load config
-  var lastFileSystem = _sysconfig2.default.get('lastFileSystem');
+  var boot = tryBoot();
+  if (boot.currentFileSystem) {
 
-  debug('sysconfig', _sysconfig2.default);
-  debug('lastFileSystem', lastFileSystem);
+    console.log('boot current file system');
 
-  var state = void 0;
-  var currentFileSystem = null;
-  var bootMode = _sysconfig2.default.get('bootMode');
-  debug('bootMode', bootMode);
-
-  if (bootMode === 'maintenance') {
-    // enter maintenance mode by user setting
-    state = 'maintenance';
-    // clear one-shot config
-    _sysconfig2.default.set('bootMode', 'normal');
+    (0, _appifi2.default)();
+    (0, _fruitmix.createFruitmix)(_path2.default.join(currentFileSystem.mountpoint, 'wisnuc', 'fruitmix'));
+    _sysconfig2.default.set('lastFileSystem', currentFileSystem);
   } else {
-    // normal mode
-
-    // find all file system mounted
-    var mounted = (0, _storage.mountedFS)((0, _reducers.storeState)().storage);
-
-    if (lastFileSystem) {
-
-      fileSystem = mounted.find(function (x) {
-        return x.stats.fileSystemType === lastFileSystem.type && x.stats.fileSystemUUID === lastFileSystem.uuid;
-      });
-
-      if (fileSystem) debug('lastFileSystem found', fileSystem);
-    }
-
-    if (fileSystem) {// fileSystem found
-
-    } else {
-      // no lastFileSystem or corresponding file system not found
-
-      var installed = mounted.filter(function (mfs) {
-        return mfs.stats.wisnucInstalled;
-      });
-      if (installed.length == 1) {
-        // only one
-        fileSystem = installed[0];
-      }
-    }
-
-    // Not checked ... TODO
-    if (fileSystem) {
-
-      state = 'normal';
-      currentFileSystem = {
-        type: fileSystem.stats.fileSystemType,
-        uuid: fileSystem.stats.fileSystemUUID,
-        mountpoint: fileSystem.stats.mountpoint
-      };
-
-      debug('set currentFileSystem', fileSystem, currentFileSystem);
-
-      (0, _appifi2.default)();
-      (0, _fruitmix.createFruitmix)(_path2.default.join(currentFileSystem.mountpoint, 'wisnuc', 'fruitmix'));
-      _sysconfig2.default.set('lastFileSystem', currentFileSystem);
-    } else {
-
-      state = 'maintenance';
-    }
+    console.log('no current file system, boot into maintenance mode');
   }
 
-  // update store state
-  var actionData = {
-    state: state,
-    bootMode: bootMode,
-    lastFileSystem: lastFileSystem,
-    currentFileSystem: currentFileSystem
-  };
-  (0, _reducers.storeDispatch)({ type: 'UPDATE_SYSBOOT', data: actionData });
-
-  // log
-  console.log('[app] updating sysboot', actionData);
-
+  (0, _reducers.storeDispatch)({ type: 'UPDATE_SYSBOOT', data: boot });
   startServer();
 });
