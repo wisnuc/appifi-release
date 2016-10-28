@@ -172,16 +172,6 @@ var udevInfoBoth = function () {
 
 var udevInfoBatch = function () {
   var _ref4 = (0, _bluebird.method)(function (paths) {
-
-    var e = new Error('paths must be non-empty string array');
-    e.code = 'EINVAL';
-
-    if (!Array.isArray(paths)) throw e;
-    if (!paths.length) throw e;
-    if (!paths.every(function (path) {
-      return typeof path === 'string' || path instanceof String;
-    })) throw e;
-
     return (0, _bluebird.all)(paths.map(function (path) {
       return udevInfoBoth(path);
     }));

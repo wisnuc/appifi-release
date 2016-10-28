@@ -113,5 +113,15 @@ process.argv.forEach(function (val, index, array) {
 });
 
 (0, _boot.tryBoot)(function (err) {
-  return err ? process.exit(1) : startServer();
+
+  if (err) {
+    console.log('[app] failed to boot');
+    console.log('==== die ====');
+    console.log(err);
+    console.log('==== die ====');
+    process.exit(1);
+    return;
+  }
+
+  startServer();
 });
