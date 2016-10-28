@@ -3,7 +3,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createUserModel = exports.createUserModelAsync = undefined;
+exports.createFirstUser = exports.createUserModel = exports.createUserModelAsync = undefined;
+
+var _stringify = require('babel-runtime/core-js/json/stringify');
+
+var _stringify2 = _interopRequireDefault(_stringify);
 
 var _typeof2 = require('babel-runtime/helpers/typeof');
 
@@ -51,6 +55,14 @@ var _inherits2 = require('babel-runtime/helpers/inherits');
 
 var _inherits3 = _interopRequireDefault(_inherits2);
 
+var _path = require('path');
+
+var _path2 = _interopRequireDefault(_path);
+
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
 var _crypto = require('crypto');
 
 var _crypto2 = _interopRequireDefault(_crypto);
@@ -75,6 +87,10 @@ var _validator = require('validator');
 
 var _validator2 = _interopRequireDefault(_validator);
 
+var _mkdirp = require('mkdirp');
+
+var _mkdirp2 = _interopRequireDefault(_mkdirp);
+
 var _throw = require('../util/throw');
 
 var _collection = require('./collection');
@@ -85,6 +101,8 @@ var debug = (0, _debug2.default)('fruitmix:userModel');
 
 // import bcrypt from 'bcryptjs'
 
+
+(0, _bluebird.promisifyAll)(_fs2.default);
 
 var isUUID = function isUUID(x) {
   return typeof x === 'string' && _validator2.default.isUUID(x);
@@ -517,5 +535,41 @@ var createUserModelAsync = function () {
   };
 }();
 
+// external use
+var createFirstUser = function createFirstUser(mp, username, password, callback) {
+
+  var salt = _bcrypt2.default.genSaltSync(10);
+  var encrypted = _bcrypt2.default.hashSync(password, salt);
+  var md4 = md4Encrypt(password);
+
+  var users = [{
+    type: 'local',
+    uuid: _nodeUuid2.default.v4(),
+    username: username,
+    password: encrypted,
+    smbPassword: md4,
+    smbLastChangeTime: new Date().getTime(),
+    avatar: null,
+    email: null,
+    isAdmin: true,
+    isFirstUser: true,
+    home: _nodeUuid2.default.v4(),
+    library: _nodeUuid2.default.v4()
+  }];
+
+  debug('creating first user', users[0]);
+
+  var dir = _path2.default.join(mp, 'wisnuc', 'fruitmix', 'models');
+  (0, _mkdirp2.default)(dir, function (err) {
+
+    if (err) return callback(err);
+    _fs2.default.writeFile(_path2.default.join(dir, 'users.json'), (0, _stringify2.default)(users, null, '  '), function (err) {
+
+      err ? callback(err) : callback(null, users[0]);
+    });
+  });
+};
+
 exports.createUserModelAsync = createUserModelAsync;
 exports.createUserModel = createUserModel;
+exports.createFirstUser = createFirstUser;

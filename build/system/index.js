@@ -230,6 +230,7 @@ router.post('/fan', function (req, res) {
   var scale = req.body.scale;
 });
 
+router.use('/storage', _mir2.default);
 router.use('/mir', _mir2.default);
 
 router.get('/boot', function (req, res) {

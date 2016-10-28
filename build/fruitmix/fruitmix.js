@@ -25,9 +25,15 @@ var _inherits2 = require('babel-runtime/helpers/inherits');
 
 var _inherits3 = _interopRequireDefault(_inherits2);
 
+var _bluebird = require('bluebird');
+
 var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
+
+var _child_process = require('child_process');
+
+var _child_process2 = _interopRequireDefault(_child_process);
 
 var _http = require('http');
 
@@ -63,7 +69,19 @@ var _samba = require('./lib/samba');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var debug = (0, _debug2.default)('fruitmix:createFruitmix');
+var debug = (0, _debug2.default)('fruitmix:fruitmix');
+
+(0, _bluebird.promisifyAll)(_child_process2.default);
+
+var startSamba = function () {
+  var _ref = (0, _bluebird.method)(function () {
+    _child_process2.default.execAsync('systemctl start nmbd'), _child_process2.default.execAsync('systemctl start smbd');
+  });
+
+  return function startSamba() {
+    return _ref.apply(this, arguments);
+  };
+}();
 
 var Fruitmix = function (_EventEmitter) {
   (0, _inherits3.default)(Fruitmix, _EventEmitter);
@@ -97,6 +115,7 @@ var createFruitmix = function createFruitmix(sysroot) {
       port = 3721;
 
   _system2.default.init(sysroot);
+
   _app2.default.set('port', port);
 
   server = _http2.default.createServer(_app2.default);

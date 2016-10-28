@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createSmbAudit = exports.smbUpdate = undefined;
+exports.createSmbAudit = undefined;
 
 var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
 
@@ -65,10 +65,10 @@ var _models2 = _interopRequireDefault(_models);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var debug = (0, _debug2.default)('fruitmix:smbaudit');
+var debug = (0, _debug2.default)('fruitmix:samba');
 
-var logConfigPath = '/etc/rsyslog.d/99-smbaudit.conf';
-var logConfig = 'LOCAL7.*    @127.0.0.1:3721';
+(0, _bluebird.promisifyAll)(_fs2.default);
+(0, _bluebird.promisifyAll)(_child_process2.default);
 
 var userList = function userList() {
   return _models2.default.getModel('user').collection.list.filter(function (user) {
@@ -383,40 +383,6 @@ var generateSmbConf = function generateSmbConf() {
   shareList().forEach(function (share) {
     return conf += section(share);
   });
-
-  //  fs.writeFile(
-};
-
-// samba
-var detectSamba = function detectSamba(callback) {
-  return _child_process2.default.exec('systemctl start nmbd', function (err) {
-    return err ? callback(err) : _child_process2.default.exec('systemctl start smbd', function (err) {
-      return callback(err);
-    });
-  });
-};
-
-// rsyslog
-var detectRsyslog = function detectRsyslog(callback) {
-
-  var configRsyslog = function configRsyslog() {
-    return _fs2.default.writeFile(logConfigPath, logConfig, function (err) {
-      return err ? callback(err) : _child_process2.default.exec('systemctl restart rsyslog', function (err) {
-        return callback(err);
-      });
-    });
-  };
-
-  _fs2.default.readFile(logConfigPath, function (err, data) {
-    if (err) {
-      if (err.code === 'ENOENT') configRsyslog();else callback(err);
-      return;
-    }
-
-    if (data.toString() === logConfig) return callback(null);
-
-    configRsyslog();
-  });
 };
 
 var SmbAudit = function (_EventEmitter) {
@@ -501,26 +467,132 @@ var SmbAudit = function (_EventEmitter) {
   return SmbAudit;
 }(_events2.default);
 
-var smbUpdate = exports.smbUpdate = function smbUpdate(callback) {};
+var startSamba = function () {
+  var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
+    var logConfigPath, logConfig, config;
+    return _regenerator2.default.wrap(function _callee3$(_context3) {
+      while (1) {
+        switch (_context3.prev = _context3.next) {
+          case 0:
+            logConfigPath = '/etc/rsyslog.d/99-smbaudit.conf';
+            logConfig = 'LOCAL7.*    @127.0.0.1:3721';
+
+            // update rsyslog config if necessary
+
+            config = null;
+            _context3.prev = 3;
+            _context3.next = 6;
+            return _fs2.default.readFileAsync(logConfigPath);
+
+          case 6:
+            config = _context3.sent;
+            _context3.next = 11;
+            break;
+
+          case 9:
+            _context3.prev = 9;
+            _context3.t0 = _context3['catch'](3);
+
+          case 11:
+            if (!(config !== logConfig)) {
+              _context3.next = 16;
+              break;
+            }
+
+            _context3.next = 14;
+            return _fs2.default.writeFileAsync(logConfigPath, logConfig);
+
+          case 14:
+            _context3.next = 16;
+            return _child_process2.default.execAsync('systemctl restart rsyslog');
+
+          case 16:
+            _context3.next = 18;
+            return _child_process2.default.execAsync('systemctl start nmbd');
+
+          case 18:
+            _context3.next = 20;
+            return _child_process2.default.execAsync('systemctl start smbd');
+
+          case 20:
+          case 'end':
+            return _context3.stop();
+        }
+      }
+    }, _callee3, undefined, [[3, 9]]);
+  }));
+
+  return function startSamba() {
+    return _ref3.apply(this, arguments);
+  };
+}();
+
+var createUdpServer = function createUdpServer(callback) {
+
+  var udp = _dgram2.default.createSocket('udp4');
+  udp.on('listening', function () {
+    callback(null, new SmbAudit(udp));
+  });
+
+  udp.once('error', function (err) {
+    if (err.code === 'EADDRINUSE') callback(err);
+  });
+  udp.bind(3721);
+};
+
+var createSmbAuditAsync = function () {
+  var _ref4 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee4() {
+    var udp;
+    return _regenerator2.default.wrap(function _callee4$(_context4) {
+      while (1) {
+        switch (_context4.prev = _context4.next) {
+          case 0:
+            _context4.next = 2;
+            return startSamba();
+
+          case 2:
+            _context4.next = 4;
+            return (0, _bluebird.promisify)(createUdpServer)();
+
+          case 4:
+            udp = _context4.sent;
+            return _context4.abrupt('return', new SmbAudit(udp));
+
+          case 6:
+          case 'end':
+            return _context4.stop();
+        }
+      }
+    }, _callee4, undefined);
+  }));
+
+  return function createSmbAuditAsync() {
+    return _ref4.apply(this, arguments);
+  };
+}();
+
+/**
+export const createSmbAudit = (callback) => {
+
+  detectSamba(err => {
+    if (err) return callback(err)
+
+    detectRsyslog(err => {
+      if (err) return callback(err)
+
+      let udp = dgram.createSocket('udp4')
+      udp.on('listening', () => 
+        callback(null, new SmbAudit(udp))) 
+     
+      udp.once('error', err => 
+        (err.code === 'EADDRINUSE') && callback(err)) 
+
+      udp.bind(3721)
+    })
+  })
+}
+**/
 
 var createSmbAudit = exports.createSmbAudit = function createSmbAudit(callback) {
-
-  detectSamba(function (err) {
-    if (err) return callback(err);
-
-    detectRsyslog(function (err) {
-      if (err) return callback(err);
-
-      var udp = _dgram2.default.createSocket('udp4');
-      udp.on('listening', function () {
-        return callback(null, new SmbAudit(udp));
-      });
-
-      udp.once('error', function (err) {
-        return err.code === 'EADDRINUSE' && callback(err);
-      });
-
-      udp.bind(3721);
-    });
-  });
+  return createSmbAuditAsync().asCallback(callback);
 };

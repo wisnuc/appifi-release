@@ -3,7 +3,11 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.mkfsBtrfsOperation = exports.refreshStorage = exports.mountedFS = undefined;
+exports.mkfsBtrfsOperation = exports.refreshStorage = exports.mkfsBtrfs = exports.makeBtrfs = exports.formattable = exports.mountedFS = undefined;
+
+var _stringify = require('babel-runtime/core-js/json/stringify');
+
+var _stringify2 = _interopRequireDefault(_stringify);
 
 var _set = require('babel-runtime/core-js/set');
 
@@ -442,7 +446,7 @@ var createVolume = function () {
 
 
 var testOperation = function () {
-  var _ref18 = (0, _bluebird.method)(function () {
+  var _ref19 = (0, _bluebird.method)(function () {
 
     return new _bluebird2.default(function (resolve, reject) {
       setTimeout(function () {
@@ -453,91 +457,33 @@ var testOperation = function () {
   });
 
   return function testOperation() {
-    return _ref18.apply(this, arguments);
+    return _ref19.apply(this, arguments);
   };
 }();
 
 var mkfsBtrfsOperation = function () {
-  var _ref19 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee16(arg) {
+  var _ref20 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee17(arg) {
     var opts, blknames;
-    return _regenerator2.default.wrap(function _callee16$(_context16) {
+    return _regenerator2.default.wrap(function _callee17$(_context17) {
       while (1) {
-        switch (_context16.prev = _context16.next) {
+        switch (_context17.prev = _context17.next) {
           case 0:
 
             debug('mkfsBtrfsOperation');
 
             opts = { mode: arg.mode };
             blknames = arg.blknames;
-            _context16.next = 5;
+            _context17.next = 5;
             return createVolume(blknames, opts);
 
           case 5:
-            _context16.next = 7;
+            _context17.next = 7;
             return refreshStorage();
 
           case 7:
-            return _context16.abrupt('return', {});
+            return _context17.abrupt('return', {});
 
           case 8:
-          case 'end':
-            return _context16.stop();
-        }
-      }
-    }, _callee16, this);
-  }));
-
-  return function mkfsBtrfsOperation(_x21) {
-    return _ref19.apply(this, arguments);
-  };
-}();
-
-var _operation = function () {
-  var _ref20 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee17(req) {
-    var f, args;
-    return _regenerator2.default.wrap(function _callee17$(_context17) {
-      while (1) {
-        switch (_context17.prev = _context17.next) {
-          case 0:
-            f = void 0, args = void 0;
-
-            if (!(req && req.operation)) {
-              _context17.next = 13;
-              break;
-            }
-
-            info('operation: ' + req.operation);
-
-            args = req.args && Array.isArray(req.args) ? req.args : [];
-            _context17.t0 = req.operation;
-            _context17.next = _context17.t0 === 'test' ? 7 : _context17.t0 === 'mkfs_btrfs' ? 9 : 11;
-            break;
-
-          case 7:
-            f = testOperation;
-            return _context17.abrupt('break', 13);
-
-          case 9:
-            f = mkfsBtrfsOperation;
-            return _context17.abrupt('break', 13);
-
-          case 11:
-            info('operation: ' + req.operation + ' is not implemented');
-            return _context17.abrupt('break', 13);
-
-          case 13:
-            if (!f) {
-              _context17.next = 16;
-              break;
-            }
-
-            _context17.next = 16;
-            return f.apply(undefined, (0, _toConsumableArray3.default)(args));
-
-          case 16:
-            return _context17.abrupt('return', { errno: 0 });
-
-          case 17:
           case 'end':
             return _context17.stop();
         }
@@ -545,8 +491,66 @@ var _operation = function () {
     }, _callee17, this);
   }));
 
-  return function _operation(_x22) {
+  return function mkfsBtrfsOperation(_x24) {
     return _ref20.apply(this, arguments);
+  };
+}();
+
+var _operation = function () {
+  var _ref21 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee18(req) {
+    var f, args;
+    return _regenerator2.default.wrap(function _callee18$(_context18) {
+      while (1) {
+        switch (_context18.prev = _context18.next) {
+          case 0:
+            f = void 0, args = void 0;
+
+            if (!(req && req.operation)) {
+              _context18.next = 13;
+              break;
+            }
+
+            info('operation: ' + req.operation);
+
+            args = req.args && Array.isArray(req.args) ? req.args : [];
+            _context18.t0 = req.operation;
+            _context18.next = _context18.t0 === 'test' ? 7 : _context18.t0 === 'mkfs_btrfs' ? 9 : 11;
+            break;
+
+          case 7:
+            f = testOperation;
+            return _context18.abrupt('break', 13);
+
+          case 9:
+            f = mkfsBtrfsOperation;
+            return _context18.abrupt('break', 13);
+
+          case 11:
+            info('operation: ' + req.operation + ' is not implemented');
+            return _context18.abrupt('break', 13);
+
+          case 13:
+            if (!f) {
+              _context18.next = 16;
+              break;
+            }
+
+            _context18.next = 16;
+            return f.apply(undefined, (0, _toConsumableArray3.default)(args));
+
+          case 16:
+            return _context18.abrupt('return', { errno: 0 });
+
+          case 17:
+          case 'end':
+            return _context18.stop();
+        }
+      }
+    }, _callee18, this);
+  }));
+
+  return function _operation(_x25) {
+    return _ref21.apply(this, arguments);
   };
 }();
 
@@ -570,6 +574,10 @@ var _rimraf = require('rimraf');
 
 var _rimraf2 = _interopRequireDefault(_rimraf);
 
+var _nodeUuid = require('node-uuid');
+
+var _nodeUuid2 = _interopRequireDefault(_nodeUuid);
+
 var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
@@ -579,6 +587,8 @@ var _reducers = require('../lib/reducers');
 var _docker = require('../lib/docker');
 
 var _udevMonitor = require('../../system/udevMonitor');
+
+var _userModel = require('../../fruitmix/models/userModel');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -910,7 +920,7 @@ var statBlocks = function statBlocks(storage) {
       // start of device is disk
       blk.stats.isDisk = true;
 
-      // TODO id_part_table_type override id_fs_usage, to fix #16, not sure
+      // id_part_table_type override id_fs_usage, to fix #16
       if (blk.props.id_part_table_type) {
         // is partitioned disk
         blk.stats.isPartitioned = true;
@@ -1155,7 +1165,11 @@ var statFruitmix = function () {
 
 var firstLog = 0;
 
-var formattable = function formattable(block) {
+var formattable = exports.formattable = function formattable(block) {
+  var _storeState$storage = (0, _reducers.storeState)().storage,
+      blocks = _storeState$storage.blocks,
+      volumes = _storeState$storage.volumes;
+
 
   if (block.stats.isDisk) {
 
@@ -1204,6 +1218,9 @@ var formattable = function formattable(block) {
   return null;
 };
 
+// FIXME !!!
+var isWisnucDevice = true;
+
 // must exists
 // must be disk
 // must be ata or scsi, if opts set
@@ -1216,9 +1233,9 @@ var validateBtrfsCandidates = function validateBtrfsCandidates(target) {
     return (0, _assign2.default)(new Error(text), reason ? { code: code, reason: reason } : { code: code });
   };
 
-  var _storeState$storage = (0, _reducers.storeState)().storage,
-      blocks = _storeState$storage.blocks,
-      volumes = _storeState$storage.volumes;
+  var _storeState$storage2 = (0, _reducers.storeState)().storage,
+      blocks = _storeState$storage2.blocks,
+      volumes = _storeState$storage2.volumes;
 
   var _loop = function _loop(i) {
 
@@ -1259,9 +1276,9 @@ var validateBtrfsCandidates = function validateBtrfsCandidates(target) {
 
 // single block, can be either disk or partition
 var validateOtherFSCandidates = function validateOtherFSCandidates(target) {
-  var _storeState$storage2 = (0, _reducers.storeState)().storage,
-      blocks = _storeState$storage2.blocks,
-      volumes = _storeState$storage2.volumes;
+  var _storeState$storage3 = (0, _reducers.storeState)().storage,
+      blocks = _storeState$storage3.blocks,
+      volumes = _storeState$storage3.volumes;
 
 
   if (target.length !== 1) return error('must be exactly one block device', 'EINVAL');
@@ -1287,13 +1304,13 @@ var umountAsync = (0, _bluebird.promisify)(umount);
 
 var umountBlocks = function () {
   var _ref14 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee12(target) {
-    var _storeState$storage3, blocks, volumes, blks, uuids, mvols, mparts, mblks, i;
+    var _storeState$storage4, blocks, volumes, blks, uuids, mvols, mparts, mblks, i;
 
     return _regenerator2.default.wrap(function _callee12$(_context12) {
       while (1) {
         switch (_context12.prev = _context12.next) {
           case 0:
-            _storeState$storage3 = (0, _reducers.storeState)().storage, blocks = _storeState$storage3.blocks, volumes = _storeState$storage3.volumes;
+            _storeState$storage4 = (0, _reducers.storeState)().storage, blocks = _storeState$storage4.blocks, volumes = _storeState$storage4.volumes;
             blks = target.map(function (name) {
               return blocks.find(function (blk) {
                 return blk.name === name;
@@ -1357,7 +1374,7 @@ var umountBlocks = function () {
               break;
             }
 
-            debug('un-mounting volume ' + mvol[i].uuid);
+            debug('un-mounting volume ' + mvols[i].uuid);
             _context12.next = 12;
             return umountAsync(mvols[i].stats.mountpoint);
 
@@ -1415,9 +1432,10 @@ var umountBlocks = function () {
   };
 }();
 
-var makeBtrfs = function makeBtrfs(target, mode, callback) {
+var makeBtrfs = exports.makeBtrfs = function makeBtrfs(target, mode, callback) {
 
   umountBlocks(target).asCallback(function (err) {
+
     if (err) return callback(err);
 
     var storage = (0, _reducers.storeState)().storage;
@@ -1426,66 +1444,86 @@ var makeBtrfs = function makeBtrfs(target, mode, callback) {
     var devices = target.map(function (name) {
       return blocks.find(function (blk) {
         return blk.name === name;
-      });
-    }).map(function (blk) {
-      return blk.name;
+      }).props.devname;
     });
+    debug('devices', devices);
 
     var cmd = 'mkfs.btrfs -d ' + mode + ' -f ' + devices.join(' ');
     _child_process2.default.exec(cmd, function (err, stdout, stderr) {
+
       debug('make btrfs', cmd, stdout, stderr);
-      callback(err);
+
+      refreshStorage().asCallback(function (err) {
+        return callback(err);
+      });
     });
   });
 };
 
-var makeExt4 = function makeExt4(target, callback) {
-
-  unmountBlocks(target).asCallback(function (err) {
-    if (err) return callback(err);
-
-    // child.exec(`mkfs.btrfs 
-  });
-};
-
-var mkfsBtrfs = function () {
-  var _ref15 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee13(target, opts) {
-    var blocks, err;
+var installFruitmixAsync = function () {
+  var _ref15 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee13(mp, init) {
+    var first, drives, drivesPath, modelFile;
     return _regenerator2.default.wrap(function _callee13$(_context13) {
       while (1) {
         switch (_context13.prev = _context13.next) {
           case 0:
-            _context13.next = 2;
-            return refreshStorage();
 
-          case 2:
-            // with stats decoration
+            debug('installing fruitmix', mp, init);
 
-            blocks = (0, _reducers.storeState)().storage.blocks;
+            _context13.next = 3;
+            return mkdirpAsync(_path2.default.join(mp, 'wisnuc', 'fruitmix', 'models'));
+
+          case 3:
+            _context13.next = 5;
+            return mkdirpAsync(_path2.default.join(mp, 'wisnuc', 'fruitmix', 'drives'));
+
+          case 5:
+            _context13.next = 7;
+            return (0, _bluebird.promisify)(_userModel.createFirstUser)(mp, init.username, init.password);
+
+          case 7:
+            first = _context13.sent;
 
 
-            debug('mkfsBtrfs', target, opts);
+            debug('first', first);
 
-            target = (0, _from2.default)(new _set2.default(target)).sort();
+            drives = [{
+              label: init.username + '-drive',
+              fixedOwner: true,
+              URI: 'fruitmix',
+              uuid: first.home,
+              owner: [first.uuid],
+              writelist: [],
+              readlist: [],
+              cache: true
+            }, {
+              label: init.username + '-library',
+              fixedOwner: true,
+              URI: 'fruitmix',
+              uuid: first.library,
+              owner: [first.uuid],
+              writelist: [],
+              readlist: [],
+              cache: true
+            }];
+            drivesPath = _path2.default.join(mp, 'wisnuc', 'fruitmix', 'drives');
+            _context13.next = 13;
+            return mkdirpAsync(_path2.default.join(drivesPath, first.home));
 
-            err = validateBtrfsCandidates(target);
+          case 13:
+            _context13.next = 15;
+            return mkdirpAsync(_path2.default.join(drivesPath, first.library));
 
-            if (!err) {
-              _context13.next = 8;
-              break;
-            }
+          case 15:
+            modelFile = _path2.default.join(mp, 'wisnuc', 'fruitmix', 'models', 'drives.json');
+            _context13.next = 18;
+            return mkdirpAsync(_path2.default.dirname(modelFile));
 
-            throw err;
+          case 18:
+            _context13.next = 20;
+            return _fs2.default.writeFileAsync(modelFile, (0, _stringify2.default)(drives, null, '  '));
 
-          case 8:
-            _context13.next = 10;
-            return umountBlocks(target);
-
-          case 10:
-
-            debug('mkfsBtrfs success');
-
-          case 11:
+          case 20:
           case 'end':
             return _context13.stop();
         }
@@ -1493,46 +1531,91 @@ var mkfsBtrfs = function () {
     }, _callee13, undefined);
   }));
 
-  return function mkfsBtrfs(_x15, _x16) {
+  return function installFruitmixAsync(_x15, _x16) {
     return _ref15.apply(this, arguments);
   };
 }();
 
-var mkfsExt4 = function () {
-  var _ref16 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee14(target, opts) {
-    var err;
+var mkfsBtrfsAsync = function () {
+  var _ref16 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee14(target, mode, init) {
+    var blocks, volumes, err, devnames, block, uuid, volume, mp;
     return _regenerator2.default.wrap(function _callee14$(_context14) {
       while (1) {
         switch (_context14.prev = _context14.next) {
           case 0:
-            _context14.next = 2;
-            return refreshStorage();
+            blocks = void 0, volumes = void 0;
 
-          case 2:
-            // with stats decoration
 
-            debug('mkfsExt4', target, opts);
+            debug('mkfsBtrfs', target, mode);
 
             target = (0, _from2.default)(new _set2.default(target)).sort();
 
-            err = validateExt4Candidates(target);
+            _context14.next = 5;
+            return refreshStorage();
+
+          case 5:
+            err = validateBtrfsCandidates(target);
 
             if (!err) {
-              _context14.next = 7;
+              _context14.next = 8;
               break;
             }
 
-            throw err;
+            throw er;
 
-          case 7:
-            _context14.next = 9;
+          case 8:
+
+            // dirty !!! FIXME
+            devnames = target.map(function (name) {
+              return '/dev/' + name;
+            });
+            _context14.next = 11;
             return umountBlocks(target);
 
-          case 9:
+          case 11:
 
-            debug('mkfsExt4 success');
+            debug('mkfs.btrfs ' + mode, devnames);
+            _context14.next = 14;
+            return _child_process2.default.execAsync('mkfs.btrfs -d ' + mode + ' -f ' + devnames.join(' '));
 
-          case 10:
+          case 14:
+            _context14.next = 16;
+            return refreshStorage();
+
+          case 16:
+
+            blocks = (0, _reducers.storeState)().storage.blocks;
+
+            block = blocks.find(function (blk) {
+              return blk.name === target[0];
+            });
+
+
+            debug('newly made fs block', block);
+
+            uuid = block.stats.fileSystemUUID;
+
+
+            volumes = (0, _reducers.storeState)().storage.volumes;
+
+            volume = volumes.find(function (vol) {
+              return vol.uuid === uuid;
+            });
+            mp = volume.stats.mountpoint;
+
+
+            debug('mkfsBtrfs success', volume);
+
+            _context14.next = 26;
+            return installFruitmixAsync(mp, init);
+
+          case 26:
+
+            debug('fruitmix installed');
+
+            return _context14.abrupt('return', uuid);
+
+          case 28:
           case 'end':
             return _context14.stop();
         }
@@ -1540,12 +1623,16 @@ var mkfsExt4 = function () {
     }, _callee14, undefined);
   }));
 
-  return function mkfsExt4(_x17, _x18) {
+  return function mkfsBtrfsAsync(_x17, _x18, _x19) {
     return _ref16.apply(this, arguments);
   };
 }();
 
-var mkfsNtfs = function () {
+var mkfsBtrfs = exports.mkfsBtrfs = function mkfsBtrfs(target, mode, init, callback) {
+  return mkfsBtrfsAsync(target, mode, init).asCallback(callback);
+};
+
+var mkfsExt4 = function () {
   var _ref17 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee15(target, opts) {
     var err;
     return _regenerator2.default.wrap(function _callee15$(_context15) {
@@ -1556,11 +1643,13 @@ var mkfsNtfs = function () {
             return refreshStorage();
 
           case 2:
+            // with stats decoration
 
-            debug('mkfsNtfs', target, opts);
+            debug('mkfsExt4', target, opts);
 
             target = (0, _from2.default)(new _set2.default(target)).sort();
-            err = validateOtherFSCandidates(target);
+
+            err = validateExt4Candidates(target);
 
             if (!err) {
               _context15.next = 7;
@@ -1575,7 +1664,7 @@ var mkfsNtfs = function () {
 
           case 9:
 
-            debug('mkfsNtfs success');
+            debug('mkfsExt4 success');
 
           case 10:
           case 'end':
@@ -1585,8 +1674,53 @@ var mkfsNtfs = function () {
     }, _callee15, undefined);
   }));
 
-  return function mkfsNtfs(_x19, _x20) {
+  return function mkfsExt4(_x20, _x21) {
     return _ref17.apply(this, arguments);
+  };
+}();
+
+var mkfsNtfs = function () {
+  var _ref18 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee16(target, opts) {
+    var err;
+    return _regenerator2.default.wrap(function _callee16$(_context16) {
+      while (1) {
+        switch (_context16.prev = _context16.next) {
+          case 0:
+            _context16.next = 2;
+            return refreshStorage();
+
+          case 2:
+
+            debug('mkfsNtfs', target, opts);
+
+            target = (0, _from2.default)(new _set2.default(target)).sort();
+            err = validateOtherFSCandidates(target);
+
+            if (!err) {
+              _context16.next = 7;
+              break;
+            }
+
+            throw err;
+
+          case 7:
+            _context16.next = 9;
+            return umountBlocks(target);
+
+          case 9:
+
+            debug('mkfsNtfs success');
+
+          case 10:
+          case 'end':
+            return _context16.stop();
+        }
+      }
+    }, _callee16, undefined);
+  }));
+
+  return function mkfsNtfs(_x22, _x23) {
+    return _ref18.apply(this, arguments);
   };
 }();
 

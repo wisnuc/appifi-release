@@ -1,11 +1,12 @@
 import path from 'path'
 import express from 'express'
 import validator from 'validator'
-
-import { storeState, storeDispatch } from '../appifi/lib/reducers' 
-
 import Debug from 'debug'
 const debug = Debug('system:mir')
+import { storeState, storeDispatch } from '../appifi/lib/reducers' 
+import sysconfig from './sysconfig'
+import { formattable, mkfsBtrfs } from '../appifi/lib/storage'
+import { tryBoot } from './boot'
 
 const router = express.Router()
 
@@ -150,6 +151,12 @@ const R = (res) => (code, error, reason) => {
 
 router.post('/', (req, res) => {
 
+  let bstate = storeState().sysboot
+  if (bstate.state !== 'maintenance')
+    return res.status(405).json({
+      message: 'system is not in maintenance mode'
+    })
+
   const startMountpoint = (mp) => {
     fs.stat(path.join(mp, 'wisnuc/fruitmix'), (err, stats) => {
       if (err) return R(res)(500, err)
@@ -173,10 +180,6 @@ router.post('/', (req, res) => {
         R(res)(200, `fruitmix started on`)
       })
     })
-  }
-
-  const runWisnuc = (mp, init) => {
-        
   }
 
   const mir = req.body 
@@ -261,32 +264,47 @@ router.post('/', (req, res) => {
 
     let { blocks } = storage
 
+    if (mkfs.type !== 'btrfs' && mkfs.type !== 'ext4' && mkfs.type !== 'ntfs')
+      return R(res)(400, `mkfs.type must be btrfs, ext4 or ntfs`)
+
     // if mkfs type is btrfs
     //   target must be 1 - n disk
     // if mkfs type is ntfs or ext4
     //   target must be single disk or partition
     if (mkfs.type === 'btrfs') {
 
+      if (target.length === 1) {
+        if (mkfs.mode !== 'single')
+          return R(res)(400, `mkfs.mode can only be single if only one disk provided`)
+      }
+      else {
+        if (['single', 'raid0', 'raid1'].indexOf(mkfs.mode) === -1)
+          return R(res)(400, `mkfs.mode can only be single, raid0, or raid1`)
+      }
+
       for (let i = 0; i < target.length; i++) {
 
         let name = target[i]
         let block = blocks.find(blk => blk.name === name) 
+        debug('block', block)
+
         if (!block) return R(res)(404, `block device ${name} not found`)
-        if (!block.isDisk) return R(res)(405, `block device ${name} is not a disk`)
+        if (!block.stats.isDisk) return R(res)(405, `block device ${name} is not a disk`)
 
         let reason = formattable(block)  
         if (reason) return R(res)(405, `block device ${name} cannot be formatted`, reason)
-
       }   
 
-      makeBtrfs(target, mode, err => {
+      mkfsBtrfs(target, mkfs.mode, init, (err, fsuuid) => {
 
-        refreshStorage().asCallback(() => {})
-        if (err)
-          return R(res)(500, err)
-        else
-          return R(res)(200, 'success')
-      })            
+        if (err) return R(res)(500, err)
+        R(res)(200, 'ok')
+
+        sysconfig.set('lastFileSystem', { type: 'btrfs', uuid: fsuuid })
+        sysconfig.set('bootMode', 'normal')
+
+        tryBoot(() => {})
+      })
     }
     else if (mkfs.type === 'ntfs' || mkfs.type === 'ext4') {
       return R(res)(500, `not implemented yet`)      

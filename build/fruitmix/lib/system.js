@@ -141,15 +141,8 @@ var initAsync = function () {
   };
 }();
 
-var deinit = function deinit() {
-  // there will be race conditon !!! FIXME
-  _models2.default.clear();
-  _paths2.default.unsetRoot();
-};
-
 exports.default = {
   init: function init(sysroot, callback) {
     return initAsync(sysroot).asCallback(callback);
-  },
-  deinit: deinit
+  }
 };

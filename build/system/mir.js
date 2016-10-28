@@ -24,15 +24,24 @@ var _validator = require('validator');
 
 var _validator2 = _interopRequireDefault(_validator);
 
-var _reducers = require('../appifi/lib/reducers');
-
 var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
+var _reducers = require('../appifi/lib/reducers');
+
+var _sysconfig = require('./sysconfig');
+
+var _sysconfig2 = _interopRequireDefault(_sysconfig);
+
+var _storage = require('../appifi/lib/storage');
+
+var _boot = require('./boot');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('system:mir');
+
 
 var router = _express2.default.Router();
 
@@ -182,6 +191,11 @@ var R = function R(res) {
 
 router.post('/', function (req, res) {
 
+  var bstate = (0, _reducers.storeState)().sysboot;
+  if (bstate.state !== 'maintenance') return res.status(405).json({
+    message: 'system is not in maintenance mode'
+  });
+
   var startMountpoint = function startMountpoint(mp) {
     fs.stat(_path2.default.join(mp, 'wisnuc/fruitmix'), function (err, stats) {
       if (err) return R(res)(500, err);
@@ -205,8 +219,6 @@ router.post('/', function (req, res) {
       });
     });
   };
-
-  var runWisnuc = function runWisnuc(mp, init) {};
 
   var mir = req.body;
   var storage = (0, _reducers.storeState)().storage;
@@ -316,26 +328,37 @@ router.post('/', function (req, res) {
   } else if (target && init && mkfs) {
     var _blocks = storage.blocks;
 
+
+    if (mkfs.type !== 'btrfs' && mkfs.type !== 'ext4' && mkfs.type !== 'ntfs') return R(res)(400, 'mkfs.type must be btrfs, ext4 or ntfs');
+
     // if mkfs type is btrfs
     //   target must be 1 - n disk
     // if mkfs type is ntfs or ext4
     //   target must be single disk or partition
-
     if (mkfs.type === 'btrfs') {
+
+      if (target.length === 1) {
+        if (mkfs.mode !== 'single') return R(res)(400, 'mkfs.mode can only be single if only one disk provided');
+      } else {
+        if (['single', 'raid0', 'raid1'].indexOf(mkfs.mode) === -1) return R(res)(400, 'mkfs.mode can only be single, raid0, or raid1');
+      }
+
       var _loop = function _loop(i) {
 
         var name = target[i];
         var block = _blocks.find(function (blk) {
           return blk.name === name;
         });
+        debug('block', block);
+
         if (!block) return {
             v: R(res)(404, 'block device ' + name + ' not found')
           };
-        if (!block.isDisk) return {
+        if (!block.stats.isDisk) return {
             v: R(res)(405, 'block device ' + name + ' is not a disk')
           };
 
-        var reason = formattable(block);
+        var reason = (0, _storage.formattable)(block);
         if (reason) return {
             v: R(res)(405, 'block device ' + name + ' cannot be formatted', reason)
           };
@@ -347,10 +370,15 @@ router.post('/', function (req, res) {
         if ((typeof _ret3 === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret3)) === "object") return _ret3.v;
       }
 
-      makeBtrfs(target, mode, function (err) {
+      (0, _storage.mkfsBtrfs)(target, mkfs.mode, init, function (err, fsuuid) {
 
-        refreshStorage().asCallback(function () {});
-        if (err) return R(res)(500, err);else return R(res)(200, 'success');
+        if (err) return R(res)(500, err);
+        R(res)(200, 'ok');
+
+        _sysconfig2.default.set('lastFileSystem', { type: 'btrfs', uuid: fsuuid });
+        _sysconfig2.default.set('bootMode', 'normal');
+
+        (0, _boot.tryBoot)(function () {});
       });
     } else if (mkfs.type === 'ntfs' || mkfs.type === 'ext4') {
       return R(res)(500, 'not implemented yet');
