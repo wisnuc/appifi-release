@@ -18,6 +18,10 @@ var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
 
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
+
 var _paths = require('./paths');
 
 var _paths2 = _interopRequireDefault(_paths);
@@ -54,6 +58,8 @@ var _thumbnail2 = _interopRequireDefault(_thumbnail);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var debug = (0, _debug2.default)('fruitmix:system');
+
 var initAsync = function () {
   var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(sysroot) {
     var modelPath, tmpPath, userModelPath, userModel, driveModelPath, driveModel, repo, thumbnailer, logpath, log, docstore, msstore, mtstore, media;
@@ -65,7 +71,7 @@ var initAsync = function () {
             return _paths2.default.setRootAsync(sysroot);
 
           case 2:
-            console.log('sysroot is set to ' + sysroot);
+            console.log('[fruitmix] sysroot is set to ' + sysroot);
 
             modelPath = _paths2.default.get('models');
             tmpPath = _paths2.default.get('tmp');
@@ -142,7 +148,5 @@ var initAsync = function () {
 }();
 
 exports.default = {
-  init: function init(sysroot, callback) {
-    return initAsync(sysroot).asCallback(callback);
-  }
+  initAsync: initAsync
 };

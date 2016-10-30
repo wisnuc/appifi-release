@@ -27,14 +27,14 @@ router.get('/', auth.jwt(), function (req, res) {
       return (0, _assign2.default)({}, u, {
         password: undefined,
         smbPassword: undefined,
-        smbLastChangeTime: undefined
+        lastChangeTime: undefined
       });
     }));
   } else {
     return res.status(200).json([(0, _assign2.default)({}, user, {
       password: undefined,
       smbPassword: undefined,
-      smbLastChangeTime: undefined
+      lastChangeTime: undefined
     })]);
   }
 });
@@ -65,7 +65,7 @@ router.post('/', auth.jwt(), function (req, res) {
       res.status(200).json((0, _assign2.default)({}, newUser, {
         password: undefined,
         smbPassword: undefined,
-        smbLastChangeTime: undefined
+        lastChangeTime: undefined
       }));
     });
   });
@@ -93,7 +93,7 @@ router.patch('/:userUUID', auth.jwt(), function (req, res) {
     return res.status(200).json((0, _assign2.default)({}, user, {
       password: undefined,
       smbPassword: undefined,
-      smbLastChangeTime: undefined
+      lastChangeTime: undefined
     }));
   });
 });

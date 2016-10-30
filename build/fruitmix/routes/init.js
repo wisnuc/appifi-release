@@ -45,7 +45,7 @@ router.post('/', function (req, res) {
       res.status(200).json((0, _assign2.default)({}, user, {
         password: undefined,
         smbPassword: undefined,
-        smbLastChangeTime: undefined
+        lastChangeTime: undefined
       }));
     });
   });

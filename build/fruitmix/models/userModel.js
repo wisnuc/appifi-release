@@ -456,9 +456,6 @@ var createUserModelAsync = function () {
                 while (1) {
                   switch (_context2.prev = _context2.next) {
                     case 0:
-
-                      debug(list);
-
                       list = collection.list;
                       locals = list.filter(function (user) {
                         return user.type === 'local';
@@ -491,17 +488,17 @@ var createUserModelAsync = function () {
                         return user.unixUID = alloc();
                       });
 
-                      debug(list);
+                      debug('user list', list);
 
-                      _context2.next = 12;
+                      _context2.next = 11;
                       return collection.updateAsync(list, list);
 
-                    case 12:
+                    case 11:
                       return _context2.abrupt('return', {
                         v: new UserModel(collection)
                       });
 
-                    case 13:
+                    case 12:
                     case 'end':
                       return _context2.stop();
                   }
@@ -548,7 +545,7 @@ var createFirstUser = function createFirstUser(mp, username, password, callback)
     username: username,
     password: encrypted,
     smbPassword: md4,
-    smbLastChangeTime: new Date().getTime(),
+    lastChangeTime: new Date().getTime(),
     avatar: null,
     email: null,
     isAdmin: true,
