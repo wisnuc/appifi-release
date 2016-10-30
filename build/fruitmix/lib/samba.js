@@ -123,7 +123,9 @@ var shareList = function shareList(userList) {
         return user.home === drive.uuid || user.library === drive.uuid;
       });
       if (owner) {
-        var shareName = drive.label; // drive.uuid.slice(0, 8)
+        var shareName = void 0;
+        if (owner.home === drive.uuid) shareName = owner.username + ' (home)';else if (owner.library === drive.uuid) shareName = owner.username + ' (library)';else shareName = owner.username + (' (' + drive.uuid.slice(0, 8) + ')');
+
         var sharePath = drive.uuid;
         var writelist = [owner.uuid].concat((0, _toConsumableArray3.default)(drive.writelist)).sort().filter(function (item, index, array) {
           return !index || item !== array[index - 1];
@@ -156,6 +158,7 @@ var shareList = function shareList(userList) {
     }
   });
 
+  debug('share list', shares);
   return shares;
 };
 
@@ -481,13 +484,14 @@ var generateSmbConfAsync = function () {
               '  path = ' + prepend + '/' + share.path + '\n') + ( // uuid path
               '  read only = ' + (share.readOnly ? "yes" : "no") + '\n') + '  guest ok = no\n' + '  force user = root\n' + '  force group = root\n' + ('  valid users = ' + share.validUsers.join(', ') + '\n') + (share.readOnly ? '' : '  write list = ' + share.writelist.join(', ') + '\n' + // writelist
               '  vfs objects = full_audit\n' + '  full_audit:prefix = %u|%U|%S|%P\n' + '  full_audit:success = create_file mkdir rename rmdir unlink write pwrite \n' + // dont remove write !!!!
-              '  full_audit:failure = connect\n' + '  full_audit:facility = LOCAL7\n' + '  full_audit:priority = ALERT\n\n');
+              '  full_audit:failure = connect\n' + '  full_audit:facility = LOCAL7\n' + '  full_audit:priority = ALERT\n');
             };
 
             conf = global;
 
+
             shareList().forEach(function (share) {
-              return conf += section(share);
+              return conf += section(share) + '\n';
             });
             debug('generateSmbConf', conf);
             _context5.next = 9;
@@ -591,59 +595,86 @@ var SmbAudit = function (_EventEmitter) {
   return SmbAudit;
 }(_events2.default);
 
+var updatingSamba = false;
+var sambaTimer = -1;
+
 var updateSambaFiles = function () {
   var _ref9 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee6() {
     return _regenerator2.default.wrap(function _callee6$(_context6) {
       while (1) {
         switch (_context6.prev = _context6.next) {
           case 0:
-            _context6.prev = 0;
+
+            updatingSamba = true;
+            _context6.prev = 1;
+
 
             debug('updating samba files');
 
-            _context6.next = 4;
+            _context6.next = 5;
             return reconcileUnixUsersAsync();
 
-          case 4:
-            _context6.next = 6;
+          case 5:
+            _context6.next = 7;
             return reconcileSmbUsersAsync();
 
-          case 6:
-            _context6.next = 8;
+          case 7:
+            _context6.next = 9;
             return generateUserMapAsync();
 
-          case 8:
-            _context6.next = 10;
+          case 9:
+            _context6.next = 11;
             return generateSmbConfAsync();
 
-          case 10:
+          case 11:
 
             debug('reloading smbd configuration');
-            _context6.next = 13;
+            _context6.next = 14;
             return _child_process2.default.execAsync('systemctl reload smbd');
 
-          case 13:
-            _context6.next = 18;
+          case 14:
+            _context6.next = 19;
             break;
 
-          case 15:
-            _context6.prev = 15;
-            _context6.t0 = _context6['catch'](0);
+          case 16:
+            _context6.prev = 16;
+            _context6.t0 = _context6['catch'](1);
 
             console.log(_context6.t0);
 
-          case 18:
+          case 19:
+
+            updatingSamba = false;
+
+          case 20:
           case 'end':
             return _context6.stop();
         }
       }
-    }, _callee6, undefined, [[0, 15]]);
+    }, _callee6, undefined, [[1, 16]]);
   }));
 
   return function updateSambaFiles() {
     return _ref9.apply(this, arguments);
   };
 }();
+
+var scheduleUpdate = function scheduleUpdate() {
+
+  if (sambaTimer !== -1) {
+    clearTimeout(sambaTimer);
+    sambaTimer = -1;
+  }
+
+  sambaTimer = setTimeout(function () {
+
+    if (updatingSamba) {
+      scheduleUpdate();
+      return;
+    }
+    updateSambaFiles().then(function () {}).catch(function (e) {});
+  }, 1000);
+};
 
 var initSamba = function () {
   var _ref10 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee7() {
@@ -718,6 +749,9 @@ var createUdpServer = function createUdpServer(callback) {
   udp.bind(3721);
 };
 
+var prevUsers = void 0,
+    prevDrives = void 0;
+
 var createSmbAuditAsync = function () {
   var _ref11 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee8() {
     var udp;
@@ -725,22 +759,39 @@ var createSmbAuditAsync = function () {
       while (1) {
         switch (_context8.prev = _context8.next) {
           case 0:
-            _context8.next = 2;
+
+            (0, _reducers.storeSubscribe)(function () {
+              var _storeState = (0, _reducers.storeState)(),
+                  fruitmixUsers = _storeState.fruitmixUsers,
+                  fruitmixDrives = _storeState.fruitmixDrives;
+
+              if (prevUsers === fruitmixUsers && prevDrives === fruitmixDrives) return;
+
+              if (prevUsers !== fruitmixUsers) debug('users changed', prevUsers, fruitmixUsers);
+              if (prevDrives !== fruitmixDrives) debug('drives changed', prevDrives, fruitmixDrives);
+
+              prevUsers = fruitmixUsers;
+              prevDrives = fruitmixDrives;
+              scheduleUpdate();
+            });
+
+            // TODO not optimal
+            _context8.next = 3;
             return initSamba();
 
-          case 2:
-            _context8.next = 4;
+          case 3:
+            _context8.next = 5;
             return updateSambaFiles();
 
-          case 4:
-            _context8.next = 6;
+          case 5:
+            _context8.next = 7;
             return (0, _bluebird.promisify)(createUdpServer)();
 
-          case 6:
+          case 7:
             udp = _context8.sent;
             return _context8.abrupt('return', new SmbAudit(udp));
 
-          case 8:
+          case 9:
           case 'end':
             return _context8.stop();
         }

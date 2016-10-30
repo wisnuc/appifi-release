@@ -33,6 +33,8 @@ var _validator = require('validator');
 
 var _validator2 = _interopRequireDefault(_validator);
 
+var _reducers = require('../../appifi/lib/reducers');
+
 var _collection = require('./collection');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -77,7 +79,6 @@ var DriveModel = function () {
     (0, _classCallCheck3.default)(this, DriveModel);
 
     this.collection = collection;
-    this.hash = _nodeUuid2.default.v4();
   }
 
   // this function requires the uuid to be passed in
@@ -87,6 +88,8 @@ var DriveModel = function () {
   (0, _createClass3.default)(DriveModel, [{
     key: 'createDrive',
     value: function createDrive(_ref, callback) {
+      var _this = this;
+
       var label = _ref.label,
           fixedOwner = _ref.fixedOwner,
           URI = _ref.URI,
@@ -98,13 +101,15 @@ var DriveModel = function () {
 
 
       var conf = { label: label, fixedOwner: fixedOwner, URI: URI, uuid: uuid, owner: owner, writelist: writelist, readlist: readlist, cache: cache };
-
       var list = this.collection.list;
-
-      // this function returns err or undefined
-      this.collection.updateAsync(list, [].concat((0, _toConsumableArray3.default)(list), [conf])).asCallback(callback);
-      // FIXME
-      this.hash = _nodeUuid2.default.v4();
+      this.collection.updateAsync(list, [].concat((0, _toConsumableArray3.default)(list), [conf])).asCallback(function (err) {
+        if (err) return callback(err);
+        callback(null);
+        (0, _reducers.storeDispatch)({
+          type: 'UPDATE_FRUITMIX_DRIVES',
+          data: _this.collection.list
+        });
+      });
     }
   }]);
   return DriveModel;
@@ -124,16 +129,20 @@ var createDriveModelAsync = function () {
             collection = _context.sent;
 
             if (!collection) {
-              _context.next = 5;
+              _context.next = 6;
               break;
             }
 
+            (0, _reducers.storeDispatch)({
+              type: 'UPDATE_FRUITMIX_DRIVES',
+              data: collection.list
+            });
             return _context.abrupt('return', new DriveModel(collection));
 
-          case 5:
+          case 6:
             return _context.abrupt('return', null);
 
-          case 6:
+          case 7:
           case 'end':
             return _context.stop();
         }

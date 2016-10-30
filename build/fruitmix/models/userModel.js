@@ -95,6 +95,8 @@ var _throw = require('../util/throw');
 
 var _collection = require('./collection');
 
+var _reducers = require('../../appifi/lib/reducers');
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('fruitmix:userModel');
@@ -266,14 +268,12 @@ var UserModel = function (_EventEmitter) {
 
       this.collection.updateAsync(list, [].concat((0, _toConsumableArray3.default)(list), [newUser])).asCallback(function (err) {
         if (err) return callback(err);
-        _this2.hash = _nodeUuid2.default.v4();
-        process.nextTick(function () {
-          return _this2.emit('userCreated', newUser);
-        });
         callback(null, newUser);
+        (0, _reducers.storeDispatch)({
+          type: 'UPDATE_FRUITMIX_USERS',
+          data: _this2.collection.list
+        });
       });
-
-      this.emit('userAdded', newUser);
     }
   }, {
     key: 'updateUser',
@@ -342,14 +342,12 @@ var UserModel = function (_EventEmitter) {
 
       this.collection.updateAsync(list, [].concat((0, _toConsumableArray3.default)(list.slice(0, index)), [update], (0, _toConsumableArray3.default)(list.slice(index + 1)))).asCallback(function (err) {
         if (err) return callback(err);
-        _this3.hash = _nodeUuid2.default.v4();
-        process.nextTick(function () {
-          return _this3.emit('userUpdated', user, update);
-        });
         callback(null, update);
+        (0, _reducers.storeDispatch)({
+          type: 'UPDATE_FRUITMIX_USERS',
+          data: _this3.collection.list
+        });
       });
-
-      this.emit('userUpdated', user, update);
     }
 
     // to be refactored
@@ -489,16 +487,20 @@ var createUserModelAsync = function () {
                       });
 
                       debug('user list', list);
-
                       _context2.next = 11;
                       return collection.updateAsync(list, list);
 
                     case 11:
+
+                      (0, _reducers.storeDispatch)({
+                        type: 'UPDATE_FRUITMIX_USERS',
+                        data: collection.list
+                      });
                       return _context2.abrupt('return', {
                         v: new UserModel(collection)
                       });
 
-                    case 12:
+                    case 13:
                     case 'end':
                       return _context2.stop();
                   }

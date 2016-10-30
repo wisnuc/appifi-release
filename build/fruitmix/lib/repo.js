@@ -256,7 +256,7 @@ var Repo = function (_EventEmitter) {
 
       var lib = {
         label: 'library',
-        fixedOwner: 'true',
+        fixedOwner: true,
         URI: 'fruitmix',
         uuid: user.library,
         owner: [user.uuid],

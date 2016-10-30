@@ -13,11 +13,17 @@ var _assign = require('babel-runtime/core-js/object/assign');
 
 var _assign2 = _interopRequireDefault(_assign);
 
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
+
 var _redux = require('redux');
 
 var _dockerApps = require('./dockerApps');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var debug = (0, _debug2.default)('system:reducers');
 
 var serverConfig = function serverConfig() {
   var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
@@ -54,6 +60,36 @@ var sysboot = function sysboot() {
 
   switch (action.type) {
     case 'UPDATE_SYSBOOT':
+      return action.data;
+
+    default:
+      return state;
+  }
+};
+
+var fruitmixUsers = function fruitmixUsers() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'UPDATE_FRUITMIX_USERS':
+      debug('update fruitmix users', action.data);
+      return action.data;
+
+    default:
+      return state;
+  }
+};
+
+var fruitmixDrives = function fruitmixDrives() {
+  var state = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : null;
+  var action = arguments[1];
+
+
+  switch (action.type) {
+    case 'UPDATE_FRUITMIX_DRIVES':
+      debug('update fruitmix drives', action.data);
       return action.data;
 
     default:
@@ -227,7 +263,9 @@ var store = (0, _redux.createStore)((0, _redux.combineReducers)({
   tasks: tasks,
   network: network,
   timeDate: timeDate,
-  barcelona: barcelona
+  barcelona: barcelona,
+  fruitmixUsers: fruitmixUsers,
+  fruitmixDrives: fruitmixDrives
 }));
 
 // store.subscribe(() => console.log(store.getState()))
