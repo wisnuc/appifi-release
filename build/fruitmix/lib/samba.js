@@ -55,6 +55,10 @@ var _dgram = require('dgram');
 
 var _dgram2 = _interopRequireDefault(_dgram);
 
+var _upnpserver = require('upnpserver');
+
+var _upnpserver2 = _interopRequireDefault(_upnpserver);
+
 var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
@@ -510,6 +514,22 @@ var generateSmbConfAsync = function () {
   };
 }();
 
+var generateUpnpPaths = function generateUpnpPaths() {
+
+  var cfs = (0, _reducers.storeState)().sysboot.currentFileSystem;
+  var prepend = _path2.default.join(cfs.mountpoint, 'wisnuc', 'fruitmix', 'drives');
+
+  var paths = [];
+  shareList().forEach(function (share) {
+    return paths.push({
+      path: prepend + '/' + share.path,
+      mountPoint: '/' + share.name
+    });
+  });
+
+  return paths;
+};
+
 var SmbAudit = function (_EventEmitter) {
   (0, _inherits3.default)(SmbAudit, _EventEmitter);
 
@@ -630,7 +650,7 @@ var updateSambaFiles = function () {
 
             debug('reloading smbd configuration');
             _context6.next = 14;
-            return _child_process2.default.execAsync('systemctl reload smbd');
+            return _child_process2.default.execAsync('systemctl restart smbd');
 
           case 14:
             _context6.next = 19;
@@ -754,7 +774,7 @@ var prevUsers = void 0,
 
 var createSmbAuditAsync = function () {
   var _ref11 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee8() {
-    var udp;
+    var paths, upnp, udp;
     return _regenerator2.default.wrap(function _callee8$(_context8) {
       while (1) {
         switch (_context8.prev = _context8.next) {
@@ -775,23 +795,28 @@ var createSmbAuditAsync = function () {
               scheduleUpdate();
             });
 
+            paths = generateUpnpPaths();
+            upnp = new _upnpserver2.default({ name: 'wisnuc media server' }, paths);
+
+            upnp.start();
+
             // TODO not optimal
-            _context8.next = 3;
+            _context8.next = 6;
             return initSamba();
 
-          case 3:
-            _context8.next = 5;
+          case 6:
+            _context8.next = 8;
             return updateSambaFiles();
 
-          case 5:
-            _context8.next = 7;
+          case 8:
+            _context8.next = 10;
             return (0, _bluebird.promisify)(createUdpServer)();
 
-          case 7:
+          case 10:
             udp = _context8.sent;
             return _context8.abrupt('return', new SmbAudit(udp));
 
-          case 9:
+          case 12:
           case 'end':
             return _context8.stop();
         }
