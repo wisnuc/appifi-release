@@ -45,13 +45,13 @@ var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
 
-var _bluebird = require('bluebird');
-
-var _bluebird2 = _interopRequireDefault(_bluebird);
-
 var _rimraf = require('rimraf');
 
 var _rimraf2 = _interopRequireDefault(_rimraf);
+
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
 
 var _xstat = require('./xstat');
 
@@ -62,6 +62,8 @@ var _util = require('./util');
 var _visitors = require('./visitors');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var debug = (0, _debug2.default)('fruitmix:filer');
 
 var ERROR = function ERROR(code, _text) {
   return function (text) {
@@ -243,7 +245,7 @@ var Forest = exports.Forest = function (_IndexedTree) {
     value: function requestProbe(node, callback) {
       var _this3 = this;
 
-      // console.log(`requestProbe ${node.uuid} ${node.name}`)
+      debug('requestProbe ' + node.uuid + ' ' + node.name);
 
       // find job with the same uuid (aka, collating the same node)
       var job = this.collations.get(node);
@@ -265,6 +267,36 @@ var Forest = exports.Forest = function (_IndexedTree) {
       }
 
       return this;
+    }
+
+    // quick and dirty
+
+  }, {
+    key: 'requestProbeByAudit',
+    value: function requestProbeByAudit(audit) {
+
+      debug('requestProbeByAudit, audit', audit);
+      var uuid = _path2.default.basename(audit.abspath);
+
+      debug('requestProbeByAudit, uuid', uuid);
+      var root = this.roots.find(function (r) {
+        return r.uuid === uuid;
+      });
+      if (!root) {
+        debug('no root found with given uuid');
+        return;
+      }
+
+      debug('requestProbeByAudit, arg0', audit.arg0);
+
+      var names = audit.arg0.split('/').filter(function (name) {
+        return name.length;
+      });
+
+      var node = root.walkDown(names);
+      debug('requestProbeByAudit, walk', names, node);
+
+      if (node.isDirectory()) this.requestProbe(node);
     }
   }, {
     key: 'reportNodeMissing',

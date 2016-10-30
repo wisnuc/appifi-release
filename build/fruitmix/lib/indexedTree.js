@@ -142,6 +142,14 @@ var nodeProperties = {
       return n.name;
     })));
   },
+  walkDown: function walkDown(names) {
+    if (names.length === 0) return this;
+    var named = this.getChildren().find(function (child) {
+      return child.name === names[0];
+    });
+    if (!named) return this;
+    return named.walkDown(names.slice(1));
+  },
   preVisit: function preVisit(func) {
     func(this);
     if (this.children) this.children.forEach(function (child) {

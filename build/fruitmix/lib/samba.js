@@ -576,7 +576,10 @@ var SmbAudit = function (_EventEmitter) {
       var audit = { user: user, share: share, abspath: abspath, op: op, arg0: arg0 };
       if (arg1) audit.arg1 = arg1;
 
-      debug(arr, audit);
+      // debug(arr, audit)
+
+      var filer = _models2.default.getModel('filer');
+      filer.requestProbeByAudit(audit);
     });
 
     _this.udp.on('close', function () {
@@ -723,11 +726,11 @@ var createSmbAuditAsync = function () {
         switch (_context8.prev = _context8.next) {
           case 0:
             _context8.next = 2;
-            return updateSambaFiles();
+            return initSamba();
 
           case 2:
             _context8.next = 4;
-            return initSamba();
+            return updateSambaFiles();
 
           case 4:
             _context8.next = 6;
