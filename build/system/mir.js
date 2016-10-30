@@ -20,6 +20,14 @@ var _express = require('express');
 
 var _express2 = _interopRequireDefault(_express);
 
+var _rimraf = require('rimraf');
+
+var _rimraf2 = _interopRequireDefault(_rimraf);
+
+var _mkdirp = require('mkdirp');
+
+var _mkdirp2 = _interopRequireDefault(_mkdirp);
+
 var _validator = require('validator');
 
 var _validator2 = _interopRequireDefault(_validator);
@@ -41,8 +49,6 @@ var _boot = require('./boot');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('system:mir');
-
-
 var router = _express2.default.Router();
 
 router.get('/', function (req, res) {
@@ -189,6 +195,12 @@ var R = function R(res) {
   };
 };
 
+var tryReboot = function tryReboot(lfs, callback) {
+  _sysconfig2.default.set('lastFileSystem', lfs);
+  _sysconfig2.default.set('bootMode', 'normal');
+  (0, _boot.tryBoot)(callback);
+};
+
 router.post('/', function (req, res) {
 
   var bstate = (0, _reducers.storeState)().sysboot;
@@ -209,9 +221,9 @@ router.post('/', function (req, res) {
   var installMountpoint = function installMountpoint(mp) {
 
     var fruit = _path2.default.join(mp, 'wisnuc/fruitmix');
-    rimraf(fruit, function (err) {
+    (0, _rimraf2.default)(fruit, function (err) {
       if (err) return R(res)(500, err);
-      mkdirp(fruit, function (err) {
+      (0, _mkdirp2.default)(fruit, function (err) {
         if (err) return R(res)(500, err);
 
         // start fruitmix
@@ -271,8 +283,27 @@ router.post('/', function (req, res) {
 
         if (init) {
           debug('installing AND running wisnuc on volume ' + uuid + ' mounted @ ' + mp);
+          if (mp !== '/') {
+            // guard, TODO
+            (0, _rimraf2.default)(_path2.default.join('mp', 'wisnuc'), function (err) {
+              (0, _storage.installFruitmixAsync)(mp, init).asCallback(function (err) {
+                tryReboot({
+                  type: 'btrfs',
+                  uuid: volume.uuid
+                }, function () {});
+                return R(res)(200, 'ok');
+              });
+            });
+          }
         } else {
           debug('running wisnuc on volume ' + uuid + ' mounted @ ' + mp);
+          tryReboot({
+            type: 'btrfs',
+            uuid: volume.uuid
+          }, function () {});
+          return {
+            v: R(res)(200, 'ok')
+          };
         }
       }();
 
@@ -374,11 +405,16 @@ router.post('/', function (req, res) {
 
         if (err) return R(res)(500, err);
         R(res)(200, 'ok');
+        /**
+                sysconfig.set('lastFileSystem', { type: 'btrfs', uuid: fsuuid })
+                sysconfig.set('bootMode', 'normal')
+                tryBoot(() => {})
+        **/
 
-        _sysconfig2.default.set('lastFileSystem', { type: 'btrfs', uuid: fsuuid });
-        _sysconfig2.default.set('bootMode', 'normal');
-
-        (0, _boot.tryBoot)(function () {});
+        tryReboot({
+          type: 'btrfs',
+          uuid: fsuuid
+        }, function () {});
       });
     } else if (mkfs.type === 'ntfs' || mkfs.type === 'ext4') {
       return R(res)(500, 'not implemented yet');

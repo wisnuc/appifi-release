@@ -13,10 +13,6 @@ var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
 
 var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
 
-var _createClass2 = require('babel-runtime/helpers/createClass');
-
-var _createClass3 = _interopRequireDefault(_createClass2);
-
 var _possibleConstructorReturn2 = require('babel-runtime/helpers/possibleConstructorReturn');
 
 var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
@@ -98,14 +94,6 @@ var Fruitmix = function (_EventEmitter) {
     return _this;
   }
 
-  (0, _createClass3.default)(Fruitmix, [{
-    key: 'stop',
-    value: function stop() {
-
-      this.server.close();
-      this.system.deinit();
-    }
-  }]);
   return Fruitmix;
 }(_events2.default);
 

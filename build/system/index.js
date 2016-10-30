@@ -242,4 +242,34 @@ router.get('/boot', function (req, res) {
   if (sysboot) res.status(200).json(sysboot);else res.status(500).end(); // TODO
 });
 
+var shutdown = function shutdown(cmd) {
+  return setTimeout(function () {
+    _child_process2.default.exec('echo "PWRD_LED 3" > /proc/BOARD_io', function (err) {});
+    _child_process2.default.exec('' + cmd, function (err) {});
+  }, 1000);
+};
+
+router.post('/boot', function (req, res) {
+
+  var obj = req.body;
+  if (obj instanceof Object === false) return R(res)(400, 'invalid arguments');
+  if (['poweroff', 'reboot', 'rebootMaintenance'].indexOf(obj.op) === -1) return R(res)(400, 'op must be poweroff, reboot, or rebootMaintenance');
+
+  if (obj.op === 'poweroff') {
+    console.log('[system] powering off');
+    shutdown('poweroff');
+  } else if (obj.op === 'reboot') {
+    console.log('[system] rebooting');
+    shutdown('reboot');
+  } else if (obj.op === 'rebootMaintenance') {
+    console.log('[system] rebooting into maintenance mode');
+    _sysconfig2.default.set('bootMode', 'maintenance');
+    shutdown('reboot');
+  }
+
+  res.status(200).json({
+    message: 'ok'
+  });
+});
+
 exports.default = router;

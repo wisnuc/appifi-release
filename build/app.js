@@ -20,36 +20,21 @@ var _sysinit = require('./system/sysinit');
 
 var _sysinit2 = _interopRequireDefault(_sysinit);
 
-var _sysconfig = require('./system/sysconfig');
-
-var _sysconfig2 = _interopRequireDefault(_sysconfig);
-
 var _reducers = require('./appifi/lib/reducers');
-
-var _storage = require('./appifi/lib/storage');
-
-var _storage2 = _interopRequireDefault(_storage);
 
 var _index = require('./system/index');
 
 var _index2 = _interopRequireDefault(_index);
 
-var _appifi = require('./appifi/appifi');
-
-var _appifi2 = _interopRequireDefault(_appifi);
-
 var _index3 = require('./appifi/index');
 
 var _index4 = _interopRequireDefault(_index3);
-
-var _fruitmix = require('./fruitmix/fruitmix');
 
 var _boot = require('./system/boot');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('system:bootstrap');
-
 var port = 3000;
 
 // append (piggyback) system api

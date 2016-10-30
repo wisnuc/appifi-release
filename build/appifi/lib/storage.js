@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.mkfsBtrfsOperation = exports.refreshStorage = exports.mkfsBtrfs = exports.makeBtrfs = exports.formattable = exports.mountedFS = undefined;
+exports.mkfsBtrfsOperation = exports.refreshStorage = exports.mkfsBtrfs = exports.installFruitmixAsync = exports.makeBtrfs = exports.formattable = exports.mountedFS = undefined;
 
 var _stringify = require('babel-runtime/core-js/json/stringify');
 
@@ -1460,7 +1460,7 @@ var makeBtrfs = exports.makeBtrfs = function makeBtrfs(target, mode, callback) {
   });
 };
 
-var installFruitmixAsync = function () {
+var installFruitmixAsync = exports.installFruitmixAsync = function () {
   var _ref15 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee13(mp, init) {
     var first, drives, drivesPath, modelFile;
     return _regenerator2.default.wrap(function _callee13$(_context13) {

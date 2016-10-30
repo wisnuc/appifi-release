@@ -554,7 +554,8 @@ var createFirstUser = function createFirstUser(mp, username, password, callback)
     isAdmin: true,
     isFirstUser: true,
     home: _nodeUuid2.default.v4(),
-    library: _nodeUuid2.default.v4()
+    library: _nodeUuid2.default.v4(),
+    unixUID: 2000
   }];
 
   debug('creating first user', users[0]);

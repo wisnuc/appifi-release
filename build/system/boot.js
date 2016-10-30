@@ -136,6 +136,21 @@ var bootState = function bootState() {
   }
 };
 
+/**
+{
+  "state": "maintenance",
+  "bootMode": "maintenance",
+  "error": null,
+  "currentFileSystem": null,
+  "lastFileSystem": {
+    "type": "btrfs",
+    "uuid": "e963643d-1e08-43a3-8c34-13340a0175cd",
+    "mountpoint": "/run/wisnuc/volumes/e963643d-1e08-43a3-8c34-13340a0175cd"
+  }
+
+}
+**/
+
 var tryBoot = exports.tryBoot = function tryBoot(callback) {
   (0, _storage.refreshStorage)().asCallback(function (err) {
     if (err) return callback(err);
@@ -146,7 +161,6 @@ var tryBoot = exports.tryBoot = function tryBoot(callback) {
 
     var cfs = bstate.currentFileSystem;
     if (cfs) {
-
       (0, _appifi2.default)();
       (0, _fruitmix.createFruitmix)(_path2.default.join(cfs.mountpoint, 'wisnuc', 'fruitmix'));
       _sysconfig2.default.set('lastFileSystem', cfs);

@@ -5,6 +5,8 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.createSmbAudit = undefined;
 
+var _bluebird = require('bluebird');
+
 var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
 
 var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
@@ -24,8 +26,6 @@ var _inherits3 = _interopRequireDefault(_inherits2);
 var _regenerator = require('babel-runtime/regenerator');
 
 var _regenerator2 = _interopRequireDefault(_regenerator);
-
-var _bluebird = require('bluebird');
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
@@ -467,8 +467,19 @@ var SmbAudit = function (_EventEmitter) {
   return SmbAudit;
 }(_events2.default);
 
-var startSamba = function () {
-  var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
+var updateSambaFiles = function () {
+  var _ref3 = (0, _bluebird.method)(function () {
+
+    debug('updating samba files');
+  });
+
+  return function updateSambaFiles() {
+    return _ref3.apply(this, arguments);
+  };
+}();
+
+var initSamba = function () {
+  var _ref4 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
     var logConfigPath, logConfig, config;
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
@@ -522,8 +533,8 @@ var startSamba = function () {
     }, _callee3, undefined, [[3, 9]]);
   }));
 
-  return function startSamba() {
-    return _ref3.apply(this, arguments);
+  return function initSamba() {
+    return _ref4.apply(this, arguments);
   };
 }();
 
@@ -541,24 +552,28 @@ var createUdpServer = function createUdpServer(callback) {
 };
 
 var createSmbAuditAsync = function () {
-  var _ref4 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee4() {
+  var _ref5 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee4() {
     var udp;
     return _regenerator2.default.wrap(function _callee4$(_context4) {
       while (1) {
         switch (_context4.prev = _context4.next) {
           case 0:
             _context4.next = 2;
-            return startSamba();
+            return updateSambaFiles();
 
           case 2:
             _context4.next = 4;
-            return (0, _bluebird.promisify)(createUdpServer)();
+            return initSamba();
 
           case 4:
+            _context4.next = 6;
+            return (0, _bluebird.promisify)(createUdpServer)();
+
+          case 6:
             udp = _context4.sent;
             return _context4.abrupt('return', new SmbAudit(udp));
 
-          case 6:
+          case 8:
           case 'end':
             return _context4.stop();
         }
@@ -567,31 +582,9 @@ var createSmbAuditAsync = function () {
   }));
 
   return function createSmbAuditAsync() {
-    return _ref4.apply(this, arguments);
+    return _ref5.apply(this, arguments);
   };
 }();
-
-/**
-export const createSmbAudit = (callback) => {
-
-  detectSamba(err => {
-    if (err) return callback(err)
-
-    detectRsyslog(err => {
-      if (err) return callback(err)
-
-      let udp = dgram.createSocket('udp4')
-      udp.on('listening', () => 
-        callback(null, new SmbAudit(udp))) 
-     
-      udp.once('error', err => 
-        (err.code === 'EADDRINUSE') && callback(err)) 
-
-      udp.bind(3721)
-    })
-  })
-}
-**/
 
 var createSmbAudit = exports.createSmbAudit = function createSmbAudit(callback) {
   return createSmbAuditAsync().asCallback(callback);
