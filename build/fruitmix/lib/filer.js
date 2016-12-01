@@ -104,17 +104,7 @@ var Forest = exports.Forest = function (_IndexedTree) {
 
   }, {
     key: 'probe',
-    value: function (_probe) {
-      function probe(_x) {
-        return _probe.apply(this, arguments);
-      }
-
-      probe.toString = function () {
-        return _probe.toString();
-      };
-
-      return probe;
-    }(function (node) {
+    value: function probe(node) {
       var _this2 = this;
 
       var finished = false;
@@ -218,7 +208,7 @@ var Forest = exports.Forest = function (_IndexedTree) {
         var job = _this2.collations.get(node);
         if (again || job.again) {
           job.again = false;
-          job.abort = probe(node);
+          job.abort = _this2.probe(node);
         } else {
           _this2.collations.delete(node);
           if (_this2.collations.size === 0) {
@@ -232,7 +222,7 @@ var Forest = exports.Forest = function (_IndexedTree) {
       function abort() {
         finished = true;
       }
-    })
+    }
 
     // a job is key value pair
     // key:   uuid
@@ -323,6 +313,8 @@ var Forest = exports.Forest = function (_IndexedTree) {
     key: 'listFolder',
     value: function listFolder(userUUID, folderUUID) {
 
+      debug('listFolder', userUUID, folderUUID);
+
       var node = this.findNodeByUUID(folderUUID);
       if (!node) {
         var e = new Error('listFolder: ' + folderUUID + ' not found');
@@ -367,6 +359,109 @@ var Forest = exports.Forest = function (_IndexedTree) {
       }).filter(function (n) {
         return !!n;
       });
+    }
+  }, {
+    key: 'navFolder',
+    value: function navFolder(userUUID, folderUUID, rootUUID) {
+
+      debug('navFolder', userUUID, folderUUID, rootUUID);
+
+      var node = this.findNodeByUUID(folderUUID);
+      if (!node) {
+        var e = new Error('listFolder: ' + folderUUID + ' not found');
+        e.code = 'ENOENT';
+        return e;
+      }
+
+      if (!node.isDirectory()) {
+        var _e3 = new Error('listFolder: ' + folderUUID + ' is not a folder');
+        _e3.code = 'ENOTDIR';
+        return _e3;
+      }
+
+      var root = this.findNodeByUUID(rootUUID);
+      if (!root) {
+        var _e4 = new Error('listFolder: ' + rootUUID + ' not found');
+        _e4.code = 'ENOENT';
+        return _e4;
+      }
+
+      var path = node.nodepath();
+      var index = path.indexOf(root);
+      debug('navFolder, index', index);
+
+      if (index === -1) {
+        var _e5 = new Error('listFolder: ' + rootUUID + ' not an ancestor of ' + folderUUID);
+        _e5.code = 'EINVAL';
+        return _e5;
+      }
+
+      debug('navFolder, path', path);
+
+      var subpath = path.slice(index);
+      if (!subpath.every(function (n) {
+        return n.userReadable(userUUID);
+      })) {
+        var _e6 = new Error('listFolder: not all ancestors accessible for given user ' + userUUID);
+        _e6.code = 'EACCESS';
+        return _e6;
+      }
+
+      debug('navFolder, subpath', subpath);
+
+      return {
+        path: subpath.map(function (n) {
+          if (n.isDirectory()) {
+            return {
+              uuid: n.uuid,
+              type: 'folder',
+              owner: n.owner,
+              writelist: n.writelist,
+              readlist: n.readlist,
+              name: n.name
+            };
+          } else if (n.isFile()) {
+            return {
+              uuid: n.uuid,
+              type: 'file',
+              owner: n.owner,
+              writelist: n.writelist,
+              readlist: n.readlist,
+              name: n.name,
+              mtime: n.mtime,
+              size: n.size
+            };
+          } else return null;
+        }).filter(function (n) {
+          return !!n;
+        }),
+
+        children: node.getChildren().map(function (n) {
+          if (n.isDirectory()) {
+            return {
+              uuid: n.uuid,
+              type: 'folder',
+              owner: n.owner,
+              writelist: n.writelist,
+              readlist: n.readlist,
+              name: n.name
+            };
+          } else if (n.isFile()) {
+            return {
+              uuid: n.uuid,
+              type: 'file',
+              owner: n.owner,
+              writelist: n.writelist,
+              readlist: n.readlist,
+              name: n.name,
+              mtime: n.mtime,
+              size: n.size
+            };
+          } else return null;
+        }).filter(function (n) {
+          return !!n;
+        })
+      };
     }
   }, {
     key: 'readFile',

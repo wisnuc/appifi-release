@@ -63,6 +63,7 @@ router.get('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
   var repo = _models2.default.getModel('repo');
   var filer = _models2.default.getModel('filer');
   var user = req.user;
+  var query = req.query;
 
   var node = filer.findNodeByUUID(req.params.nodeUUID);
   if (!node) {
@@ -73,7 +74,9 @@ router.get('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
   }
 
   if (node.isDirectory()) {
-    var ret = filer.listFolder(user.uuid, node.uuid);
+
+    var ret = query.navroot ? filer.navFolder(user.uuid, node.uuid, query.navroot) : filer.listFolder(user.uuid, node.uuid);
+
     if (ret instanceof Error) {
       res.status(500).json({
         code: ret.code,

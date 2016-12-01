@@ -95,7 +95,7 @@ var _throw = require('../util/throw');
 
 var _collection = require('./collection');
 
-var _reducers = require('../../appifi/lib/reducers');
+var _reducers = require('../../reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 

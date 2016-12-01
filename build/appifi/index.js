@@ -20,17 +20,9 @@ var _assets = require('../../assets');
 
 var _assets2 = _interopRequireDefault(_assets);
 
-var _server = require('./routes/server');
+var _server = require('./server');
 
 var _server2 = _interopRequireDefault(_server);
-
-var _appstore = require('./routes/appstore');
-
-var _appstore2 = _interopRequireDefault(_appstore);
-
-var _stylesheets = require('./routes/stylesheets');
-
-var _stylesheets2 = _interopRequireDefault(_stylesheets);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -63,8 +55,60 @@ app.get('/bundle.js', function (req, res) {
   return res.set('Content-Type', 'application/javascript').send(_assets2.default.bundlejs);
 });
 
-app.use('/stylesheets', _stylesheets2.default);
-app.use('/appstore', _appstore2.default);
-app.use('/server', _server2.default);
+app.get('/stylesheets/style.css', function (req, res) {
+  return res.set('Content-Type', 'text/css').send(_assets2.default.styleCSS);
+});
+
+app.get('/stylesheets/roboto.css', function (req, res) {
+  return res.set('Content-Type', 'text/css').send(_assets2.default.robotoCSS);
+});
+
+app.get('/stylesheets/Roboto-Thin-webfont.woff', function (req, res) {
+  return res.set('Content-Type', 'application/font-woff').send(_assets2.default.robotoThin);
+});
+
+app.get('/stylesheets/Roboto-Light-webfont.woff', function (req, res) {
+  return res.set('Content-Type', 'application/font-woff').send(_assets2.default.robotoLight);
+});
+
+app.get('/stylesheets/Roboto-Regular-webfont.woff', function (req, res) {
+  return res.set('Content-Type', 'application/font-woff').send(_assets2.default.robotoRegular);
+});
+
+app.get('/stylesheets/Roboto-Medium-webfont.woff', function (req, res) {
+  return res.set('Content-Type', 'application/font-woff').send(_assets2.default.robotoMedium);
+});
+
+app.get('/stylesheets/Roboto-Bold-webfont.woff', function (req, res) {
+  return res.set('Content-Type', 'application/font-woff').send(_assets2.default.robotoBold);
+});
+
+app.get('/stylesheets/Roboto-Black-webfont.woff', function (req, res) {
+  return res.set('Content-Type', 'application/font-woff').send(_assets2.default.robotoBlack);
+});
+
+var nolog = function nolog(res) {
+  res.nolog = true;
+  return res;
+};
+
+app.get('/server', function (req, res) {
+  return nolog(res).status(200).json(_server2.default.get());
+});
+app.get('/server/status', function (req, res) {
+  return nolog(res).status(200).json(_server2.default.status());
+});
+
+app.post('/server', function (req, res) {
+  return _server2.default.operation(req.body, function (err, result) {
+    return err ? res.status(200).json({
+      err: err.message,
+      ecode: err.code
+    }) : res.status(200).json({
+      err: null,
+      result: result
+    });
+  });
+});
 
 exports.default = app;

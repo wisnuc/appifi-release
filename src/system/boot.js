@@ -1,18 +1,15 @@
 import path from 'path'
 import Debug from 'debug'
-const debug = Debug('system:boot')
-
-import { refreshStorage } from '../appifi/lib/storage'
-import appifiInit from '../appifi/appifi'
+import { storeState, storeDispatch } from '../reducers'
+import { refreshStorage } from './storage'
 import { createFruitmix } from '../fruitmix/fruitmix'
+import docker from '../appifi/docker'
 
-import { storeState, storeDispatch } from '../appifi/lib/reducers'
-import sysconfig from './sysconfig'
+const debug = Debug('system:boot')
 
 const bootState = () => {
 
-  let bootMode = sysconfig.get('bootMode')
-  let lastFileSystem = sysconfig.get('lastFileSystem')
+  let { bootMode, lastFileSystem } = storeState().config
   let { blocks, volumes } = storeState().storage
 
   if (bootMode === 'maintenance') {
@@ -113,34 +110,26 @@ const bootState = () => {
   }
 }
 
-/**
-{
-  "state": "maintenance",
-  "bootMode": "maintenance",
-  "error": null,
-  "currentFileSystem": null,
-  "lastFileSystem": {
-    "type": "btrfs",
-    "uuid": "e963643d-1e08-43a3-8c34-13340a0175cd",
-    "mountpoint": "/run/wisnuc/volumes/e963643d-1e08-43a3-8c34-13340a0175cd"
-  }
-
-}
-**/
-
 export const tryBoot = (callback) => {
+
   refreshStorage().asCallback(err => {
+
     if (err) return callback(err)
-
     let bstate = bootState()
-
     debug('tryboot: bootState', bstate)
 
     let cfs = bstate.currentFileSystem 
     if (cfs) {
-      appifiInit()
+      // boot fruitmix
       createFruitmix(path.join(cfs.mountpoint, 'wisnuc', 'fruitmix'))
-      sysconfig.set('lastFileSystem', cfs)
+      storeDispatch({ type: 'CONFIG_LAST_FILESYSTEM', cfs })
+
+      // boot appifi only if fruitmix booted
+      let install = storeState().config.dockerInstall
+      debug('dockerInstall', install)      
+      
+      let dockerRootDir = path.join(cfs.mountpoint, 'wisnuc')
+      docker.init(dockerRootDir) 
     }
 
     storeDispatch({ type: 'UPDATE_SYSBOOT', data: bstate })

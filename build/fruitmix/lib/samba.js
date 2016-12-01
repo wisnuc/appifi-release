@@ -75,7 +75,7 @@ var _models = require('../models/models');
 
 var _models2 = _interopRequireDefault(_models);
 
-var _reducers = require('../../appifi/lib/reducers');
+var _reducers = require('../../reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -479,7 +479,7 @@ var generateSmbConfAsync = function () {
       while (1) {
         switch (_context5.prev = _context5.next) {
           case 0:
-            cfs = (0, _reducers.storeState)().sysboot.currentFileSystem;
+            cfs = (0, _reducers.storeState)().boot.currentFileSystem;
             prepend = _path2.default.join(cfs.mountpoint, 'wisnuc', 'fruitmix', 'drives');
             global = '[global]\n' + '  username map = /etc/smbusermap\n' + '  workgroup = WORKGROUP\n' + '  netbios name = SAMBA\n' + '  map to guest = Bad User\n' + '  log file = /var/log/samba/%m\n' + '  log level = 1\n\n';
 
@@ -516,7 +516,7 @@ var generateSmbConfAsync = function () {
 
 var generateUpnpPaths = function generateUpnpPaths() {
 
-  var cfs = (0, _reducers.storeState)().sysboot.currentFileSystem;
+  var cfs = (0, _reducers.storeState)().boot.currentFileSystem;
   var prepend = _path2.default.join(cfs.mountpoint, 'wisnuc', 'fruitmix', 'drives');
 
   var paths = [];

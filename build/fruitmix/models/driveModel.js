@@ -33,7 +33,7 @@ var _validator = require('validator');
 
 var _validator2 = _interopRequireDefault(_validator);
 
-var _reducers = require('../../appifi/lib/reducers');
+var _reducers = require('../../reducers');
 
 var _collection = require('./collection');
 

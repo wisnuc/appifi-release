@@ -3,117 +3,94 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.setFanScale = exports.pollingPowerButton = exports.updateFanSpeed = undefined;
+exports.barcelonaInit = exports.writeFanScale = exports.readFanSpeed = undefined;
 
-var _regenerator = require('babel-runtime/regenerator');
+var _isInteger = require('babel-runtime/core-js/number/is-integer');
 
-var _regenerator2 = _interopRequireDefault(_regenerator);
+var _isInteger2 = _interopRequireDefault(_isInteger);
 
-var _bluebird = require('bluebird');
+var _async = require('../common/async');
 
-var _fs = require('fs');
+var _debug = require('debug');
 
-var _fs2 = _interopRequireDefault(_fs);
+var _debug2 = _interopRequireDefault(_debug);
 
-var _child_process = require('child_process');
-
-var _child_process2 = _interopRequireDefault(_child_process);
-
-var _reducers = require('../appifi/lib/reducers');
-
-var _sysconfig = require('./sysconfig');
-
-var _sysconfig2 = _interopRequireDefault(_sysconfig);
+var _reducers = require('../reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+var debug = (0, _debug2.default)('system:barcelona');
 var BOARD_EVENT = '/proc/BOARD_event';
 var FAN_IO = '/proc/FAN_io';
 
-var fsStatAsync = (0, _bluebird.promisify)(_fs2.default.stat);
-var fsReadFileAsync = (0, _bluebird.promisify)(_fs2.default.readFile);
-var childExecAsync = (0, _bluebird.promisify)(_child_process2.default.exec);
+var readFanSpeed = function readFanSpeed(callback) {
+  return _async.fs.readFile(FAN_IO, function (err, data) {
+    if (err) return callback(err);
 
-var updateFanSpeed = function updateFanSpeed() {
-  return fsReadFileAsync(FAN_IO).then(function (data) {
     var fanSpeed = parseInt(data.toString().trim());
-    (0, _reducers.storeDispatch)({
-      type: 'BARCELONA_FANSPEED_UPDATE',
-      data: fanSpeed
-    });
-  }).catch(function (e) {});
-}; // suppress nodejs red warning
+    if (!(0, _isInteger2.default)(fanSpeed)) return callback(new Error('Parse Failed'));
+
+    callback(null, fanSpeed);
+  });
+};
+
+var writeFanScale = function writeFanScale(fanScale, callback) {
+  return !(0, _isInteger2.default)(fanScale) || fanScale < 0 || fanScale > 100 ? callback(new Error('fanScale must be integer from 0 to 100')) : _async.child.exec('echo ' + fanScale + ' > ' + FAN_IO, function (err) {
+    return callback(err);
+  });
+};
 
 var powerButtonCounter = 0;
 
-var pollingPowerButton = function pollingPowerButton() {
-  return setInterval(function () {
-    return fsReadFileAsync(BOARD_EVENT).then(function (data) {
-      if (data.toString().trim() === 'PWR ON') {
-        powerButtonCounter++;
-        if (powerButtonCounter > 4) _child_process2.default.exec('poweroff', function () {});
-      } else powerButtonCounter = 0;
-    }).catch(function (e) {});
-  } // suppress nodejs red warning
+var job = function job() {
+  return _async.fs.readFile(BOARD_EVENT, function (err, data) {
 
-  , 1000);
+    if (err) {
+      powerButtonCounter = 0;
+      debug('board event error', powerButtonCounter);
+      return;
+    }
+
+    var read = data.toString().trim();
+    if (read === 'PWR ON') {
+      powerButtonCounter++;
+      if (powerButtonCounter > 4) {
+        console.log('[barcelona] user long-pressed the power button, shutting down');
+        _async.child.exec('poweroff');
+      }
+    } else {
+      powerButtonCounter = 0;
+    }
+
+    debug('board event', read, powerButtonCounter);
+  });
 };
 
-var setFanScale = function setFanScale(SCALE) {
-  return function () {
-    var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(scale) {
-      var fanScale;
-      return _regenerator2.default.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              if (typeof scale === 'number') {
-                _context.next = 2;
-                break;
-              }
+var pollingPowerButton = function pollingPowerButton() {
+  return setInterval(job, 1000);
+};
 
-              throw new Error('scale ' + scale + ' is not a number');
+var barcelonaInit = function barcelonaInit() {
 
-            case 2:
-              fanScale = Math.floor(scale);
+  console.log('[system] barcelona init');
 
-              if (!(fanScale < 0 || fanScale > 100)) {
-                _context.next = 5;
-                break;
-              }
+  _async.child.exec('echo "PWR_LED 1" > /proc/BOARD_io');
+  console.log('[barcelona] set power LED to white on');
 
-              throw new Error('fanScale ' + fanScale + ' out of range');
+  pollingPowerButton();
+  console.log('[barcelona] start polling power button');
 
-            case 5:
-              _context.next = 7;
-              return childExecAsync('echo ' + fanScale + ' > ' + FAN_IO);
+  var fanScale = (0, _reducers.storeState)().config.barcelonaFanScale;
+  writeFanScale(fanScale, function (err) {
+    if (err) {
+      console.log('[barcelona] failed set barcelonaFanScale');
+      console.log(err);
+    } else {
+      console.log('[barcelona] fanScale set to ' + fanScale);
+    }
+  });
+};
 
-            case 7:
-
-              // setConfig('barcelonaFanScale', fanScale)
-              _sysconfig2.default.set('barcelonaFanScale', fanScale);
-              (0, _reducers.storeDispatch)({
-                type: 'BARCELONA_FANSCALE_UPDATE',
-                data: fanScale
-              });
-
-            case 9:
-            case 'end':
-              return _context.stop();
-          }
-        }
-      }, _callee, undefined);
-    }));
-
-    return function (_x) {
-      return _ref.apply(this, arguments);
-    };
-  }()(SCALE).then(function () {}).catch(function (e) {});
-}; // dirty TODO
-
-// workaround FIXME
-_child_process2.default.exec('echo "PWR_LED 1" > /proc/BOARD_io', function (err) {});
-
-exports.updateFanSpeed = updateFanSpeed;
-exports.pollingPowerButton = pollingPowerButton;
-exports.setFanScale = setFanScale;
+exports.readFanSpeed = readFanSpeed;
+exports.writeFanScale = writeFanScale;
+exports.barcelonaInit = barcelonaInit;

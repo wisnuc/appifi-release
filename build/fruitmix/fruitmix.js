@@ -51,7 +51,7 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
-var _reducers = require('../appifi/lib/reducers');
+var _reducers = require('../reducers');
 
 var _system = require('./lib/system');
 

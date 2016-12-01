@@ -8,6 +8,14 @@ var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
 
+var _fs = require('fs');
+
+var _fs2 = _interopRequireDefault(_fs);
+
+var _child_process = require('child_process');
+
+var _child_process2 = _interopRequireDefault(_child_process);
+
 var _http = require('http');
 
 var _http2 = _interopRequireDefault(_http);
@@ -16,11 +24,17 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
-var _sysinit = require('./system/sysinit');
+var _rimraf = require('rimraf');
 
-var _sysinit2 = _interopRequireDefault(_sysinit);
+var _rimraf2 = _interopRequireDefault(_rimraf);
 
-var _reducers = require('./appifi/lib/reducers');
+var _mkdirp = require('mkdirp');
+
+var _mkdirp2 = _interopRequireDefault(_mkdirp);
+
+var _reducers = require('./reducers');
+
+var _async = require('./common/async');
 
 var _index = require('./system/index');
 
@@ -30,12 +44,54 @@ var _index3 = require('./appifi/index');
 
 var _index4 = _interopRequireDefault(_index3);
 
+var _device = require('./system/device');
+
+var _device2 = _interopRequireDefault(_device);
+
+var _barcelona = require('./system/barcelona');
+
 var _boot = require('./system/boot');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('system:bootstrap');
+
 var port = 3000;
+var wisnucTmpDir = '/etc/wisnuc/tmp';
+var wisnucConfigFile = '/etc/wisnuc.json';
+
+var initConfig = function initConfig() {
+
+  var state = undefined;
+
+  (0, _reducers.storeSubscribe)(function () {
+
+    if (state === (0, _reducers.storeState)().config) return;
+
+    state = (0, _reducers.storeState)().config;
+    (0, _async.writeObjectAsync)(wisnucConfigFile, wisnucTmpDir, state).asCallback(function (err) {
+      debug('new config written', state);
+      if (err) console.log('error writing config', err, state);
+    });
+  });
+
+  _rimraf2.default.sync(wisnucTmpDir);
+  _mkdirp2.default.sync(wisnucTmpDir);
+
+  var raw = null;
+  try {
+    raw = _fs2.default.readFileSync(wisnucConfigFile, { encoding: 'utf8' });
+  } catch (e) {
+    console.log(e);
+  }
+
+  (0, _reducers.storeDispatch)({
+    type: 'CONFIG_INIT',
+    data: raw
+  });
+  console.log('[bootstrap] config initialized');
+  console.log((0, _reducers.storeState)().config);
+};
 
 // append (piggyback) system api
 var startServer = function startServer() {
@@ -81,7 +137,7 @@ var startServer = function startServer() {
   });
 
   httpServer.on('listening', function () {
-    console.log('[app] Listening on port ' + httpServer.address().port);
+    console.log('[bootstrap] Listening on port ' + httpServer.address().port);
   });
 
   httpServer.listen(port);
@@ -90,23 +146,43 @@ var startServer = function startServer() {
 process.argv.forEach(function (val, index, array) {
   if (val === '--appstore-master') {
     (0, _reducers.storeDispatch)({
-      type: 'SERVER_CONFIG',
+      type: 'DEVELOPER_SETTING',
       key: 'appstoreMaster',
       value: true
     });
   }
 });
 
-(0, _boot.tryBoot)(function (err) {
+// initialize config
+initConfig();
 
-  if (err) {
-    console.log('[app] failed to boot');
-    console.log('==== die ====');
-    console.log(err);
-    console.log('==== die ====');
-    process.exit(1);
-    return;
+(0, _device2.default)(function (err, data) {
+
+  if (!err) {
+    (0, _reducers.storeDispatch)({
+      type: 'UPDATE_DEVICE',
+      data: data
+    });
+
+    if (data.ws215i) {
+      console.log('[bootstrap] device is ws215i');
+      (0, _barcelona.barcelonaInit)();
+    } else {
+      console.log('[bootstrap] device is not ws215i');
+    }
   }
 
-  startServer();
+  (0, _boot.tryBoot)(function (err) {
+
+    if (err) {
+      console.log('[bootstrap] failed to boot');
+      console.log('==== die ====');
+      console.log(err);
+      console.log('==== die ====');
+      process.exit(1);
+      return;
+    }
+
+    startServer();
+  });
 });

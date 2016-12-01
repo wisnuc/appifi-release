@@ -17,28 +17,24 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
-var _storage = require('../appifi/lib/storage');
+var _reducers = require('../reducers');
 
-var _appifi = require('../appifi/appifi');
-
-var _appifi2 = _interopRequireDefault(_appifi);
+var _storage = require('./storage');
 
 var _fruitmix = require('../fruitmix/fruitmix');
 
-var _reducers = require('../appifi/lib/reducers');
+var _docker = require('../appifi/docker');
 
-var _sysconfig = require('./sysconfig');
-
-var _sysconfig2 = _interopRequireDefault(_sysconfig);
+var _docker2 = _interopRequireDefault(_docker);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('system:boot');
 
 var bootState = function bootState() {
-
-  var bootMode = _sysconfig2.default.get('bootMode');
-  var lastFileSystem = _sysconfig2.default.get('lastFileSystem');
+  var _storeState$config = (0, _reducers.storeState)().config,
+      bootMode = _storeState$config.bootMode,
+      lastFileSystem = _storeState$config.lastFileSystem;
   var _storeState$storage = (0, _reducers.storeState)().storage,
       blocks = _storeState$storage.blocks,
       volumes = _storeState$storage.volumes;
@@ -136,34 +132,26 @@ var bootState = function bootState() {
   }
 };
 
-/**
-{
-  "state": "maintenance",
-  "bootMode": "maintenance",
-  "error": null,
-  "currentFileSystem": null,
-  "lastFileSystem": {
-    "type": "btrfs",
-    "uuid": "e963643d-1e08-43a3-8c34-13340a0175cd",
-    "mountpoint": "/run/wisnuc/volumes/e963643d-1e08-43a3-8c34-13340a0175cd"
-  }
-
-}
-**/
-
 var tryBoot = exports.tryBoot = function tryBoot(callback) {
+
   (0, _storage.refreshStorage)().asCallback(function (err) {
+
     if (err) return callback(err);
-
     var bstate = bootState();
-
     debug('tryboot: bootState', bstate);
 
     var cfs = bstate.currentFileSystem;
     if (cfs) {
-      (0, _appifi2.default)();
+      // boot fruitmix
       (0, _fruitmix.createFruitmix)(_path2.default.join(cfs.mountpoint, 'wisnuc', 'fruitmix'));
-      _sysconfig2.default.set('lastFileSystem', cfs);
+      (0, _reducers.storeDispatch)({ type: 'CONFIG_LAST_FILESYSTEM', cfs: cfs });
+
+      // boot appifi only if fruitmix booted
+      var install = (0, _reducers.storeState)().config.dockerInstall;
+      debug('dockerInstall', install);
+
+      var dockerRootDir = _path2.default.join(cfs.mountpoint, 'wisnuc');
+      _docker2.default.init(dockerRootDir);
     }
 
     (0, _reducers.storeDispatch)({ type: 'UPDATE_SYSBOOT', data: bstate });

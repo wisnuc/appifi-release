@@ -36,13 +36,9 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
-var _reducers = require('../appifi/lib/reducers');
+var _reducers = require('../reducers');
 
-var _sysconfig = require('./sysconfig');
-
-var _sysconfig2 = _interopRequireDefault(_sysconfig);
-
-var _storage = require('../appifi/lib/storage');
+var _storage = require('./storage');
 
 var _boot = require('./boot');
 
@@ -196,14 +192,20 @@ var R = function R(res) {
 };
 
 var tryReboot = function tryReboot(lfs, callback) {
-  _sysconfig2.default.set('lastFileSystem', lfs);
-  _sysconfig2.default.set('bootMode', 'normal');
+  (0, _reducers.storeDispatch)({
+    type: 'CONFIG_LAST_FILESYSTEM',
+    data: lfs
+  });
+  (0, _reducers.storeDispatch)({
+    type: 'CONFIG_BOOT_MODE',
+    data: 'normal'
+  });
   (0, _boot.tryBoot)(callback);
 };
 
 router.post('/', function (req, res) {
 
-  var bstate = (0, _reducers.storeState)().sysboot;
+  var bstate = (0, _reducers.storeState)().boot;
   if (bstate.state !== 'maintenance') return res.status(405).json({
     message: 'system is not in maintenance mode'
   });
@@ -405,11 +407,6 @@ router.post('/', function (req, res) {
 
         if (err) return R(res)(500, err);
         R(res)(200, 'ok');
-        /**
-                sysconfig.set('lastFileSystem', { type: 'btrfs', uuid: fsuuid })
-                sysconfig.set('bootMode', 'normal')
-                tryBoot(() => {})
-        **/
 
         tryReboot({
           type: 'btrfs',

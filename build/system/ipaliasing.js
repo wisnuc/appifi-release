@@ -27,9 +27,7 @@ var _child_process = require('child_process');
 
 var _child_process2 = _interopRequireDefault(_child_process);
 
-var _sysconfig = require('./sysconfig');
-
-var _sysconfig2 = _interopRequireDefault(_sysconfig);
+var _reducers = require('../reducers');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -74,9 +72,12 @@ var _addAlias = function _addAlias(dev, addr, callback) {
 
 var addAlias = function addAlias(dev, addr, callback) {
   return _addAlias(dev, addr, function (err) {
-    return err ? callback(err) : callback(K(null)(_sysconfig2.default.set('ipAliasing', aliases().map(function (alias) {
-      return { mac: alias.mac, ipv4: alias.ipv4 };
-    }))));
+    return err ? callback(err) : callback(K(null)((0, _reducers.storeDispatch)({
+      type: 'CONFIG_IP_ALIASING',
+      data: aliases().map(function (alias) {
+        return { mac: alias.mac, ipv4: alias.ipv4 };
+      })
+    })));
   });
 };
 
@@ -90,9 +91,12 @@ var _deleteAlias = function _deleteAlias(dev, addr, callback) {
 
 var deleteAlias = function deleteAlias(dev, addr, callback) {
   return _deleteAlias(dev, addr, function (err) {
-    return err ? callback(err) : callback(K(null)(_sysconfig2.default.set('ipAliasing', aliases().map(function (alias) {
-      return { mac: alias.mac, ipv4: alias.ipv4 };
-    }))));
+    return err ? callback(err) : callback(K(null)((0, _reducers.storeDispatch)({
+      type: 'CONFIG_IP_ALIASING',
+      data: aliases().map(function (alias) {
+        return { mac: alias.mac, ipv4: alias.ipv4 };
+      })
+    })));
   });
 };
 
@@ -107,7 +111,22 @@ var init = function () {
           case 0:
             i = void 0;
             activated = aliases();
-            config = _sysconfig2.default.get('ipAliasing');
+
+          case 2:
+            if (!((0, _reducers.storeState)().config === null)) {
+              _context.next = 7;
+              break;
+            }
+
+            _context.next = 5;
+            return (0, _bluebird.delay)(100);
+
+          case 5:
+            _context.next = 2;
+            break;
+
+          case 7:
+            config = (0, _reducers.storeState)().config.ipAliasing;
 
             // find common entries
 
@@ -133,41 +152,41 @@ var init = function () {
             // remove activated but not configured
             i = 0;
 
-          case 7:
+          case 12:
             if (!(i < activated.length)) {
-              _context.next = 13;
+              _context.next = 18;
               break;
             }
 
-            _context.next = 10;
+            _context.next = 15;
             return (0, _bluebird.promisify)(_deleteAlias)(activated[i].dev, activated[i].ipv4);
 
-          case 10:
+          case 15:
             i++;
-            _context.next = 7;
+            _context.next = 12;
             break;
 
-          case 13:
+          case 18:
 
             // add configured but not activated
             net = _os2.default.networkInterfaces();
             i = 0;
 
-          case 15:
+          case 20:
             if (!(i < config.length)) {
-              _context.next = 21;
+              _context.next = 26;
               break;
             }
 
-            _context.next = 18;
+            _context.next = 23;
             return (0, _bluebird.promisify)(_addAlias)(_mac2dev(net, config[i].mac), config[i].ipv4);
 
-          case 18:
+          case 23:
             i++;
-            _context.next = 15;
+            _context.next = 20;
             break;
 
-          case 21:
+          case 26:
           case 'end':
             return _context.stop();
         }
@@ -181,8 +200,7 @@ var init = function () {
 }();
 
 init().then(function () {
-  console.log('ipaliasing initialized');
-  console.log(aliases());
+  return console.log('[system] ipaliasing initialized', aliases());
 }).catch(function (e) {
   return console.log(e);
 });

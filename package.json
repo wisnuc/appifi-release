@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node build/app.js",
     "build": "babel src --out-dir build",
-    "devel": "nodemon --exec babel-node --ignore web --ignore public/bundle.js src/app.js",
+    "devel": "nodemon --exec babel-node --ignore web src/app.js",
     "devel-assets": "nodemon --exec babel-node --ignore web --ignore public/bundle.js assets.js",
     "devel-appstore": "nodemon --exec babel-node --ignore web --ignore public/bundle.js src/app.js --appstore-master",
     "webpack": "webpack --watch --watch-poll",
@@ -82,6 +82,7 @@
     "serve-favicon": "~2.3.0",
     "shallowequal": "^0.2.2",
     "sinon": "^1.17.4",
+    "stringify-object": "^3.0.0",
     "superagent": "^1.8.3",
     "supertest": "^2.0.0",
     "upnpserver": "^2.1.3",

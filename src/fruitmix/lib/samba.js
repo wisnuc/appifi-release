@@ -13,7 +13,7 @@ import mkdirp from 'mkdirp'
 import paths from './paths'
 import models from '../models/models'
 
-import { storeState, storeSubscribe } from '../../appifi/lib/reducers'
+import { storeState, storeSubscribe } from '../../reducers'
 
 const mkdirpAsync = Promise.promisify(mkdirp)
 Promise.promisifyAll(fs)
@@ -259,7 +259,7 @@ const generateUserMapAsync = async () => {
 
 const generateSmbConfAsync = async () => {
 
-  let cfs = storeState().sysboot.currentFileSystem
+  let cfs = storeState().boot.currentFileSystem
   let prepend = path.join(cfs.mountpoint, 'wisnuc', 'fruitmix', 'drives')
 
   let global =  '[global]\n' +
@@ -296,7 +296,7 @@ const generateSmbConfAsync = async () => {
 
 const generateUpnpPaths = () => {
 
-  let cfs = storeState().sysboot.currentFileSystem
+  let cfs = storeState().boot.currentFileSystem
   let prepend = path.join(cfs.mountpoint, 'wisnuc', 'fruitmix', 'drives')
 
   let paths = []

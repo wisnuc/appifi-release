@@ -3,21 +3,22 @@ import os from 'os'
 
 import express from 'express'
 import Debug from 'debug'
-const debug = Debug('system:router')
-
 import validator from 'validator'
 
-import { storeState } from '../appifi/lib/reducers'
-import sysconfig from './sysconfig'
+import { storeState, storeDispatch } from '../reducers'
+
 import mir from './mir'
 import { mac2dev, aliases, addAliasAsync, deleteAliasAsync } from './ipaliasing'
 import eth from './eth'
+import deviceProbe from './device'
+import { readFanSpeed, writeFanScale } from './barcelona'
 
 const codeMap = new Map([
   ['EINVAL', 400],
   ['ENOENT', 404]
 ]) 
 
+const debug = Debug('system:router')
 const router = express.Router()
 
 const K = x => y => x
@@ -35,6 +36,11 @@ const timedate = (callback) =>
         prev[pair[0]] = pair[1]
         return prev
       }, {})))
+
+// device
+router.get('/device', (req, res) => {
+  res.status(200).json(storeState().device)
+})
 
 
 // timedate
@@ -85,14 +91,45 @@ router.delete('/ipaliasing', (req, res) => (async () => {
 
 })().asCallback((err, obj) => respond(res, err, obj)))
 
+//
 // fan
-router.get('/fan', (req, res) => {})
+//
+router.get('/fan', (req, res) => {
+
+  let device = storeState().device
+  if (!device.ws215i) 
+    return res.status(404).json({
+      message: 'not available on this device'
+    })
+
+  readFanSpeed((err, fanSpeed) => {
+    err ? res.status(500).json({ message: err.message }) :
+      res.status(200).json({
+        fanSpeed, fanScale: storeState().config.barcelonaFanScale
+      })
+  })
+})
 
 router.post('/fan', (req, res) => {
 
-  let { scale } = req.body
+  let device = storeState().device
+  if (!device.ws215i)
+    return res.status(404).json({
+      message: 'not available on this device'
+    })
 
-  
+  let { fanScale } = req.body
+  writeFanScale(fanScale, err => {
+    if (err) 
+    return res.status(500).json({ message: err.message })
+
+    storeDispatch({
+      type: 'CONFIG_BARCELONA_FANSCALE',
+      data: fanScale
+    })
+
+    res.status(200).json({ message: 'ok' })  
+  })
 })
 
 router.use('/storage', mir)
@@ -100,12 +137,12 @@ router.use('/mir', mir)
 
 router.get('/boot', (req, res) => {
 
-  let sysboot = storeState().sysboot
+  let boot = storeState().boot
  
-  debug(sysboot) 
+  debug(boot) 
 
-  if (sysboot)
-    res.status(200).json(sysboot)
+  if (boot)
+    res.status(200).json(boot)
   else 
     res.status(500).end() // TODO
 })
@@ -121,20 +158,27 @@ router.post('/boot', (req, res) => {
   let obj = req.body
   if (obj instanceof Object === false)
     return R(res)(400, 'invalid arguments')
+
   if (['poweroff', 'reboot', 'rebootMaintenance'].indexOf(obj.op) === -1)
     return R(res)(400, 'op must be poweroff, reboot, or rebootMaintenance')
 
   if (obj.op === 'poweroff') {
+
     console.log('[system] powering off')
     shutdown('poweroff')
   }
   else if (obj.op === 'reboot') {
+
     console.log('[system] rebooting')
     shutdown('reboot')
   }
   else if (obj.op === 'rebootMaintenance') {
+
     console.log('[system] rebooting into maintenance mode')
-    sysconfig.set('bootMode', 'maintenance')
+    storeDispatch({
+      type: 'CONFIG_BOOT_MODE',
+      data: 'maintenance'
+    })
     shutdown('reboot')
   }
 
