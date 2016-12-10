@@ -3,6 +3,13 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _assign = require('babel-runtime/core-js/object/assign');
+
+var _assign2 = _interopRequireDefault(_assign);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 var path = require('path');
 var fs = require('fs');
 var child = require('child_process');
@@ -134,4 +141,44 @@ var systemProbe = function systemProbe(cb) {
   });
 };
 
-exports.default = systemProbe;
+var probeRelease = function probeRelease(cb) {
+
+  var countDown = 2;
+  var soft = {};
+  fs.readFile('.release.json', function (err, data) {
+    if (!err) {
+      try {
+        soft.release = JSON.parse(data.toString());
+      } catch (e) {}
+    }
+    if (! --countDown) cb(null, soft);
+  });
+  fs.readFile('.revision', function (err, data) {
+    if (!err) {
+      soft.commit = data.toString();
+    }
+    if (! --countDown) cb(null, soft);
+  });
+};
+
+var allProbe = function allProbe(cb) {
+
+  var countDown = 2;
+  var merge = {};
+
+  systemProbe(function (err, data) {
+    if (!err) {
+      (0, _assign2.default)(merge, data);
+    }
+    if (! --countDown) cb(null, merge);
+  });
+
+  probeRelease(function (err, data) {
+    if (!err) {
+      (0, _assign2.default)(merge, data);
+    }
+    if (! --countDown) cb(null, merge);
+  });
+};
+
+exports.default = allProbe;
