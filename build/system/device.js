@@ -44,6 +44,37 @@ var probeProcfs = function probeProcfs(path, cb) {
   });
 }; // merge into one object
 
+var probeProcfsMultiSec = function probeProcfsMultiSec(path, cb) {
+  return child.exec('cat /proc/' + path, function (err, stdout) {
+    return err ? cb(err) : cb(null, stdout.toString().split('\n\n') // split to sections
+    .map(function (sect) {
+      return sect.trim();
+    }) // trim
+    .filter(function (sect) {
+      return sect.length;
+    }) // remove last empty
+    .map(function (sect) {
+      return sect.split('\n') // process each section
+      .map(function (l) {
+        return l.trim();
+      }).filter(function (l) {
+        return l.length;
+      }) // trim and remove empty line     
+      .map(function (l) {
+        return l.split(':').map(function (w) {
+          return w.trim();
+        });
+      }) // split to word array (kv)     
+      .filter(function (arr) {
+        return arr.length === 2 && arr[0].length;
+      }) // filter out non-kv     
+      .reduce(function (obj, arr) {
+        return K(obj)(obj[stylize(arr[0])] = arr[1]);
+      }, {});
+    }));
+  });
+}; // merge into one object 
+
 var probeWs215i = function probeWs215i(cb) {
   return fs.stat('/proc/BOARD_io', function (err) {
     return err ? err.code === 'ENOENT' ? cb(null, false) : cb(err) : cb(null, true);
@@ -90,7 +121,7 @@ var dmiDecode = function dmiDecode(cb) {
 };
 
 var systemProbe = function systemProbe(cb) {
-  return probeProcfs('cpuinfo', function (err, cpuInfo) {
+  return probeProcfsMultiSec('cpuinfo', function (err, cpuInfo) {
     return err ? cb(err) : probeProcfs('meminfo', function (err, memInfo) {
       return err ? cb(err) : probeWs215i(function (err, isWs215i) {
         return err ? cb(err) : isWs215i ? mtdDecode(function (err, ws215i) {
