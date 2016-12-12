@@ -322,7 +322,7 @@ var UserModel = function (_EventEmitter) {
 
       // password
       if (password) {
-        if (password !== 'string' || !password.length) return einval('invalid password');
+        if (typeof password !== 'string' || !password.length) return einval('invalid password');
         change.password = _bcrypt2.default.hashSync(password, _bcrypt2.default.genSaltSync(10));
         change.smbPassword = md4Encrypt(password);
         change.lastChangeTime = new Date().getTime();
