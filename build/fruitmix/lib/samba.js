@@ -55,10 +55,6 @@ var _dgram = require('dgram');
 
 var _dgram2 = _interopRequireDefault(_dgram);
 
-var _upnpserver = require('upnpserver');
-
-var _upnpserver2 = _interopRequireDefault(_upnpserver);
-
 var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
@@ -80,6 +76,7 @@ var _reducers = require('../../reducers');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('fruitmix:samba');
+// import upnpserver from 'upnpserver'
 
 var mkdirpAsync = (0, _bluebird.promisify)(_mkdirp2.default);
 (0, _bluebird.promisifyAll)(_fs2.default);
@@ -774,7 +771,7 @@ var prevUsers = void 0,
 
 var createSmbAuditAsync = function () {
   var _ref11 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee8() {
-    var paths, upnp, udp;
+    var udp;
     return _regenerator2.default.wrap(function _callee8$(_context8) {
       while (1) {
         switch (_context8.prev = _context8.next) {
@@ -795,28 +792,27 @@ var createSmbAuditAsync = function () {
               scheduleUpdate();
             });
 
-            paths = generateUpnpPaths();
-            upnp = new _upnpserver2.default({ name: 'wisnuc media server' }, paths);
-
-            upnp.start();
+            //  let paths = generateUpnpPaths()
+            //  let upnp = new upnpserver({ name: 'wisnuc media server' }, paths)
+            //  upnp.start()
 
             // TODO not optimal
-            _context8.next = 6;
+            _context8.next = 3;
             return initSamba();
 
-          case 6:
-            _context8.next = 8;
+          case 3:
+            _context8.next = 5;
             return updateSambaFiles();
 
-          case 8:
-            _context8.next = 10;
+          case 5:
+            _context8.next = 7;
             return (0, _bluebird.promisify)(createUdpServer)();
 
-          case 10:
+          case 7:
             udp = _context8.sent;
             return _context8.abrupt('return', new SmbAudit(udp));
 
-          case 12:
+          case 9:
           case 'end':
             return _context8.stop();
         }
