@@ -125,7 +125,9 @@ router.post('/', function (req, res) {
     _fs2.default.rename(srcpath, dstpath, function (err) {
 
       if (err) return res.status(500).end();
-      repo.inspect(node.uuid);
+      // repo.inspect(node.uuid)
+
+      filer.requestProbe(node);
       setTimeout(function () {
         return res.status(200).end();
       }, 3000);
