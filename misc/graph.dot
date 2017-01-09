@@ -1,8 +1,0 @@
-digraph G {
-  documentStore -> '/tmp';
-  documentStore -> '/documents';
-  mediaShareStore -> '/tmp';
-  mediaShareStore -> mediaSharePath;
-  mediaShareStore -> documentStore;
-  userModel -> repo;
-}

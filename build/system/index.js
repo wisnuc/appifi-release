@@ -63,6 +63,11 @@ var codeMap = new _map2.default([['EINVAL', 400], ['ENOENT', 404]]);
 var debug = (0, _debug2.default)('system:router');
 var router = _express2.default.Router();
 
+var nolog = function nolog(res) {
+  res.nolog = true;
+  return res;
+};
+
 var K = function K(x) {
   return function (y) {
     return x;
@@ -276,7 +281,7 @@ router.get('/boot', function (req, res) {
 
   debug(boot);
 
-  if (boot) res.status(200).json(boot);else res.status(500).end(); // TODO
+  if (boot) nolog(res).status(200).json(boot);else res.status(500).end(); // TODO
 });
 
 var shutdown = function shutdown(cmd) {

@@ -145,15 +145,25 @@ var releaseProbe = function releaseProbe(cb) {
 
   var countDown = 2;
   var soft = {};
-  fs.readFile('.release.json', function (err, data) {
+  var relpath = process.env.NODE_ENV === 'production' ? '/wisnuc/appifi/.release.json' : '.release.json';
+  var revpath = process.env.NODE_ENV === 'production' ? '/wisnuc/appifi/.revision' : '.revision';
+
+  fs.readFile(relpath, function (err, data) {
+    if (err) console.log('[system] failed to read device release', err);
+
     if (!err) {
       try {
         soft.release = JSON.parse(data.toString());
-      } catch (e) {}
+      } catch (e) {
+        console.log('[system] failed to parse device release', err);
+      }
     }
     if (! --countDown) cb(null, soft);
   });
-  fs.readFile('.revision', function (err, data) {
+  fs.readFile(revpath, function (err, data) {
+
+    if (err) console.log('[system] failed to read device revision', err);
+
     if (!err) {
       soft.commit = data.toString();
     }

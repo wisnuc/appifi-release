@@ -52,6 +52,10 @@ var router = _express2.default.Router();
 var runnable = function runnable(wisnuc) {
   return (typeof wisnuc === 'undefined' ? 'undefined' : (0, _typeof3.default)(wisnuc)) === 'object' && wisnuc !== null && wisnuc.users;
 };
+var nolog = function nolog(res) {
+  res.nolog = true;
+  return res;
+};
 
 router.get('/', function (req, res) {
 
@@ -63,7 +67,7 @@ router.get('/', function (req, res) {
   var adapted = (0, _adapter.adaptStorage)(storage);
   if (req.query.wisnuc === 'true') (0, _adapter.probeAllFruitmixes)(adapted, function (err, copy) {
     return err ? res.status(500).json({ message: err.message }) : res.status(200).json(copy);
-  });else res.status(200).json(adapted);
+  });else nolog(res).status(200).json(adapted);
 });
 
 //
