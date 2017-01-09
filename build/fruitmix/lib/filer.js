@@ -160,7 +160,8 @@ var Forest = exports.Forest = function (_IndexedTree) {
         // if node is deleted, blame where it is deleted failing to remove this job
         // so timestamp check should be enough
         if (err) {
-          _this2.requestProbe(node.parent);
+          if (node.parent) // a quickfix, not sure TODO FIXME
+            _this2.requestProbe(node.parent);
           finishJob(false);
         } else if (mtime1 === mtime) {
           finishJob(false);
