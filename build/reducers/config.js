@@ -138,6 +138,9 @@ var config = function config() {
     case 'CONFIG_BOOT_MODE':
       return validateBootMode(action.data) ? (0, _assign2.default)({}, state, { bootMode: action.data }) : state;
 
+    case 'CONFIG_BOOT_TARGET':
+      if (action.data) return validateLastFileSystem(action.data) ? (0, _assign2.default)({}, state, { bootMode: 'normal', lastFileSystem: action.data }) : state;else return (0, _assign2.default)({}, state, { bootMode: 'normal' });
+
     case 'CONFIG_IP_ALIASING':
       return validateIpAliasing(action.data) ? (0, _assign2.default)({}, state, { ipAliasing: action.data }) : state;
 

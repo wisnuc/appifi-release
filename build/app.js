@@ -4,25 +4,13 @@ var _assign = require('babel-runtime/core-js/object/assign');
 
 var _assign2 = _interopRequireDefault(_assign);
 
-var _path = require('path');
-
-var _path2 = _interopRequireDefault(_path);
-
 var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
 
-var _child_process = require('child_process');
-
-var _child_process2 = _interopRequireDefault(_child_process);
-
 var _http = require('http');
 
 var _http2 = _interopRequireDefault(_http);
-
-var _debug = require('debug');
-
-var _debug2 = _interopRequireDefault(_debug);
 
 var _rimraf = require('rimraf');
 
@@ -31,6 +19,10 @@ var _rimraf2 = _interopRequireDefault(_rimraf);
 var _mkdirp = require('mkdirp');
 
 var _mkdirp2 = _interopRequireDefault(_mkdirp);
+
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
 
 var _reducers = require('./reducers');
 
@@ -89,6 +81,7 @@ var initConfig = function initConfig() {
     type: 'CONFIG_INIT',
     data: raw
   });
+
   console.log('[bootstrap] config initialized');
   console.log((0, _reducers.storeState)().config);
 };
@@ -144,6 +137,17 @@ var startServer = function startServer() {
 };
 
 process.argv.forEach(function (val, index, array) {
+
+  debug('argv index, value', index, val);
+
+  if (val === '--no-fruitmix') {
+    (0, _reducers.storeDispatch)({
+      type: 'DEVELOPER_SETTING',
+      key: 'noFruitmix',
+      value: true
+    });
+  }
+
   if (val === '--appstore-master') {
     (0, _reducers.storeDispatch)({
       type: 'DEVELOPER_SETTING',

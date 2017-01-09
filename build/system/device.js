@@ -141,7 +141,7 @@ var systemProbe = function systemProbe(cb) {
   });
 };
 
-var probeRelease = function probeRelease(cb) {
+var releaseProbe = function releaseProbe(cb) {
 
   var countDown = 2;
   var soft = {};
@@ -161,7 +161,7 @@ var probeRelease = function probeRelease(cb) {
   });
 };
 
-var allProbe = function allProbe(cb) {
+var deviceProbe = function deviceProbe(cb) {
 
   var countDown = 2;
   var merge = {};
@@ -173,7 +173,7 @@ var allProbe = function allProbe(cb) {
     if (! --countDown) cb(null, merge);
   });
 
-  probeRelease(function (err, data) {
+  releaseProbe(function (err, data) {
     if (!err) {
       (0, _assign2.default)(merge, data);
     }
@@ -181,4 +181,4 @@ var allProbe = function allProbe(cb) {
   });
 };
 
-exports.default = allProbe;
+exports.default = deviceProbe;

@@ -1,10 +1,8 @@
-import path from 'path'
 import fs from 'fs'
-import child from 'child_process'
 import http from 'http'
-import Debug from 'debug'
 import rimraf from 'rimraf'
 import mkdirp from 'mkdirp'
+import Debug from 'debug'
 
 import { storeState, storeDispatch, storeSubscribe } from './reducers'
 import { writeObjectAsync } from './common/async'
@@ -51,6 +49,7 @@ const initConfig = () => {
     type: 'CONFIG_INIT',
     data: raw
   })
+
   console.log('[bootstrap] config initialized')
   console.log(storeState().config)
 }
@@ -101,6 +100,17 @@ const startServer = () => {
 }
 
 process.argv.forEach((val, index, array) => {
+
+  debug('argv index, value', index, val)
+
+  if (val === '--no-fruitmix') {
+    storeDispatch({
+      type: 'DEVELOPER_SETTING',
+      key: 'noFruitmix',
+      value: true
+    })
+  }
+
   if (val === '--appstore-master') {
     storeDispatch({
       type: 'DEVELOPER_SETTING',

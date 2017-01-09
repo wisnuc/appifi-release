@@ -157,10 +157,18 @@ router.post('/boot', (req, res) => {
 
   let obj = req.body
   if (obj instanceof Object === false)
-    return R(res)(400, 'invalid arguments')
+    return res.status(400).json({ message: 'invalid arguments, req.body is not an object'})
 
-  if (['poweroff', 'reboot', 'rebootMaintenance'].indexOf(obj.op) === -1)
-    return R(res)(400, 'op must be poweroff, reboot, or rebootMaintenance')
+  if (['poweroff', 'reboot', 'rebootMaintenance', 'rebootNormal'].indexOf(obj.op) === -1)
+    return res.status(400).json({ message: 'op must be poweroff, reboot, or rebootMaintenance' }) 
+
+  if (obj.target) {
+    // if target is provided
+    if (obj.op !== 'rebootNormal')
+      return res.status(400).json({ message: 'target can only be used when op is rebootNormal' })
+
+    // validate target FIXME
+  }
 
   if (obj.op === 'poweroff') {
 
@@ -179,6 +187,26 @@ router.post('/boot', (req, res) => {
       type: 'CONFIG_BOOT_MODE',
       data: 'maintenance'
     })
+    shutdown('reboot')
+  }
+  else if (obj.op === 'rebootNormal') {
+
+    console.log('[system] rebooting into normal mode')
+
+    if (obj.target) {
+      storeDispatch({
+        type: 'CONFIG_BOOT_TARGET',
+        data: {
+          type: 'btrfs',
+          uuid: target
+        }
+      })
+    }
+    else {
+      storeDispatch({
+        type: 'CONFIG_BOOT_TARGET'
+      })
+    }
     shutdown('reboot')
   }
 

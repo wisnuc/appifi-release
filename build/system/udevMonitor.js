@@ -1,10 +1,5 @@
 'use strict';
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.createUdevMonitor = undefined;
-
 var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
 
 var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
@@ -32,6 +27,8 @@ var _events2 = _interopRequireDefault(_events);
 var _readline = require('readline');
 
 var _readline2 = _interopRequireDefault(_readline);
+
+var _storage = require('./storage');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -82,10 +79,31 @@ var UdevMonitor = function (_EventEmitter) {
   return UdevMonitor;
 }(_events2.default);
 
-var createUdevMonitor = exports.createUdevMonitor = function createUdevMonitor() {
+var createUdevMonitor = function createUdevMonitor() {
 
   var spawn = _child_process2.default.spawn('stdbuf', ['-oL', 'udevadm', 'monitor', '--udev', '-s', 'block']);
   var rl = _readline2.default.createInterface({ input: spawn.stdout });
 
   return new UdevMonitor(rl);
 };
+
+var udevmon = createUdevMonitor();
+
+udevmon.on('events', function (events) {
+
+  console.log('udev events', events);
+
+  var add = false;
+  var remove = false;
+
+  events.forEach(function (evt) {
+    if (evt.action === 'add') add = true;
+    if (evt.action === 'remove') remove = true;
+  });
+
+  if (add || remove) (0, _storage.refreshStorage)().then(function () {}).catch(function (e) {
+    console.log('udevmon, refreshStorage error >>>>');
+    console.log(e);
+    console.log('udevmon, refreshStorage error <<<<');
+  });
+});

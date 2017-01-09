@@ -3,11 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createFirstUser = exports.createUserModel = exports.createUserModelAsync = undefined;
-
-var _stringify = require('babel-runtime/core-js/json/stringify');
-
-var _stringify2 = _interopRequireDefault(_stringify);
+exports.createUserModel = exports.createUserModelAsync = undefined;
 
 var _typeof2 = require('babel-runtime/helpers/typeof');
 
@@ -55,25 +51,9 @@ var _inherits2 = require('babel-runtime/helpers/inherits');
 
 var _inherits3 = _interopRequireDefault(_inherits2);
 
-var _path = require('path');
-
-var _path2 = _interopRequireDefault(_path);
-
-var _fs = require('fs');
-
-var _fs2 = _interopRequireDefault(_fs);
-
-var _crypto = require('crypto');
-
-var _crypto2 = _interopRequireDefault(_crypto);
-
 var _events = require('events');
 
 var _events2 = _interopRequireDefault(_events);
-
-var _debug = require('debug');
-
-var _debug2 = _interopRequireDefault(_debug);
 
 var _bcrypt = require('bcrypt');
 
@@ -87,9 +67,9 @@ var _validator = require('validator');
 
 var _validator2 = _interopRequireDefault(_validator);
 
-var _mkdirp = require('mkdirp');
+var _tools = require('../tools');
 
-var _mkdirp2 = _interopRequireDefault(_mkdirp);
+var _tools2 = _interopRequireDefault(_tools);
 
 var _throw = require('../util/throw');
 
@@ -97,22 +77,19 @@ var _collection = require('./collection');
 
 var _reducers = require('../../reducers');
 
+var _debug = require('debug');
+
+var _debug2 = _interopRequireDefault(_debug);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var debug = (0, _debug2.default)('fruitmix:userModel');
-
-// import bcrypt from 'bcryptjs'
-
-
-(0, _bluebird.promisifyAll)(_fs2.default);
 
 var isUUID = function isUUID(x) {
   return typeof x === 'string' && _validator2.default.isUUID(x);
 };
 
-var md4Encrypt = function md4Encrypt(text) {
-  return _crypto2.default.createHash('md4').update(Buffer.from(text, 'utf16le')).digest('hex').toUpperCase();
-};
+(0, _bluebird.promisifyAll)(_bcrypt2.default);
 
 /** Schema
 {
@@ -165,8 +142,6 @@ Note:
 o1  can only be changed by first user
 
 **/
-
-(0, _bluebird.promisifyAll)(_bcrypt2.default);
 
 // TODO
 var validateAvatar = function validateAvatar(avatar) {
@@ -241,7 +216,7 @@ var UserModel = function (_EventEmitter) {
       var uuid = _nodeUuid2.default.v4();
       var salt = _bcrypt2.default.genSaltSync(10);
       var passwordEncrypted = _bcrypt2.default.hashSync(password, salt);
-      var smbPasswordEncrypted = md4Encrypt(password);
+      var smbPasswordEncrypted = (0, _tools2.default)(password);
       var lastChangeTime = new Date().getTime();
 
       if (this.collection.locked) return ebusy('locked');
@@ -324,7 +299,7 @@ var UserModel = function (_EventEmitter) {
       if (password) {
         if (typeof password !== 'string' || !password.length) return einval('invalid password');
         change.password = _bcrypt2.default.hashSync(password, _bcrypt2.default.genSaltSync(10));
-        change.smbPassword = md4Encrypt(password);
+        change.smbPassword = (0, _tools2.default)(password);
         change.lastChangeTime = new Date().getTime();
       }
 
@@ -534,42 +509,5 @@ var createUserModelAsync = function () {
   };
 }();
 
-// external use
-var createFirstUser = function createFirstUser(mp, username, password, callback) {
-
-  var salt = _bcrypt2.default.genSaltSync(10);
-  var encrypted = _bcrypt2.default.hashSync(password, salt);
-  var md4 = md4Encrypt(password);
-
-  var users = [{
-    type: 'local',
-    uuid: _nodeUuid2.default.v4(),
-    username: username,
-    password: encrypted,
-    smbPassword: md4,
-    lastChangeTime: new Date().getTime(),
-    avatar: null,
-    email: null,
-    isAdmin: true,
-    isFirstUser: true,
-    home: _nodeUuid2.default.v4(),
-    library: _nodeUuid2.default.v4(),
-    unixUID: 2000
-  }];
-
-  debug('creating first user', users[0]);
-
-  var dir = _path2.default.join(mp, 'wisnuc', 'fruitmix', 'models');
-  (0, _mkdirp2.default)(dir, function (err) {
-
-    if (err) return callback(err);
-    _fs2.default.writeFile(_path2.default.join(dir, 'users.json'), (0, _stringify2.default)(users, null, '  '), function (err) {
-
-      err ? callback(err) : callback(null, users[0]);
-    });
-  });
-};
-
 exports.createUserModelAsync = createUserModelAsync;
 exports.createUserModel = createUserModel;
-exports.createFirstUser = createFirstUser;

@@ -568,9 +568,11 @@ var daemonStart = function () {
 }();
 
 var daemonStopCmd = 'start-stop-daemon --stop --pidfile "/run/wisnuc/app/docker.pid" --retry 3';
-var daemonStop3 = function daemonStop3(volume, callback) {
+
+var daemonStop3 = function daemonStop3(callback) {
   return _async.child.exec(daemonStopCmd, function (err, stdout, stderr) {
     if (err) console.log('[docker] daemonStop:', err, stdout, stderr);else console.log('[docker] daemonStop: success');
+
     callback(err);
   });
 };
