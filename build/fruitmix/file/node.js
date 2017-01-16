@@ -245,9 +245,7 @@ var FolderNode = function (_Node2) {
 }(Node);
 
 // node.type ==== 'file'
-
-
-node instanceof FileNode;
+// node instanceof FileNode
 
 var isUUID = function isUUID(uuid) {
   return typeof uuid === 'string' && _validator2.default.isUUID(uuid);
@@ -280,3 +278,74 @@ var createFileNode = function createFileNode() {};
 var createFolderNode = function createFolderNode() {};
 
 exports.createNode = createNode;
+
+/**
+
+root
+
+timestamp = 0
+
+probe node 
+
+1. read timestamp ts1
+2. probe folders and files inside given folder
+3. read timestamp ts2
+4. if (ts1 === ts2) // step 2 result and ts1/ts2 valid, update memtree
+5. else // ????? retry? when? instant? wait a minute?
+
+exponential backoff
+
+1 2 4 8 16 32 64 .... 1024 2^10 worse case
+
+folder a
+
+folder a / file b (rename b1) probe -> a
+
+
+folder node -> concurrent probe request
+
+schedule
+
+
+waiting <- probe (wait another 50ms)
+        <- timeout (go to probing 0)
+probing - 0 <- probe (go to probing 1)
+            <- success (go to idle)
+            <- ??? (go to waiting, retry, waiting), (probe parent)
+probing - 1 <- probe (nothing)
+            <- success (go to waiting)
+            <- ???
+idle <- probe ( go to waiting )
+
+{
+
+  constructor() {
+    this.state = '
+  }
+
+  enterIdle() {
+  }
+
+  exitIdle() {
+  }
+
+  setState(nextState, ...args) {
+
+    switch(this.state) {
+      exit()
+    }
+
+    switch(nextState)
+    case
+      enterIdle(...args)
+  }
+}
+
+io scheduler
+
+/// scientific method
+test criteria
+latency reconciliation time
+statistic probe time? io time?
+
+***/

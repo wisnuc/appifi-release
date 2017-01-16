@@ -460,7 +460,7 @@ var probeFruitmix = function probeFruitmix(mountpoint, callback) {
     // AMBIGUOUS
     // DAMAGED
     // READY
-    var status = users ? 'READY' : ['ENOWISNUC', 'EWISNUCNOTDIR', 'ENOFRUITMIX', 'EFRUITMIXNOTDIR'].includes(error) ? 'NOTFOUND' : ['ENOMODELS', 'EMODELSNOTDIR', 'ENOUSERS', 'EUSERSNOTFILE'].includes(error) ? 'AMBIGUOUS' : ['EUSERSPARSE', 'EUSERSFORMAT'].includes(err) ? 'DAMAGED' : null;
+    var status = users ? 'READY' : ['ENOWISNUC', 'EWISNUCNOTDIR', 'ENOFRUITMIX', 'EFRUITMIXNOTDIR'].includes(error) ? 'NOTFOUND' : ['ENOMODELS', 'EMODELSNOTDIR', 'ENOUSERS', 'EUSERSNOTFILE'].includes(error) ? 'AMBIGUOUS' : ['EUSERSPARSE', 'EUSERSFORMAT'].includes(error) ? 'DAMAGED' : null;
 
     var mmap = new _map2.default([['ENOWISNUC', '/wisnuc文件夹不存在'], ['EWISNUCNOTDIR', '/wisnuc路径存在但不是文件夹'], ['ENOFRUITMIX', '/wisnuc文件夹存在但没有/wisnuc/fruitmix文件夹'], ['EFRUITMIXNOTDIR', '/wisnuc/fruitmix路径存在但不是文件夹'], ['ENOMODELS', '/wisnuc/fruitmix路径存在但/wisnuc/fruitmix/models文件夹不存在'], ['EMODELSNOTDIR', '/wisnuc/fruitmix/models路径存在但不是文件夹'], ['ENOUSERS', '/wisnuc/fruitmix/models文件夹存在但users.json文件不存在'], ['EUSERSNOTFILE', '/wisnuc/fruitmix/models/users.json路径存在但users.json不是文件'], ['EUSERSPARSE', '/wisnuc/fruitmix/models/users.json文件存在但不是合法的JSON格式'], ['EUSERSFORMAT', '/wisnuc/fruitmix/models/users.json文件存在但格式不正确']]);
 

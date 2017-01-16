@@ -69,8 +69,6 @@ var _validator2 = _interopRequireDefault(_validator);
 
 var _tools = require('../tools');
 
-var _tools2 = _interopRequireDefault(_tools);
-
 var _throw = require('../util/throw');
 
 var _collection = require('./collection');
@@ -216,7 +214,7 @@ var UserModel = function (_EventEmitter) {
       var uuid = _nodeUuid2.default.v4();
       var salt = _bcrypt2.default.genSaltSync(10);
       var passwordEncrypted = _bcrypt2.default.hashSync(password, salt);
-      var smbPasswordEncrypted = (0, _tools2.default)(password);
+      var smbPasswordEncrypted = (0, _tools.md4Encrypt)(password);
       var lastChangeTime = new Date().getTime();
 
       if (this.collection.locked) return ebusy('locked');
@@ -299,7 +297,7 @@ var UserModel = function (_EventEmitter) {
       if (password) {
         if (typeof password !== 'string' || !password.length) return einval('invalid password');
         change.password = _bcrypt2.default.hashSync(password, _bcrypt2.default.genSaltSync(10));
-        change.smbPassword = (0, _tools2.default)(password);
+        change.smbPassword = (0, _tools.md4Encrypt)(password);
         change.lastChangeTime = new Date().getTime();
       }
 
