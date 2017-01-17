@@ -55,6 +55,10 @@ var advertiser = function (_events) {
 
       this.handle = _child_process2.default.spawn('avahi-publish-service', [this.name, '_http._tcp', this.port], { stdio: 'ignore' });
 
+      this.handle.on('error', function (error) {
+        console.log('[advertiser] error', error);
+      });
+
       this.handle.on('exit', function (code, signal) {
 
         console.log('[advertiser] stop advertising ' + _this2.name + ' @ ' + _this2.port);

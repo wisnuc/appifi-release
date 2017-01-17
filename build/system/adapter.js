@@ -67,6 +67,24 @@ var adaptStorage = function adaptStorage(storage) {
       return usg.mountpoint === vol.stats.mountpoint;
     });
 
+    // this is possible if volume mount failed, which is observed on at least one machine
+    if (!usage) {
+
+      var _mapped = (0, _assign2.default)({}, vol, vol.stats); // without usage
+      delete _mapped.stats;
+
+      _mapped.devices = vol.devices.map(function (dev) {
+        return {
+          name: _path2.default.basename(dev.path), // tricky
+          path: dev.path,
+          id: dev.id,
+          used: dev.used
+        };
+      });
+
+      return _mapped;
+    }
+
     // copy level 1 props
     var copy = {
       overall: usage.overall,
@@ -82,6 +100,7 @@ var adaptStorage = function adaptStorage(storage) {
 
     // copy level 2 (usage for each volume device) into devices
     mapped.devices = vol.devices.map(function (dev) {
+
       var devUsage = usage.devices.find(function (ud) {
         return ud.name === dev.path;
       });
