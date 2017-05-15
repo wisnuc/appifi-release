@@ -26,7 +26,7 @@ var _debug = require('debug');
 
 var _debug2 = _interopRequireDefault(_debug);
 
-var _reducers = require('../reducers');
+var _reducers = require('./reducers');
 
 var _dockerApps = require('./dockerApps');
 
@@ -227,7 +227,7 @@ var operationAsync = function () {
             }
 
             _context.next = 31;
-            return f.apply(undefined, (0, _toConsumableArray3.default)(args));
+            return (0, _bluebird.resolve)(f.apply(undefined, (0, _toConsumableArray3.default)(args)));
 
           case 31:
             return _context.abrupt('return', _context.sent);

@@ -120,7 +120,7 @@ var Repo = function (_EventEmitter) {
               case 11:
                 _context.prev = 11;
                 _context.next = 14;
-                return _async.fs.statAsync(_path2.default.join(dir, conf.uuid));
+                return (0, _bluebird.resolve)(_async.fs.statAsync(_path2.default.join(dir, conf.uuid)));
 
               case 14:
                 stat = _context.sent;

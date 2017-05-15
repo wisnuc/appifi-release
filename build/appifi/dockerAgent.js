@@ -45,7 +45,7 @@ var _error = require('./error');
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 /*
- * This class uses a transform as input inot which user write data, and redirect data
+ * This class uses a transform as input into which user write data, and redirect data
  * to readline, emit parsed json object 
  */
 var connection = function (_events) {

@@ -27,9 +27,9 @@ var _child_process = require('child_process');
 
 var _child_process2 = _interopRequireDefault(_child_process);
 
-var _reducers = require('../reducers');
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var Config = require('./config');
 
 // ip addr add ${ipaddr}/24 dev ${dev} label ${dev}:wisnuc
 // ip addr del ${ipaddr}/24 dev ${dev}:wisnuc
@@ -72,11 +72,8 @@ var _addAlias = function _addAlias(dev, addr, callback) {
 
 var addAlias = function addAlias(dev, addr, callback) {
   return _addAlias(dev, addr, function (err) {
-    return err ? callback(err) : callback(K(null)((0, _reducers.storeDispatch)({
-      type: 'CONFIG_IP_ALIASING',
-      data: aliases().map(function (alias) {
-        return { mac: alias.mac, ipv4: alias.ipv4 };
-      })
+    return err ? callback(err) : callback(Config.updateIpAliasing(aliases().map(function (alias) {
+      return { mac: alias.mac, ipv4: alias.ipv4 };
     })));
   });
 };
@@ -91,11 +88,8 @@ var _deleteAlias = function _deleteAlias(dev, addr, callback) {
 
 var deleteAlias = function deleteAlias(dev, addr, callback) {
   return _deleteAlias(dev, addr, function (err) {
-    return err ? callback(err) : callback(K(null)((0, _reducers.storeDispatch)({
-      type: 'CONFIG_IP_ALIASING',
-      data: aliases().map(function (alias) {
-        return { mac: alias.mac, ipv4: alias.ipv4 };
-      })
+    return err ? callback(err) : callback(Config.updateIpAliasing(aliases().map(function (alias) {
+      return { mac: alias.mac, ipv4: alias.ipv4 };
     })));
   });
 };
@@ -113,20 +107,20 @@ var init = function () {
             activated = aliases();
 
           case 2:
-            if (!((0, _reducers.storeState)().config === null)) {
+            if (Config.get()) {
               _context.next = 7;
               break;
             }
 
             _context.next = 5;
-            return (0, _bluebird.delay)(100);
+            return (0, _bluebird.resolve)((0, _bluebird.delay)(100));
 
           case 5:
             _context.next = 2;
             break;
 
           case 7:
-            config = (0, _reducers.storeState)().config.ipAliasing;
+            config = Config.get().ipAliasing;
 
             // find common entries
 
@@ -159,7 +153,7 @@ var init = function () {
             }
 
             _context.next = 15;
-            return (0, _bluebird.promisify)(_deleteAlias)(activated[i].dev, activated[i].ipv4);
+            return (0, _bluebird.resolve)((0, _bluebird.promisify)(_deleteAlias)(activated[i].dev, activated[i].ipv4));
 
           case 15:
             i++;
@@ -179,7 +173,7 @@ var init = function () {
             }
 
             _context.next = 23;
-            return (0, _bluebird.promisify)(_addAlias)(_mac2dev(net, config[i].mac), config[i].ipv4);
+            return (0, _bluebird.resolve)((0, _bluebird.promisify)(_addAlias)(_mac2dev(net, config[i].mac), config[i].ipv4));
 
           case 23:
             i++;

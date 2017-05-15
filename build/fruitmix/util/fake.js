@@ -50,15 +50,15 @@ var fakePathModel = exports.fakePathModel = function () {
           case 0:
             dir = void 0, tmpdir = void 0;
             _context.next = 3;
-            return (0, _async.rimrafAsync)(fakeroot);
+            return (0, _bluebird.resolve)((0, _async.rimrafAsync)(fakeroot));
 
           case 3:
             _context.next = 5;
-            return (0, _async.mkdirpAsync)(fakeroot);
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)(fakeroot));
 
           case 5:
             _context.next = 7;
-            return _paths2.default.setRootAsync(fakeroot);
+            return (0, _bluebird.resolve)(_paths2.default.setRootAsync(fakeroot));
 
           case 7:
 
@@ -71,9 +71,9 @@ var fakePathModel = exports.fakePathModel = function () {
             }
 
             _context.next = 11;
-            return (0, _bluebird.all)(drives.map(function (drv) {
+            return (0, _bluebird.resolve)((0, _bluebird.all)(drives.map(function (drv) {
               return (0, _async.mkdirpAsync)(_path2.default.join(dir, drv.uuid));
-            }));
+            })));
 
           case 11:
 
@@ -87,7 +87,7 @@ var fakePathModel = exports.fakePathModel = function () {
             }
 
             _context.next = 16;
-            return _async.fs.writeFileAsync(_path2.default.join(dir, 'users.json'), (0, _stringify2.default)(users, null, '  '));
+            return (0, _bluebird.resolve)(_async.fs.writeFileAsync(_path2.default.join(dir, 'users.json'), (0, _stringify2.default)(users, null, '  ')));
 
           case 16:
             if (!drives.length) {
@@ -96,16 +96,16 @@ var fakePathModel = exports.fakePathModel = function () {
             }
 
             _context.next = 19;
-            return _async.fs.writeFileAsync(_path2.default.join(dir, 'drives.json'), (0, _stringify2.default)(drives, null, '  '));
+            return (0, _bluebird.resolve)(_async.fs.writeFileAsync(_path2.default.join(dir, 'drives.json'), (0, _stringify2.default)(drives, null, '  ')));
 
           case 19:
             _context.next = 21;
-            return (0, _userModel.createUserModelAsync)(_path2.default.join(dir, 'users.json'), tmpdir);
+            return (0, _bluebird.resolve)((0, _userModel.createUserModelAsync)(_path2.default.join(dir, 'users.json'), tmpdir));
 
           case 21:
             umod = _context.sent;
             _context.next = 24;
-            return (0, _driveModel.createDriveModelAsync)(_path2.default.join(dir, 'drives.json'), tmpdir);
+            return (0, _bluebird.resolve)((0, _driveModel.createDriveModelAsync)(_path2.default.join(dir, 'drives.json'), tmpdir));
 
           case 24:
             dmod = _context.sent;
@@ -216,7 +216,7 @@ var fakeRepoSilenced = exports.fakeRepoSilenced = function () {
             // create repo and wait until drives cached
 
             _context2.next = 3;
-            return createRepoSilencedAsync(dmod);
+            return (0, _bluebird.resolve)(createRepoSilencedAsync(dmod));
 
           case 3:
             repo = _context2.sent;

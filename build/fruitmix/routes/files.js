@@ -112,60 +112,58 @@ router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
   if (node.isDirectory()) {
 
     if (req.is('multipart/form-data')) {
-      (function () {
-        // uploading a new file into folder
+      // uploading a new file into folder
 
-        var sha256 = void 0,
-            abort = false;
+      var sha256 = void 0,
+          abort = false;
 
-        var form = new _formidable2.default.IncomingForm();
-        form.hash = 'sha256';
+      var form = new _formidable2.default.IncomingForm();
+      form.hash = 'sha256';
 
-        form.on('field', function (name, value) {
-          if (name === 'sha256') sha256 = value;
-        });
+      form.on('field', function (name, value) {
+        if (name === 'sha256') sha256 = value;
+      });
 
-        form.on('fileBegin', function (name, file) {
-          if ((0, _sanitizeFilename2.default)(file.name) !== file.name) {
-            abort = true;
-            return res.status(500).json({}); // TODO
-          }
-          if (node.getChildren().find(function (child) {
-            return child.name === file.name;
-          })) {
-            abort = true;
-            return res.status(500).json({}); // TODO
-          }
-          file.path = _path2.default.join(repo.getTmpFolderForNode(node), _nodeUuid2.default.v4());
-        });
-
-        form.on('file', function (name, file) {
-
-          if (abort) return;
-          if (sha256 !== file.hash) {
-            return _fs2.default.unlink(file.path, function (err) {
-              res.status(500).json({}); // TODO
-            });
-          }
-
-          filer.createFile(user.uuid, file.path, node, file.name, function (err, newNode) {
-            return res.status(200).json((0, _assign2.default)({}, newNode, {
-              parent: newNode.parent.uuid
-            }));
-          });
-        });
-
-        // this may be fired after user abort, so response is not guaranteed to send
-        form.on('error', function (err) {
+      form.on('fileBegin', function (name, file) {
+        if ((0, _sanitizeFilename2.default)(file.name) !== file.name) {
           abort = true;
-          return res.status(500).json({
-            code: err.code,
-            message: err.message
-          });
-        });
+          return res.status(500).json({}); // TODO
+        }
+        if (node.getChildren().find(function (child) {
+          return child.name === file.name;
+        })) {
+          abort = true;
+          return res.status(500).json({}); // TODO
+        }
+        file.path = _path2.default.join(repo.getTmpFolderForNode(node), _nodeUuid2.default.v4());
+      });
 
-        form.parse(req);
-      })();
+      form.on('file', function (name, file) {
+
+        if (abort) return;
+        if (sha256 !== file.hash) {
+          return _fs2.default.unlink(file.path, function (err) {
+            res.status(500).json({}); // TODO
+          });
+        }
+
+        filer.createFile(user.uuid, file.path, node, file.name, function (err, newNode) {
+          return res.status(200).json((0, _assign2.default)({}, newNode, {
+            parent: newNode.parent.uuid
+          }));
+        });
+      });
+
+      // this may be fired after user abort, so response is not guaranteed to send
+      form.on('error', function (err) {
+        abort = true;
+        return res.status(500).json({
+          code: err.code,
+          message: err.message
+        });
+      });
+
+      form.parse(req);
     } else {
       // creating a new sub-folder in folder
 
@@ -184,49 +182,47 @@ router.post('/:nodeUUID', _auth2.default.jwt(), function (req, res) {
   } else if (node.isFile()) {
 
     if (req.is('multipart/form-data')) {
-      (function () {
-        // overwriting an existing file
+      // overwriting an existing file
 
-        var sha256 = void 0,
-            abort = false;
-        var form = new _formidable2.default.IncomingForm();
-        form.hash = 'sha256';
+      var _sha = void 0,
+          _abort = false;
+      var _form = new _formidable2.default.IncomingForm();
+      _form.hash = 'sha256';
 
-        form.on('field', function (name, value) {
-          if (name === 'sha256') sha256 = value;
-        });
+      _form.on('field', function (name, value) {
+        if (name === 'sha256') _sha = value;
+      });
 
-        form.on('fileBegin', function (name, file) {
-          file.path = _path2.default.join(repo.getTmpFolderForNode(node), _nodeUuid2.default.v4());
-        });
+      _form.on('fileBegin', function (name, file) {
+        file.path = _path2.default.join(repo.getTmpFolderForNode(node), _nodeUuid2.default.v4());
+      });
 
-        form.on('file', function (name, file) {
-          if (abort) return;
-          if (sha256 !== file.hash) {
-            return _fs2.default.unlink(file.path, function (err) {
-              res.status(500).json({}); // TODO
-            });
-          }
-
-          filer.overwriteFile(user.uuid, file.path, node, function (err, newNode) {
-            if (err) return res.status(500).json({}); // TODO
-            res.status(200).json((0, _assign2.default)({}, newNode, {
-              parent: newNode.parent.uuid
-            }));
+      _form.on('file', function (name, file) {
+        if (_abort) return;
+        if (_sha !== file.hash) {
+          return _fs2.default.unlink(file.path, function (err) {
+            res.status(500).json({}); // TODO
           });
-        });
+        }
 
-        form.on('error', function (err) {
-          if (abort) return;
-          abort = true;
-          return res.status(500).json({
-            code: err.code,
-            message: err.message
-          });
+        filer.overwriteFile(user.uuid, file.path, node, function (err, newNode) {
+          if (err) return res.status(500).json({}); // TODO
+          res.status(200).json((0, _assign2.default)({}, newNode, {
+            parent: newNode.parent.uuid
+          }));
         });
+      });
 
-        form.parse(req);
-      })();
+      _form.on('error', function (err) {
+        if (_abort) return;
+        _abort = true;
+        return res.status(500).json({
+          code: err.code,
+          message: err.message
+        });
+      });
+
+      _form.parse(req);
     } else {
       //
       return res.status(404).end();

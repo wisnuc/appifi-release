@@ -23,7 +23,7 @@ var visitAsync = function () {
             switch (_context.prev = _context.next) {
               case 0:
                 _context.next = 2;
-                return funcAsync(dir, dirContext, entry);
+                return (0, _bluebird.resolve)(funcAsync(dir, dirContext, entry));
 
               case 2:
                 entryContext = _context.sent;
@@ -34,7 +34,7 @@ var visitAsync = function () {
                 }
 
                 _context.next = 6;
-                return visitAsync(_path2.default.join(dir, entry), entryContext, funcAsync);
+                return (0, _bluebird.resolve)(visitAsync(_path2.default.join(dir, entry), entryContext, funcAsync));
 
               case 6:
               case 'end':
@@ -55,7 +55,7 @@ var visitAsync = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return _fs2.default.readdirAsync(dir);
+            return (0, _bluebird.resolve)(_fs2.default.readdirAsync(dir));
 
           case 2:
             entries = _context2.sent;
@@ -77,9 +77,9 @@ var visitAsync = function () {
 
           case 7:
             _context2.next = 9;
-            return _bluebird2.default.all(entries.map(function (entry) {
+            return (0, _bluebird.resolve)(_bluebird2.default.all(entries.map(function (entry) {
               return wrapper(dir, dirContext, entry, funcAsync);
-            }));
+            })));
 
           case 9:
           case 'end':

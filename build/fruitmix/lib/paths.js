@@ -47,11 +47,11 @@ var setRootAsync = function () {
 
             root = rootpath;
             _context.next = 5;
-            return (0, _async.mkdirpAsync)(root);
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)(root));
 
           case 5:
             _context.next = 7;
-            return _bluebird2.default.all([(0, _async.mkdirpAsync)(join('models')), (0, _async.mkdirpAsync)(join('drives')), (0, _async.mkdirpAsync)(join('documents')), (0, _async.mkdirpAsync)(join('mediashare')), (0, _async.mkdirpAsync)(join('mediashareArchive')), (0, _async.mkdirpAsync)(join('mediatalk')), (0, _async.mkdirpAsync)(join('mediatallArchive')), (0, _async.mkdirpAsync)(join('thumbnail')), (0, _async.mkdirpAsync)(join('log')), (0, _async.mkdirpAsync)(join('etc')), (0, _async.mkdirpAsync)(join('smb')), (0, _async.mkdirpAsync)(join('tmp'))]);
+            return (0, _bluebird.resolve)(_bluebird2.default.all([(0, _async.mkdirpAsync)(join('models')), (0, _async.mkdirpAsync)(join('drives')), (0, _async.mkdirpAsync)(join('documents')), (0, _async.mkdirpAsync)(join('mediashare')), (0, _async.mkdirpAsync)(join('mediashareArchive')), (0, _async.mkdirpAsync)(join('mediatalk')), (0, _async.mkdirpAsync)(join('mediatallArchive')), (0, _async.mkdirpAsync)(join('thumbnail')), (0, _async.mkdirpAsync)(join('log')), (0, _async.mkdirpAsync)(join('etc')), (0, _async.mkdirpAsync)(join('smb')), (0, _async.mkdirpAsync)(join('tmp'))]));
 
           case 7:
           case 'end':

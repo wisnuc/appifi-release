@@ -101,7 +101,7 @@ var daemonStartOp = function () {
 
           case 8:
             _context5.next = 10;
-            return daemonStart(volume.uuid);
+            return (0, _bluebird.resolve)(daemonStart(volume.uuid));
 
           case 10:
           case 'end':
@@ -195,7 +195,7 @@ var installedStart = function () {
             }
 
             _context6.next = 12;
-            return (0, _dockerApi.containerStart)(container.Id);
+            return (0, _bluebird.resolve)((0, _dockerApi.containerStart)(container.Id));
 
           case 12:
           case 'end':
@@ -251,7 +251,7 @@ var installedStop = function () {
             }
 
             _context7.next = 12;
-            return (0, _dockerApi.containerStop)(container.Id);
+            return (0, _bluebird.resolve)((0, _dockerApi.containerStop)(container.Id));
 
           case 12:
           case 'end':
@@ -310,7 +310,7 @@ var appUninstall = function () {
             }
 
             _context8.next = 13;
-            return (0, _dockerApi.containerStop)(containers[i].Id);
+            return (0, _bluebird.resolve)((0, _dockerApi.containerStop)(containers[i].Id));
 
           case 13:
             i++;
@@ -327,7 +327,7 @@ var appUninstall = function () {
             }
 
             _context8.next = 20;
-            return (0, _dockerApi.containerDelete)(containers[_i].Id);
+            return (0, _bluebird.resolve)((0, _dockerApi.containerDelete)(containers[_i].Id));
 
           case 20:
             _i++;
@@ -361,7 +361,7 @@ var _superagent = require('superagent');
 
 var _superagent2 = _interopRequireDefault(_superagent);
 
-var _reducers = require('../reducers');
+var _reducers = require('./reducers');
 
 var _dockerApi = require('./dockerApi');
 
@@ -408,7 +408,7 @@ var prepareDirs = function () {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return (0, _async.mkdirpAsync)('/run/wisnuc/app');
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)('/run/wisnuc/app'));
 
           case 2:
 
@@ -418,15 +418,15 @@ var prepareDirs = function () {
             graphDir = _path2.default.join(rootDir, 'g');
 
             _context.next = 8;
-            return (0, _async.mkdirpAsync)(appDataDir);
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)(appDataDir));
 
           case 8:
             _context.next = 10;
-            return (0, _async.mkdirpAsync)(_path2.default.join(rootDir, 'r'));
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)(_path2.default.join(rootDir, 'r')));
 
           case 10:
             _context.next = 12;
-            return (0, _async.mkdirpAsync)(_path2.default.join(rootDir, 'g'));
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)(_path2.default.join(rootDir, 'g')));
 
           case 12:
           case 'end':
@@ -463,7 +463,7 @@ var startDockerEvents = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return (0, _dockerEvents.dockerEventsAgent)();
+            return (0, _bluebird.resolve)((0, _dockerEvents.dockerEventsAgent)());
 
           case 2:
             agent = _context2.sent;
@@ -541,7 +541,7 @@ var daemonStart = function () {
             });
 
             _context3.next = 9;
-            return (0, _bluebird.delay)(3000);
+            return (0, _bluebird.resolve)((0, _bluebird.delay)(3000));
 
           case 9:
             if (!(dockerDaemon === null)) {
@@ -590,7 +590,7 @@ var initAsync = function () {
             debug('docker init dir', dir);
 
             _context4.next = 3;
-            return prepareDirs(dir);
+            return (0, _bluebird.resolve)(prepareDirs(dir));
 
           case 3:
 
@@ -599,7 +599,7 @@ var initAsync = function () {
             probedGraphDir = void 0;
             _context4.prev = 5;
             _context4.next = 8;
-            return probeDaemonGraphDirAsync();
+            return (0, _bluebird.resolve)(probeDaemonGraphDirAsync());
 
           case 8:
             probedGraphDir = _context4.sent;
@@ -631,21 +631,21 @@ var initAsync = function () {
 
             console.log('[docker] another daemon already started (graphDir) @ {probedGraphDir}, try stopping it');
             _context4.next = 22;
-            return daemonStop();
+            return (0, _bluebird.resolve)(daemonStop());
 
           case 22:
             _context4.next = 24;
-            return (0, _bluebird.delay)(1000);
+            return (0, _bluebird.resolve)((0, _bluebird.delay)(1000));
 
           case 24:
 
             console.log('[docker] starting daemon @ ' + rootDir);
             _context4.next = 27;
-            return daemonStart();
+            return (0, _bluebird.resolve)(daemonStart());
 
           case 27:
             _context4.next = 29;
-            return startDockerEvents();
+            return (0, _bluebird.resolve)(startDockerEvents());
 
           case 29:
             console.log('[docker] docker events listener started');

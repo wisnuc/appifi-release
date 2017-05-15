@@ -3,7 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createFruitmix = undefined;
+exports.createHttpServer = exports.createFruitmix = undefined;
 
 var _regenerator = require('babel-runtime/regenerator');
 
@@ -11,29 +11,9 @@ var _regenerator2 = _interopRequireDefault(_regenerator);
 
 var _bluebird = require('bluebird');
 
-var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
-
-var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
-
-var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
-
-var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
-
-var _possibleConstructorReturn2 = require('babel-runtime/helpers/possibleConstructorReturn');
-
-var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
-
-var _inherits2 = require('babel-runtime/helpers/inherits');
-
-var _inherits3 = _interopRequireDefault(_inherits2);
-
 var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
-
-var _child_process = require('child_process');
-
-var _child_process2 = _interopRequireDefault(_child_process);
 
 var _http = require('http');
 
@@ -42,10 +22,6 @@ var _http2 = _interopRequireDefault(_http);
 var _dgram = require('dgram');
 
 var _dgram2 = _interopRequireDefault(_dgram);
-
-var _events = require('events');
-
-var _events2 = _interopRequireDefault(_events);
 
 var _debug = require('debug');
 
@@ -65,52 +41,43 @@ var _app = require('./app');
 
 var _app2 = _interopRequireDefault(_app);
 
-var _samba = require('./lib/samba');
-
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// import { createSmbAudit } from './lib/samba'
 
 var debug = (0, _debug2.default)('fruitmix:fruitmix');
 
-(0, _bluebird.promisifyAll)(_child_process2.default);
+// Promise.promisifyAll(child)
 
-var startSamba = function () {
-  var _ref = (0, _bluebird.method)(function () {
-    _child_process2.default.execAsync('systemctl start nmbd'), _child_process2.default.execAsync('systemctl start smbd');
-  });
+// const startSamba = async () => {
+//   child.execAsync('systemctl start nmbd'),
+//   child.execAsync('systemctl start smbd')
+// }
 
-  return function startSamba() {
-    return _ref.apply(this, arguments);
-  };
-}();
+// class Fruitmix extends EventEmitter {
 
-var Fruitmix = function (_EventEmitter) {
-  (0, _inherits3.default)(Fruitmix, _EventEmitter);
+//   constructor(system, app, server, smbAudit) {
 
-  function Fruitmix(system, app, server, smbAudit) {
-    (0, _classCallCheck3.default)(this, Fruitmix);
-
-    var _this = (0, _possibleConstructorReturn3.default)(this, (Fruitmix.__proto__ || (0, _getPrototypeOf2.default)(Fruitmix)).call(this));
-
-    _this.system = system;
-    _this.app = app;
-    _this.server = server;
-    _this.smbAudit = smbAudit;
-    return _this;
-  }
-
-  return Fruitmix;
-}(_events2.default);
+//     super()
+//     this.system = system
+//     this.app = app
+//     this.server = server 
+//     this.smbAudit = smbAudit
+//   }
+// }
 
 // TODO
 
+// import EventEmitter from 'events'
 
-var createHttpServer = function createHttpServer(callback) {
+// import child from 'child_process'
+var createHttpServer = function createHttpServer(app, callback) {
 
   var server = void 0,
       port = 3721;
-  _app2.default.set('port', port);
+  app.set('port', port);
 
-  server = _http2.default.createServer(_app2.default);
+  server = _http2.default.createServer(app);
   server.timeout = 24 * 3600 * 1000; // 24 hours
 
   server.on('error', function (error) {
@@ -145,29 +112,15 @@ var createHttpServer = function createHttpServer(callback) {
 };
 
 var createFruitmixAsync = function () {
-  var _ref2 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(sysroot) {
-    var server, smbaudit;
+  var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(sysroot) {
     return _regenerator2.default.wrap(function _callee$(_context) {
       while (1) {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return _system2.default.initAsync(sysroot);
+            return (0, _bluebird.resolve)(_system2.default.initAsync(sysroot));
 
           case 2:
-            _context.next = 4;
-            return (0, _bluebird.promisify)(createHttpServer)();
-
-          case 4:
-            server = _context.sent;
-            _context.next = 7;
-            return (0, _bluebird.promisify)(_samba.createSmbAudit)();
-
-          case 7:
-            smbaudit = _context.sent;
-            return _context.abrupt('return', new Fruitmix(_system2.default, _app2.default, server, smbaudit));
-
-          case 9:
           case 'end':
             return _context.stop();
         }
@@ -176,7 +129,7 @@ var createFruitmixAsync = function () {
   }));
 
   return function createFruitmixAsync(_x) {
-    return _ref2.apply(this, arguments);
+    return _ref.apply(this, arguments);
   };
 }();
 
@@ -187,3 +140,4 @@ var createFruitmix = function createFruitmix(sysroot, callback) {
 };
 
 exports.createFruitmix = createFruitmix;
+exports.createHttpServer = createHttpServer;

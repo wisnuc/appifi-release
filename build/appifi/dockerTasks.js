@@ -47,7 +47,7 @@ var _nodeUuid = require('node-uuid');
 
 var _nodeUuid2 = _interopRequireDefault(_nodeUuid);
 
-var _reducers = require('../reducers');
+var _reducers = require('./reducers');
 
 var _pullImage = require('./pullImage');
 
@@ -290,7 +290,7 @@ var AppInstallTask = function (_Task2) {
                 (0, _dockerApps.installAppifiLabel)(opt.Labels, this.uuid, this.recipe);
 
                 _context.next = 10;
-                return (0, _dockerApi.containerCreate)(opt);
+                return (0, _bluebird.resolve)((0, _dockerApi.containerCreate)(opt));
 
               case 10:
                 re = _context.sent;

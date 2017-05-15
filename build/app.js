@@ -1,192 +1,65 @@
 'use strict';
 
-var _assign = require('babel-runtime/core-js/object/assign');
+var _regenerator = require('babel-runtime/regenerator');
 
-var _assign2 = _interopRequireDefault(_assign);
+var _regenerator2 = _interopRequireDefault(_regenerator);
 
-var _fs = require('fs');
-
-var _fs2 = _interopRequireDefault(_fs);
-
-var _http = require('http');
-
-var _http2 = _interopRequireDefault(_http);
-
-var _rimraf = require('rimraf');
-
-var _rimraf2 = _interopRequireDefault(_rimraf);
-
-var _mkdirp = require('mkdirp');
-
-var _mkdirp2 = _interopRequireDefault(_mkdirp);
-
-var _debug = require('debug');
-
-var _debug2 = _interopRequireDefault(_debug);
-
-var _reducers = require('./reducers');
-
-var _async = require('./common/async');
-
-var _index = require('./system/index');
-
-var _index2 = _interopRequireDefault(_index);
-
-var _index3 = require('./appifi/index');
-
-var _index4 = _interopRequireDefault(_index3);
-
-var _device = require('./system/device');
-
-var _device2 = _interopRequireDefault(_device);
-
-var _barcelona = require('./system/barcelona');
-
-var _boot = require('./system/boot');
+var _bluebird = require('bluebird');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var debug = (0, _debug2.default)('system:bootstrap');
+var Boot = require('./system/boot');
+var Config = require('./system/config');
+var Device = require('./system/device');
+var Storage = require('./system/storage');
 
-var port = 3000;
-var wisnucTmpDir = '/etc/wisnuc/tmp';
-var wisnucConfigFile = '/etc/wisnuc.json';
+var system = require('./system/index');
+var systemServer = require('./system/system');
+// const appifi = require('./appifi/appifi')
 
-var initConfig = function initConfig() {
+var configFile = '/etc/wisnuc.json';
+var configTmpDir = '/etc/wisnuc/tmp';
+var storageFile = '/run/wisnuc/storage';
+var storageTmpDir = '/run/wisnuc/tmp';
 
-  var state = undefined;
+var main = function () {
+  var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee() {
+    return _regenerator2.default.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            _context.next = 2;
+            return (0, _bluebird.resolve)(Config.initAsync(configFile, configTmpDir));
 
-  (0, _reducers.storeSubscribe)(function () {
+          case 2:
+            _context.next = 4;
+            return (0, _bluebird.resolve)(Device.probeAsync());
 
-    if (state === (0, _reducers.storeState)().config) return;
+          case 4:
+            _context.next = 6;
+            return (0, _bluebird.resolve)(Storage.initAsync(storageFile, storageTmpDir));
 
-    state = (0, _reducers.storeState)().config;
-    (0, _async.writeObjectAsync)(wisnucConfigFile, wisnucTmpDir, state).asCallback(function (err) {
-      debug('new config written', state);
-      if (err) console.log('error writing config', err, state);
-    });
-  });
+          case 6:
+            _context.next = 8;
+            return (0, _bluebird.resolve)(Boot.autoBootAsync());
 
-  _rimraf2.default.sync(wisnucTmpDir);
-  _mkdirp2.default.sync(wisnucTmpDir);
+          case 8:
+            // appifi(system)
+            systemServer(system);
 
-  var raw = null;
-  try {
-    raw = _fs2.default.readFileSync(wisnucConfigFile, { encoding: 'utf8' });
-  } catch (e) {
-    console.log(e);
-  }
+          case 9:
+          case 'end':
+            return _context.stop();
+        }
+      }
+    }, _callee, undefined);
+  }));
 
-  (0, _reducers.storeDispatch)({
-    type: 'CONFIG_INIT',
-    data: raw
-  });
+  return function main() {
+    return _ref.apply(this, arguments);
+  };
+}();
 
-  console.log('[bootstrap] config initialized');
-  console.log((0, _reducers.storeState)().config);
-};
-
-// append (piggyback) system api
-var startServer = function startServer() {
-
-  _index4.default.use('/system', _index2.default);
-
-  // catch 404 and forward to error handler
-  _index4.default.use(function (req, res, next) {
-    return next((0, _assign2.default)(new Error('Not Found'), { status: 404 }));
-  });
-
-  // development error handler will print stacktrace
-  if (_index4.default.get('env') === 'development') {
-    _index4.default.use(function (err, req, res) {
-      return res.status(err.status || 500).send('error: ' + err.message);
-    });
-  }
-
-  // production error handler no stacktraces leaked to user
-  _index4.default.use(function (err, req, res) {
-    return res.status(err.status || 500).send('error: ' + err.message);
-  });
-
-  _index4.default.set('port', port);
-
-  var httpServer = _http2.default.createServer(_index4.default);
-
-  httpServer.on('error', function (error) {
-
-    if (error.syscall !== 'listen') throw error;
-    switch (error.code) {
-      case 'EACCES':
-        console.error('Port ' + port + ' requires elevated privileges');
-        process.exit(1);
-        break;
-      case 'EADDRINUSE':
-        console.error('Port ' + port + ' is already in use');
-        process.exit(1);
-        break;
-      default:
-        throw error;
-    }
-  });
-
-  httpServer.on('listening', function () {
-    console.log('[bootstrap] Listening on port ' + httpServer.address().port);
-  });
-
-  httpServer.listen(port);
-};
-
-process.argv.forEach(function (val, index, array) {
-
-  debug('argv index, value', index, val);
-
-  if (val === '--no-fruitmix') {
-    (0, _reducers.storeDispatch)({
-      type: 'DEVELOPER_SETTING',
-      key: 'noFruitmix',
-      value: true
-    });
-  }
-
-  if (val === '--appstore-master') {
-    (0, _reducers.storeDispatch)({
-      type: 'DEVELOPER_SETTING',
-      key: 'appstoreMaster',
-      value: true
-    });
-  }
-});
-
-// initialize config
-initConfig();
-
-(0, _device2.default)(function (err, data) {
-
-  if (!err) {
-    (0, _reducers.storeDispatch)({
-      type: 'UPDATE_DEVICE',
-      data: data
-    });
-
-    if (data.ws215i) {
-      console.log('[bootstrap] device is ws215i');
-      (0, _barcelona.barcelonaInit)();
-    } else {
-      console.log('[bootstrap] device is not ws215i');
-    }
-  }
-
-  (0, _boot.tryBoot)(function (err) {
-
-    if (err) {
-      console.log('[bootstrap] failed to boot');
-      console.log('==== die ====');
-      console.log(err);
-      console.log('==== die ====');
-      process.exit(1);
-      return;
-    }
-
-    startServer();
-  });
+main().asCallback(function (err) {
+  return err && console.log(err);
 });

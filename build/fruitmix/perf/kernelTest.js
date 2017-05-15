@@ -22,31 +22,31 @@ var test = function () {
 
             console.log('removing ' + TMPDIR);
             _context.next = 3;
-            return rimrafAsync(TMPDIR);
+            return (0, _bluebird.resolve)(rimrafAsync(TMPDIR));
 
           case 3:
 
             console.log('mkdir ' + TMPDIR);
             _context.next = 6;
-            return (0, _mkdirp2.default)(TMPDIR);
+            return (0, _bluebird.resolve)((0, _mkdirp2.default)(TMPDIR));
 
           case 6:
 
             console.log('set xattr');
             _context.next = 9;
-            return _fsXattr2.default.setAsync(TMPDIR, FRUITMIX, preset);
+            return (0, _bluebird.resolve)(_fsXattr2.default.setAsync(TMPDIR, FRUITMIX, preset));
 
           case 9:
 
             console.log('untar');
             _context.next = 12;
-            return _bluebird2.default.promisify(_child_process2.default.exec)('tar xf ' + KERNEL_TARBALL + ' -C ' + TMPDIR + ' --strip-components=1');
+            return (0, _bluebird.resolve)(_bluebird2.default.promisify(_child_process2.default.exec)('tar xf ' + KERNEL_TARBALL + ' -C ' + TMPDIR + ' --strip-components=1'));
 
           case 12:
 
             console.log('create drive');
             _context.next = 15;
-            return createDriveAsync(TMPDIR);
+            return (0, _bluebird.resolve)(createDriveAsync(TMPDIR));
 
           case 15:
             drive = _context.sent;
@@ -55,11 +55,11 @@ var test = function () {
 
             console.log('starting scan');
             _context.next = 20;
-            return new _bluebird2.default(function (resolve, reject) {
+            return (0, _bluebird.resolve)(new _bluebird2.default(function (resolve, reject) {
               return drive.scan(function (err) {
                 return err ? reject(err) : resolve(null);
               });
-            });
+            }));
 
           case 20:
             after = process.memoryUsage();

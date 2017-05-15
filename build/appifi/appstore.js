@@ -42,7 +42,7 @@ var retrieveRecipes = function () {
           case 5:
             debug('retrieve json recipes');
             _context.next = 8;
-            return retrieveTextAsync(getJsonRecipesUrl());
+            return (0, _bluebird.resolve)(retrieveTextAsync(getJsonRecipesUrl()));
 
           case 8:
             jsonRecipes = _context.sent;
@@ -91,12 +91,20 @@ var retrieveRecipes = function () {
   };
 }();
 
+var retrieveLocalRecipes = function () {
+  var _ref2 = (0, _bluebird.method)(function () {});
+
+  return function retrieveLocalRecipes() {
+    return _ref2.apply(this, arguments);
+  };
+}();
+
 /* this promise never reject */
 
 
 // retrieve all repos for all recipes, return component -> repo map
 var retrieveRepoMap = function () {
-  var _ref2 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee2(recipes) {
+  var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee2(recipes) {
     var compos, repos, map, i;
     return _regenerator2.default.wrap(function _callee2$(_context2) {
       while (1) {
@@ -120,9 +128,9 @@ var retrieveRepoMap = function () {
             });
 
             _context2.next = 8;
-            return (0, _bluebird.all)(compos.map(function (compo) {
+            return (0, _bluebird.resolve)((0, _bluebird.all)(compos.map(function (compo) {
               return retrieveRepo(compo.namespace, compo.name);
-            }));
+            })));
 
           case 8:
             repos = _context2.sent;
@@ -143,7 +151,7 @@ var retrieveRepoMap = function () {
   }));
 
   return function retrieveRepoMap(_x) {
-    return _ref2.apply(this, arguments);
+    return _ref3.apply(this, arguments);
   };
 }();
 
@@ -158,7 +166,7 @@ var retrieveRepoMap = function () {
 //
 
 var refreshAppStore = exports.refreshAppStore = function () {
-  var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
+  var _ref4 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
     var appstore, recipes, repoMap;
     return _regenerator2.default.wrap(function _callee3$(_context3) {
       while (1) {
@@ -184,7 +192,7 @@ var refreshAppStore = exports.refreshAppStore = function () {
             });
 
             _context3.next = 7;
-            return retrieveRecipes();
+            return (0, _bluebird.resolve)(retrieveRecipes());
 
           case 7:
             recipes = _context3.sent;
@@ -207,7 +215,7 @@ var refreshAppStore = exports.refreshAppStore = function () {
 
           case 12:
             _context3.next = 14;
-            return retrieveRepoMap(recipes);
+            return (0, _bluebird.resolve)(retrieveRepoMap(recipes));
 
           case 14:
             repoMap = _context3.sent;
@@ -248,7 +256,7 @@ var refreshAppStore = exports.refreshAppStore = function () {
   }));
 
   return function refreshAppStore() {
-    return _ref3.apply(this, arguments);
+    return _ref4.apply(this, arguments);
   };
 }();
 
@@ -260,7 +268,7 @@ var _superagent = require('superagent');
 
 var _superagent2 = _interopRequireDefault(_superagent);
 
-var _reducers = require('../reducers');
+var _reducers = require('./reducers');
 
 var _dockerApps = require('./dockerApps');
 

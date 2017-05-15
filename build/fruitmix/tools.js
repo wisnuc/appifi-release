@@ -114,7 +114,7 @@ var prepareAsync = function () {
             stats = void 0;
             _context.prev = 6;
             _context.next = 9;
-            return _fs2.default.lstatAsync(wisnuc);
+            return (0, _bluebird.resolve)(_fs2.default.lstatAsync(wisnuc));
 
           case 9:
             stats = _context.sent;
@@ -150,7 +150,7 @@ var prepareAsync = function () {
 
           case 20:
             _context.next = 22;
-            return rimrafAsync(wisnuc);
+            return (0, _bluebird.resolve)(rimrafAsync(wisnuc));
 
           case 22:
             return _context.abrupt('return');
@@ -170,7 +170,7 @@ var prepareAsync = function () {
 
           case 28:
             _context.next = 30;
-            return rimrafAsync(wisnuc);
+            return (0, _bluebird.resolve)(rimrafAsync(wisnuc));
 
           case 30:
             return _context.abrupt('return');
@@ -178,7 +178,7 @@ var prepareAsync = function () {
           case 31:
             _context.prev = 31;
             _context.next = 34;
-            return _fs2.default.lstatAsync(fruitmix);
+            return (0, _bluebird.resolve)(_fs2.default.lstatAsync(fruitmix));
 
           case 34:
             stats = _context.sent;
@@ -214,7 +214,7 @@ var prepareAsync = function () {
 
           case 45:
             _context.next = 47;
-            return rimrafAsync(fruitmix);
+            return (0, _bluebird.resolve)(rimrafAsync(fruitmix));
 
           case 47:
             return _context.abrupt('return');
@@ -226,7 +226,7 @@ var prepareAsync = function () {
             }
 
             _context.next = 53;
-            return rimrafAsync(fruitmix);
+            return (0, _bluebird.resolve)(rimrafAsync(fruitmix));
 
           case 53:
             return _context.abrupt('return');
@@ -234,7 +234,7 @@ var prepareAsync = function () {
           case 54:
             _context.prev = 54;
             _context.next = 57;
-            return _fs2.default.lstatAsync(models);
+            return (0, _bluebird.resolve)(_fs2.default.lstatAsync(models));
 
           case 57:
             stats = _context.sent;
@@ -260,7 +260,7 @@ var prepareAsync = function () {
             // models exists
             archive = _path2.default.join(fruitmix, 'models-' + new Date().toISOString().replace(/(-|:|\.)/g, ''));
             _context.next = 68;
-            return _fs2.default.renameAsync(models, archive);
+            return (0, _bluebird.resolve)(_fs2.default.renameAsync(models, archive));
 
           case 68:
             return _context.abrupt('return');
@@ -299,7 +299,7 @@ var initFruitmixAsync = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return prepareAsync(mp, remove);
+            return (0, _bluebird.resolve)(prepareAsync(mp, remove));
 
           case 2:
 
@@ -308,14 +308,14 @@ var initFruitmixAsync = function () {
             // mkdirp
             modelsPath = _path2.default.join(mp, 'wisnuc', 'fruitmix', 'models');
             _context2.next = 6;
-            return mkdirpAsync(modelsPath);
+            return (0, _bluebird.resolve)(mkdirpAsync(modelsPath));
 
           case 6:
 
             // mkdirp
             drivesPath = _path2.default.join(mp, 'wisnuc', 'fruitmix', 'drives');
             _context2.next = 9;
-            return mkdirpAsync(drivesPath);
+            return (0, _bluebird.resolve)(mkdirpAsync(drivesPath));
 
           case 9:
 
@@ -324,11 +324,11 @@ var initFruitmixAsync = function () {
             home = _nodeUuid2.default.v4();
             library = _nodeUuid2.default.v4();
             _context2.next = 14;
-            return mkdirpAsync(_path2.default.join(drivesPath, home));
+            return (0, _bluebird.resolve)(mkdirpAsync(_path2.default.join(drivesPath, home)));
 
           case 14:
             _context2.next = 16;
-            return mkdirpAsync(_path2.default.join(drivesPath, library));
+            return (0, _bluebird.resolve)(mkdirpAsync(_path2.default.join(drivesPath, library)));
 
           case 16:
 
@@ -357,7 +357,7 @@ var initFruitmixAsync = function () {
 
             drivesFile = _path2.default.join(modelsPath, 'drives.json');
             _context2.next = 20;
-            return _fs2.default.writeFileAsync(drivesFile, (0, _stringify2.default)(drives, null, '  '));
+            return (0, _bluebird.resolve)(_fs2.default.writeFileAsync(drivesFile, (0, _stringify2.default)(drives, null, '  ')));
 
           case 20:
 
@@ -382,7 +382,7 @@ var initFruitmixAsync = function () {
             }];
             usersFile = _path2.default.join(modelsPath, 'users.json');
             _context2.next = 27;
-            return _fs2.default.writeFileAsync(usersFile, (0, _stringify2.default)(users, null, '  '));
+            return (0, _bluebird.resolve)(_fs2.default.writeFileAsync(usersFile, (0, _stringify2.default)(users, null, '  ')));
 
           case 27:
             return _context2.abrupt('return', {
@@ -480,7 +480,7 @@ var probeFruitmix = function probeFruitmix(mountpoint, callback) {
     if (err && err.code === 'ENOENT') return cb(null, 'ENOWISNUC');
     if (err) return callback(err);
 
-    if (!stats.isDirectory) return cb(null, 'EWISNUCNOTDIR');
+    if (!stats.isDirectory()) return cb(null, 'EWISNUCNOTDIR');
 
     var fruit = _path2.default.join(wisnuc, 'fruitmix');
     _fs2.default.lstat(fruit, function (err, stats) {

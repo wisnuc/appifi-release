@@ -68,7 +68,7 @@ var initAsync = function () {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return _paths2.default.setRootAsync(sysroot);
+            return (0, _bluebird.resolve)(_paths2.default.setRootAsync(sysroot));
 
           case 2:
             console.log('[fruitmix] sysroot is set to ' + sysroot);
@@ -80,7 +80,7 @@ var initAsync = function () {
 
             userModelPath = _path2.default.join(modelPath, 'users.json');
             _context.next = 8;
-            return (0, _userModel.createUserModelAsync)(userModelPath, tmpPath);
+            return (0, _bluebird.resolve)((0, _userModel.createUserModelAsync)(userModelPath, tmpPath));
 
           case 8:
             userModel = _context.sent;
@@ -90,7 +90,7 @@ var initAsync = function () {
             // create and set drive model
             driveModelPath = _path2.default.join(modelPath, 'drives.json');
             _context.next = 13;
-            return (0, _driveModel.createDriveModelAsync)(driveModelPath, tmpPath);
+            return (0, _bluebird.resolve)((0, _driveModel.createDriveModelAsync)(driveModelPath, tmpPath));
 
           case 13:
             driveModel = _context.sent;
@@ -121,7 +121,7 @@ var initAsync = function () {
 
             // create document store
             _context.next = 26;
-            return (0, _bluebird.promisify)(_documentStore.createDocumentStore)();
+            return (0, _bluebird.resolve)((0, _bluebird.promisify)(_documentStore.createDocumentStore)());
 
           case 26:
             docstore = _context.sent;

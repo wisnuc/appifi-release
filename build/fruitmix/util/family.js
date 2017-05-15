@@ -869,36 +869,36 @@ var initFamilyRoot = exports.initFamilyRoot = function () {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return (0, _async.mkdirpAsync)(rootDir);
+            return (0, _bluebird.resolve)((0, _async.mkdirpAsync)(rootDir));
 
           case 2:
             _context.next = 4;
-            return _paths2.default.setRootAsync(rootDir);
+            return (0, _bluebird.resolve)(_paths2.default.setRootAsync(rootDir));
 
           case 4:
             driveDir = _paths2.default.get('drives');
             _context.next = 7;
-            return _bluebird2.default.all(drives.map(function (drv) {
+            return (0, _bluebird.resolve)(_bluebird2.default.all(drives.map(function (drv) {
               return (0, _async.mkdirpAsync)(_path2.default.join(driveDir, drv.uuid));
-            }));
+            })));
 
           case 7:
             modelDir = _paths2.default.get('models');
             _context.next = 10;
-            return _async.fs.writeFileAsync(_path2.default.join(modelDir, 'users.json'), (0, _stringify2.default)(getUsers(), null, '  '));
+            return (0, _bluebird.resolve)(_async.fs.writeFileAsync(_path2.default.join(modelDir, 'users.json'), (0, _stringify2.default)(getUsers(), null, '  ')));
 
           case 10:
             _context.next = 12;
-            return _async.fs.writeFileAsync(_path2.default.join(modelDir, 'drives.json'), (0, _stringify2.default)(drives, null, '  '));
+            return (0, _bluebird.resolve)(_async.fs.writeFileAsync(_path2.default.join(modelDir, 'drives.json'), (0, _stringify2.default)(drives, null, '  ')));
 
           case 12:
             _context.next = 14;
-            return (0, _userModel.createUserModelAsync)(_path2.default.join(modelDir, 'users.json'));
+            return (0, _bluebird.resolve)((0, _userModel.createUserModelAsync)(_path2.default.join(modelDir, 'users.json')));
 
           case 14:
             userModel = _context.sent;
             _context.next = 17;
-            return (0, _driveModel.createDriveModelAsync)(_path2.default.join(modelDir, 'drives.json'));
+            return (0, _bluebird.resolve)((0, _driveModel.createDriveModelAsync)(_path2.default.join(modelDir, 'drives.json')));
 
           case 17:
             driveModel = _context.sent;

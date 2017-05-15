@@ -4,10 +4,6 @@ Object.defineProperty(exports, "__esModule", {
   value: true
 });
 
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
-
 var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
@@ -92,79 +88,63 @@ router.get('/list', function (req, res) {
   var qpath = req.query.path;
 
   if (type === 'filesystem') {
-    var _ret = function () {
 
-      if (typeof name !== 'string' || typeof qpath !== 'string') return {
-          v: res.status(400).json({ message: 'name and path must be string' })
-        };
+    if (typeof name !== 'string' || typeof qpath !== 'string') return res.status(400).json({ message: 'name and path must be string' });
 
-      var blocks = (0, _reducers.storeState)().storage.blocks;
-      var block = blocks.find(function (blk) {
-        return blk.name === name;
-      });
+    var blocks = (0, _reducers.storeState)().storage.blocks;
+    var block = blocks.find(function (blk) {
+      return blk.name === name;
+    });
 
-      if (!block) return {
-          v: res.status(404).json({ message: 'block ' + name + ' not found' })
-        };
+    if (!block) return res.status(404).json({ message: 'block ' + name + ' not found' });
 
-      if (!block.stats.isFileSystem) return {
-          v: res.status(400).json({ message: 'block is not a filesystem' })
-        };
+    if (!block.stats.isFileSystem) return res.status(400).json({ message: 'block is not a filesystem' });
 
-      debug('list, block', block);
-      if (!block.stats.isMounted) return {
-          v: res.status(400).json({ message: 'block ' + name + ' not mounted' })
-        };
+    debug('list, block', block);
+    if (!block.stats.isMounted) return res.status(400).json({ message: 'block ' + name + ' not mounted' });
 
-      debug('list, block.stats.mountpoint', block.stats.mountpoint);
-      if (block.stats.mountpoint === '/') return {
-          v: res.status(400).json({ message: 'block ' + name + ' is rootfs' })
-        };
+    debug('list, block.stats.mountpoint', block.stats.mountpoint);
+    if (block.stats.mountpoint === '/') return res.status(400).json({ message: 'block ' + name + ' is rootfs' });
 
-      var mp = block.stats.mountpoint;
+    var mp = block.stats.mountpoint;
 
-      // end mp with a single '/'
-      mp = mp.endsWith('/') ? mp : mp + '/';
-      // no leading '/' for qpath
-      while (qpath.startsWith('/')) {
-        qpath = qpath.slice(1);
-      }var abspath = _path2.default.join(mp, qpath);
+    // end mp with a single '/'
+    mp = mp.endsWith('/') ? mp : mp + '/';
+    // no leading '/' for qpath
+    while (qpath.startsWith('/')) {
+      qpath = qpath.slice(1);
+    }var abspath = _path2.default.join(mp, qpath);
 
-      debug('list, mp and abspath', mp, abspath);
+    debug('list, mp and abspath', mp, abspath);
 
-      if (!abspath.startsWith(mp)) // invalid path
-        return {
-          v: res.status(400).json({ message: 'invalid path ' + query.path })
-        };
+    if (!abspath.startsWith(mp)) // invalid path
+      return res.status(400).json({ message: 'invalid path ' + query.path });
 
-      _fs2.default.readdir(abspath, function (err, entries) {
-        if (err) return res.status(500).json({ code: err.code, message: err.message });
+    _fs2.default.readdir(abspath, function (err, entries) {
+      if (err) return res.status(500).json({ code: err.code, message: err.message });
 
-        if (entries.length === 0) return res.status(200).json([]);
+      if (entries.length === 0) return res.status(200).json([]);
 
-        var count = entries.length;
-        var list = [];
-        entries.forEach(function (entry) {
-          _fs2.default.lstat(_path2.default.join(abspath, entry), function (err, stat) {
-            if (!err) {
-              if (stat.isDirectory() || stat.isFile()) {
-                list.push({
-                  name: entry,
-                  type: stat.isDirectory() ? 'folder' : 'file',
-                  size: stat.size,
-                  mtime: stat.mtime
-                });
-              }
+      var count = entries.length;
+      var list = [];
+      entries.forEach(function (entry) {
+        _fs2.default.lstat(_path2.default.join(abspath, entry), function (err, stat) {
+          if (!err) {
+            if (stat.isDirectory() || stat.isFile()) {
+              list.push({
+                name: entry,
+                type: stat.isDirectory() ? 'folder' : 'file',
+                size: stat.size,
+                mtime: stat.mtime
+              });
             }
-            if (! --count) {
-              res.status(200).json(list);
-            }
-          });
+          }
+          if (! --count) {
+            res.status(200).json(list);
+          }
         });
       });
-    }();
-
-    if ((typeof _ret === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret)) === "object") return _ret.v;
+    });
   } else if (type === 'appifi') {} else return res.status(400).json({
     message: 'unrecognized type'
   });

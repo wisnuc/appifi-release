@@ -130,16 +130,14 @@ var Forest = exports.Forest = function (_IndexedTree) {
           if (entries.length === 0) {
             readXstatAgain();
           } else {
-            (function () {
-              var count = entries.length;
-              entries.forEach(function (entry) {
-                (0, _xstat.readXstat)(_path2.default.join(target, entry), function (err, xstat) {
-                  if (finished) return;
-                  if (!err) children.push(xstat); // bypass error
-                  if (! --count) readXstatAgain();
-                });
+            var count = entries.length;
+            entries.forEach(function (entry) {
+              (0, _xstat.readXstat)(_path2.default.join(target, entry), function (err, xstat) {
+                if (finished) return;
+                if (!err) children.push(xstat); // bypass error
+                if (! --count) readXstatAgain();
               });
-            })();
+            });
           }
         });
 
@@ -168,39 +166,37 @@ var Forest = exports.Forest = function (_IndexedTree) {
         } else if (mtime1 !== mtime2) {
           finishJob(true);
         } else {
-          (function () {
-            // compare children, create a map first
-            var map = new _map2.default();
-            children.forEach(function (xstat) {
-              return map.set(xstat.uuid, xstat);
-            });
+          // compare children, create a map first
+          var map = new _map2.default();
+          children.forEach(function (xstat) {
+            return map.set(xstat.uuid, xstat);
+          });
 
-            // first round, remove all children not found in xstats
-            node.getChildren().filter(function (child) {
-              return !map.has(child.uuid);
-            }).forEach(function (child) {
-              return _this2.deleteSubTree(child);
-            });
+          // first round, remove all children not found in xstats
+          node.getChildren().filter(function (child) {
+            return !map.has(child.uuid);
+          }).forEach(function (child) {
+            return _this2.deleteSubTree(child);
+          });
 
-            // second round, update existing thing if necessary
-            node.getChildren().forEach(function (child) {
+          // second round, update existing thing if necessary
+          node.getChildren().forEach(function (child) {
 
-              var xstat = map.get(child.uuid);
-              _this2.updateNode(child, (0, _util.mapXstatToObject)(xstat));
-              if (xstat.isDirectory() && xstat.mtime.getTime() !== child.mtime) _this2.requestProbe(child); // TODO
+            var xstat = map.get(child.uuid);
+            _this2.updateNode(child, (0, _util.mapXstatToObject)(xstat));
+            if (xstat.isDirectory() && xstat.mtime.getTime() !== child.mtime) _this2.requestProbe(child); // TODO
 
-              map.delete(child.uuid);
-            });
+            map.delete(child.uuid);
+          });
 
-            // third round, add new node
-            (0, _from2.default)(map.values()).forEach(function (xstat) {
-              var child = _this2.createNode(node, (0, _util.mapXstatToObject)(xstat));
-              if (xstat.isDirectory()) _this2.requestProbe(child); // TODO
-            });
+          // third round, add new node
+          (0, _from2.default)(map.values()).forEach(function (xstat) {
+            var child = _this2.createNode(node, (0, _util.mapXstatToObject)(xstat));
+            if (xstat.isDirectory()) _this2.requestProbe(child); // TODO
+          });
 
-            node.mtime = mtime2;
-            finishJob(false);
-          })();
+          node.mtime = mtime2;
+          finishJob(false);
         }
       };
 

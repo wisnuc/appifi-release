@@ -55,38 +55,3 @@ var combineReducers = function combineReducers(reducers) {
 
 exports.createStore = createStore;
 exports.combineReducers = combineReducers;
-
-/** test
-const reducer1 = (state = 0, action) => {
-
-  switch (action.type) {
-  case 'INC':
-    return state + 1
-  case 'DEC':
-    return state - 1
-  default:
-    return state  
-  }
-}
-
-const reducer2 = (state = 100, action) => {
-
-  switch (action.type) {
-  case 'INC':
-    return state + 1
-  case 'DEC':
-    return state - 1
-  default:
-    return state  
-  }
-}
-
-const reducer3 = combineReducers({reducer1, reducer2})
-
-let store = createStore(reducer3)
-console.log(store.getState())
-store.dispatch({type: 'INC'})
-console.log(store.getState())
-store.dispatch({type: 'DEC'})
-console.log(store.getState())
-**/

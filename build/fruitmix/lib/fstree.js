@@ -38,17 +38,18 @@ var listAsync = function () {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return _fs2.default.lstatAsync(target);
+            return (0, _bluebird.resolve)(_fs2.default.lstatAsync(target));
 
           case 2:
             stat = _context.sent;
 
             if (!(stat.isDirectory() || stat.isFile())) {
-              _context.next = 15;
+              _context.next = 16;
               break;
             }
 
-            _context.t0 = {
+            _context.t0 = _assign2.default;
+            _context.t1 = {
               path: target,
               type: stat.isDirectory() ? 'folder' : 'file',
               mtime: stat.mtime.getTime(),
@@ -56,33 +57,33 @@ var listAsync = function () {
             };
 
             if (!(level === 0 || !stat.isDirectory())) {
-              _context.next = 9;
+              _context.next = 10;
               break;
             }
 
-            _context.t1 = {};
-            _context.next = 13;
+            _context.t2 = {};
+            _context.next = 14;
             break;
 
-          case 9:
-            _context.next = 11;
-            return _fs2.default.readdirAsync(target).map(function (entry) {
+          case 10:
+            _context.next = 12;
+            return (0, _bluebird.resolve)(_fs2.default.readdirAsync(target).map(function (entry) {
               return listAsync(_path2.default.join(target, entry), level - 1);
             }).filter(function (item) {
               return !!item;
-            });
+            }));
 
-          case 11:
-            _context.t2 = _context.sent;
-            _context.t1 = {
-              children: _context.t2
+          case 12:
+            _context.t3 = _context.sent;
+            _context.t2 = {
+              children: _context.t3
             };
 
-          case 13:
-            _context.t3 = _context.t1;
-            return _context.abrupt('return', (0, _assign2.default)(_context.t0, _context.t3));
+          case 14:
+            _context.t4 = _context.t2;
+            return _context.abrupt('return', (0, _context.t0)(_context.t1, _context.t4));
 
-          case 15:
+          case 16:
           case 'end':
             return _context.stop();
         }

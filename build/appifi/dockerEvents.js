@@ -50,14 +50,14 @@ var probeDockerState = function () {
             volumesUrl = '/volumes';
             networksUrl = '/networks';
             _context.next = 8;
-            return (0, _bluebird.all)([dockerApiGet(containersUrl), dockerApiGet(imagesUrl), dockerApiGet(infoUrl), dockerApiGet(versionUrl), dockerApiGet(volumesUrl), dockerApiGet(networksUrl)]);
+            return (0, _bluebird.resolve)((0, _bluebird.all)([dockerApiGet(containersUrl), dockerApiGet(imagesUrl), dockerApiGet(infoUrl), dockerApiGet(versionUrl), dockerApiGet(volumesUrl), dockerApiGet(networksUrl)]));
 
           case 8:
             r = _context.sent;
             _context.next = 11;
-            return (0, _bluebird.all)(r[1].map(function (img) {
+            return (0, _bluebird.resolve)((0, _bluebird.all)(r[1].map(function (img) {
               return dockerApiGet('/images/' + img.Id.slice(7) + '/json');
-            }));
+            })));
 
           case 11:
             id = _context.sent;
@@ -97,13 +97,13 @@ var dockerEventsAgent = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return new _bluebird2.default(function (resolve) {
+            return (0, _bluebird.resolve)(new _bluebird2.default(function (resolve) {
               return (// TODO never reject?
                 _dockerAgent2.default.get('/events', function (e, r) {
                   return e ? resolve(null) : resolve(r);
                 })
               );
-            });
+            }));
 
           case 2:
             return _context2.abrupt('return', _context2.sent);

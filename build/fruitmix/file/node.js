@@ -3,27 +3,10 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createNode = undefined;
-
-var _getPrototypeOf = require('babel-runtime/core-js/object/get-prototype-of');
-
-var _getPrototypeOf2 = _interopRequireDefault(_getPrototypeOf);
-
-var _possibleConstructorReturn2 = require('babel-runtime/helpers/possibleConstructorReturn');
-
-var _possibleConstructorReturn3 = _interopRequireDefault(_possibleConstructorReturn2);
-
-var _inherits2 = require('babel-runtime/helpers/inherits');
-
-var _inherits3 = _interopRequireDefault(_inherits2);
 
 var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
 
 var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
-
-var _assign = require('babel-runtime/core-js/object/assign');
-
-var _assign2 = _interopRequireDefault(_assign);
 
 var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
 
@@ -33,44 +16,44 @@ var _createClass2 = require('babel-runtime/helpers/createClass');
 
 var _createClass3 = _interopRequireDefault(_createClass2);
 
-var _validator = require('validator');
+var _path = require('path');
 
-var _validator2 = _interopRequireDefault(_validator);
+var _path2 = _interopRequireDefault(_path);
+
+var _error = require('../lib/error');
+
+var _error2 = _interopRequireDefault(_error);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// tree, link-list => recursive
-// array, => linear
-// for (let x= node; x.parent !== null; x = x.parent)
-// 
-// turing machine vs lambda calculus / functional programming
-// lambda expression () => {}
-//
-
 var Node = function () {
-  function Node(props) {
+  function Node(ctx) {
     (0, _classCallCheck3.default)(this, Node);
 
-    // TODO
-    (0, _assign2.default)(this, props);
+
+    this.ctx = ctx;
+    this.worker = null;
     this.parent = null;
-    this.children = []; // new Set
   }
 
   (0, _createClass3.default)(Node, [{
-    key: 'attach',
-    value: function attach(parent) {
-      if (this.parent) throw new Error('node is already attached');
-      this.parent = parent;
-      parent.setChild(this);
-    }
-  }, {
-    key: 'detach',
-    value: function detach() {
-      if (this.parent === null) throw new Error('Node is already detached');
-      this.parent.unsetChild(this);
-      this.parent = null;
-    }
+    key: 'root',
+    value: function (_root) {
+      function root() {
+        return _root.apply(this, arguments);
+      }
+
+      root.toString = function () {
+        return _root.toString();
+      };
+
+      return root;
+    }(function () {
+      var node = this;
+      while (node.parent !== null) {
+        node = node.parent;
+      }return root;
+    })
   }, {
     key: 'setChild',
     value: function setChild(child) {
@@ -79,56 +62,52 @@ var Node = function () {
   }, {
     key: 'unsetChild',
     value: function unsetChild(child) {
-
       var children = this.children;
       if (children === undefined) throw new Error('Node has no children');
-
       var index = children.findIndex(function (c) {
         return c === child;
       });
       if (index === -1) throw new Error('Node has no such child');
       children.splice(index, 1);
-
       if (children.length === 0) delete this.children;
     }
-  }, {
-    key: 'root',
-    value: function root() {
-      var node = this;
-      while (node.parent !== null) {
-        node = node.parent;
-      }return node;
-    }
-  }, {
-    key: 'nea',
-    value: function nea() {
-      var node = this;
-      while (!node.writelist) {
-        node = node.parent;
-      }return node;
-    }
-  }, {
-    key: 'isRootOwner',
-    value: function isRootOwner(userUUID) {
-      return this.root().owner.indexOf(userUUID) !== -1;
-    }
-  }, {
-    key: 'userWritable',
-    value: function userWritable(userUUID) {
-      return this.root().owner.indexOf(userUUID) !== -1 || this.nea().writelist.indexOf(userUUID) !== -1;
-    }
-  }, {
-    key: 'userReadable',
-    value: function userReadable(userUUID) {
-      return this.root().owner.indexOf(userUUID) !== -1 || this.nea().writelist.indexOf(userUUID) !== -1 || this.nea().readlist.indexOf(userUUID) !== -1;
-    }
-
-    // always return array
-
   }, {
     key: 'getChildren',
     value: function getChildren() {
       return this.children ? this.children : [];
+    }
+  }, {
+    key: 'attach',
+    value: function attach(parent) {
+
+      if (this.parent) {
+        var e = new Error('node is already attached');
+        console.log('>>>>>>>>');
+        console.log('this, parent, e', this, parent, e);
+        console.log('<<<<<<<<');
+        throw e;
+      }
+
+      if (!(parent instanceof Node)) {
+        var _e = new Error('parent is not a directory node');
+        console.log('>>>>>>>>');
+        console.log('this, parent, e', this, parent, _e);
+        console.log('<<<<<<<<');
+        throw _e;
+      }
+
+      this.parent = parent;
+      if (parent) parent.setChild(this);
+      this.ctx.nodeAttached(this);
+    }
+  }, {
+    key: 'detach',
+    value: function detach() {
+
+      this.ctx.nodeDetaching(this);
+      if (this.parent === null) throw new Error('node is already detached');
+      this.parent.unsetChild(this);
+      this.parent = null;
     }
   }, {
     key: 'upEach',
@@ -149,36 +128,9 @@ var Node = function () {
       }
     }
   }, {
-    key: 'nodepath',
-    value: function nodepath() {
-      var q = [];
-      this.upEach(function (node) {
-        return q.unshift(node);
-      });
-      return q;
-    }
-  }, {
-    key: 'namepath',
-    value: function namepath() {
-      var _path;
-
-      return (_path = path).join.apply(_path, (0, _toConsumableArray3.default)(this.nodepath().map(function (n) {
-        return n.name;
-      })));
-    }
-  }, {
-    key: 'walkDown',
-    value: function walkDown(names) {
-      if (names.length === 0) return this;
-      var named = this.getChildren().find(function (child) {
-        return child.name === names[0];
-      });
-      if (!named) return this;
-      return named.walkDown(names.slice(1));
-    }
-  }, {
     key: 'preVisit',
     value: function preVisit(func) {
+
       func(this);
       if (this.children) this.children.forEach(function (child) {
         return child.preVisit(func);
@@ -187,165 +139,89 @@ var Node = function () {
   }, {
     key: 'postVisit',
     value: function postVisit(func) {
+
       if (this.children) this.children.forEach(function (child) {
         return child.postVisit(func);
       });
       func(this);
     }
+
+    // return node array starting from drive node 
+
   }, {
-    key: 'preVisitEol',
-    value: function preVisitEol(func) {
-      if (func(this) && this.children) this.children.forEach(function (child) {
-        return child.preVisitEol(func);
-      });
+    key: 'nodepath',
+    value: function nodepath() {
+
+      var q = [];
+      for (var n = this; n !== null; n = n.parent) {
+        if (n === this.ctx.root) return q;
+        q.unshift(n);
+      }
+
+      throw new _error2.default.ENODEDETACHED();
+    }
+
+    // return drive node
+
+  }, {
+    key: 'getDrive',
+    value: function getDrive() {
+
+      for (var n = this; n !== null; n = n.parent) {
+        if (n.parent === this.ctx.root) return n.drive;
+      }
+
+      throw new _error2.default.ENODEDETACHED();
     }
   }, {
-    key: 'preVisitFind',
-    value: function preVisitFind(func) {
-      if (func(this)) return this;
-      if (this.getChildren().length === 0) return undefined;
-      return this.children.find(function (child) {
-        return child.preVisitFind(func);
-      });
+    key: 'abspath',
+    value: function abspath() {
+
+      return _path2.default.join.apply(_path2.default, [this.ctx.dir].concat((0, _toConsumableArray3.default)(this.nodepath().map(function (n) {
+        return n.name;
+      }))));
+    }
+  }, {
+    key: 'namepath',
+    value: function namepath() {
+
+      return _path2.default.join.apply(_path2.default, (0, _toConsumableArray3.default)(this.nodepath().map(function (n) {
+        return n.name;
+      })));
+    }
+  }, {
+    key: 'walkdown',
+    value: function walkdown(names) {}
+    // TODO
+
+
+    // abort workers // TODO nullify worker?
+
+  }, {
+    key: 'abort',
+    value: function abort() {
+      if (this.worker) this.worker.abort();
     }
   }, {
     key: 'isFile',
     value: function isFile() {
-      return this.type === 'file';
+      return false;
     }
   }, {
     key: 'isDirectory',
     value: function isDirectory() {
-      return this.type === 'folder';
+      return false;
+    }
+  }, {
+    key: 'genObject',
+    value: function genObject() {
+      return this.getChildren().reduce(function (acc, c) {
+        acc[c.name] = c.genObject();
+        return acc;
+      }, {});
     }
   }]);
   return Node;
 }();
 
-var FileNode = function (_Node) {
-  (0, _inherits3.default)(FileNode, _Node);
-
-  function FileNode(props) {
-    (0, _classCallCheck3.default)(this, FileNode);
-    return (0, _possibleConstructorReturn3.default)(this, (FileNode.__proto__ || (0, _getPrototypeOf2.default)(FileNode)).call(this, props));
-  }
-
-  return FileNode;
-}(Node);
-
-var FolderNode = function (_Node2) {
-  (0, _inherits3.default)(FolderNode, _Node2);
-
-  function FolderNode(props) {
-    (0, _classCallCheck3.default)(this, FolderNode);
-    return (0, _possibleConstructorReturn3.default)(this, (FolderNode.__proto__ || (0, _getPrototypeOf2.default)(FolderNode)).call(this, props));
-  }
-
-  return FolderNode;
-}(Node);
-
-// node.type ==== 'file'
-// node instanceof FileNode
-
-var isUUID = function isUUID(uuid) {
-  return typeof uuid === 'string' && _validator2.default.isUUID(uuid);
-};
-
-// throw error
-var createNode = function createNode(props) {
-
-  // props must have uuid
-  if (!isUUID(props.uuid)) {
-    var e = new Error('invalid uuid');
-    e.code = 'EINVAL';
-    throw e;
-  }
-
-  // props must have type, 'file' or 'folder'
-  if (props.type !== 'file' && props.type !== 'folder') {
-    var _e = new Error('invalid type');
-    _e.code = 'EINVAL';
-    throw _e;
-  }
-
-  // TODO validate owner, writelist, readlist, name
-  // if file, size & mtime 
-  // if folder ???? TODO
-  return new Node(props);
-};
-
-var createFileNode = function createFileNode() {};
-var createFolderNode = function createFolderNode() {};
-
-exports.createNode = createNode;
-
-/**
-
-root
-
-timestamp = 0
-
-probe node 
-
-1. read timestamp ts1
-2. probe folders and files inside given folder
-3. read timestamp ts2
-4. if (ts1 === ts2) // step 2 result and ts1/ts2 valid, update memtree
-5. else // ????? retry? when? instant? wait a minute?
-
-exponential backoff
-
-1 2 4 8 16 32 64 .... 1024 2^10 worse case
-
-folder a
-
-folder a / file b (rename b1) probe -> a
-
-
-folder node -> concurrent probe request
-
-schedule
-
-
-waiting <- probe (wait another 50ms)
-        <- timeout (go to probing 0)
-probing - 0 <- probe (go to probing 1)
-            <- success (go to idle)
-            <- ??? (go to waiting, retry, waiting), (probe parent)
-probing - 1 <- probe (nothing)
-            <- success (go to waiting)
-            <- ???
-idle <- probe ( go to waiting )
-
-{
-
-  constructor() {
-    this.state = '
-  }
-
-  enterIdle() {
-  }
-
-  exitIdle() {
-  }
-
-  setState(nextState, ...args) {
-
-    switch(this.state) {
-      exit()
-    }
-
-    switch(nextState)
-    case
-      enterIdle(...args)
-  }
-}
-
-io scheduler
-
-/// scientific method
-test criteria
-latency reconciliation time
-statistic probe time? io time?
-
-***/
+exports.default = Node;

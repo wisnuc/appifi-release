@@ -3,7 +3,9 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.createDocumentStore = undefined;
+exports.createDocumentStoreAsync = exports.createDocumentStore = undefined;
+
+var _bluebird = require('bluebird');
 
 var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
 
@@ -25,10 +27,6 @@ var _crypto = require('crypto');
 
 var _crypto2 = _interopRequireDefault(_crypto);
 
-var _rimraf = require('rimraf');
-
-var _rimraf2 = _interopRequireDefault(_rimraf);
-
 var _mkdirp = require('mkdirp');
 
 var _mkdirp2 = _interopRequireDefault(_mkdirp);
@@ -39,19 +37,19 @@ var _canonicalJson2 = _interopRequireDefault(_canonicalJson);
 
 var _util = require('./util');
 
-var _paths = require('./paths');
-
-var _paths2 = _interopRequireDefault(_paths);
+var _const = require('./const');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// import paths from './paths'
 
 var DocumentStore = function () {
 
   // the factory must assure the tmp folder exists !
-  function DocumentStore(dir, tmpdir) {
+  function DocumentStore(docdir, tmpdir) {
     (0, _classCallCheck3.default)(this, DocumentStore);
 
-    this.rootdir = dir;
+    this.docdir = docdir;
     this.tmpdir = tmpdir;
   }
 
@@ -78,7 +76,7 @@ var DocumentStore = function () {
       digest = hash.digest().toString('hex');
 
       // src is in tmp folder
-      dirpath = _path2.default.join(this.rootdir, digest.slice(0, 2));
+      dirpath = _path2.default.join(this.docdir, digest.slice(0, 2));
       filepath = _path2.default.join(dirpath, digest.slice(2));
       tmppath = _path2.default.join(this.tmpdir, digest);
 
@@ -106,7 +104,7 @@ var DocumentStore = function () {
         return process.nextTick(callback, error);
       }
 
-      filepath = _path2.default.join(this.rootdir, digest.slice(0, 2), digest.slice(2));
+      filepath = _path2.default.join(this.docdir, digest.slice(0, 2), digest.slice(2));
 
       _fs2.default.readFile(filepath, function (err, data) {
 
@@ -122,19 +120,21 @@ var DocumentStore = function () {
   return DocumentStore;
 }();
 
-var createDocumentStore = function createDocumentStore(callback) {
+var createDocumentStore = function createDocumentStore(froot, callback) {
 
-  var dir = _paths2.default.get('documents');
-  var tmpdir = _paths2.default.get('tmp');
+  var doc = _path2.default.join(froot, _const.DIR.DOC);
+  var tmp = _path2.default.join(froot, _const.DIR.TMP);
 
-  _fs2.default.stat(dir, function (err, stats) {
-
+  (0, _mkdirp2.default)(doc, function (err) {
     if (err) return callback(err);
-    if (!stats.isDirectory()) return callback(new Error('path must be folder'));
-
-    // no clean
-    return callback(null, new DocumentStore(dir, tmpdir));
+    (0, _mkdirp2.default)(tmp, function (err) {
+      if (err) return callback(err);
+      callback(null, new DocumentStore(doc, tmp));
+    });
   });
 };
 
+var createDocumentStoreAsync = (0, _bluebird.promisify)(createDocumentStore);
+
 exports.createDocumentStore = createDocumentStore;
+exports.createDocumentStoreAsync = createDocumentStoreAsync;

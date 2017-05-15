@@ -1,16 +1,8 @@
 'use strict';
 
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
 var _assign = require('babel-runtime/core-js/object/assign');
 
 var _assign2 = _interopRequireDefault(_assign);
-
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
 
 var _regenerator = require('babel-runtime/regenerator');
 
@@ -20,11 +12,11 @@ var _bluebird = require('bluebird');
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var path = require('path');
-var os = require('os');
-
 var Promise = require('bluebird');
+
+var path = require('path');
 var fs = Promise.promisifyAll(require('fs'));
+var os = require('os');
 
 var classNetPath = '/sys/class/net';
 
@@ -35,9 +27,9 @@ var mapAsyncMapFilter = function () {
         switch (_context.prev = _context.next) {
           case 0:
             _context.next = 2;
-            return Promise.map(arr, function (item) {
+            return (0, _bluebird.resolve)(Promise.map(arr, function (item) {
               return asyncMapper(item).reflect();
-            }, options);
+            }, options));
 
           case 2:
             _context.t0 = function (x, index) {
@@ -71,27 +63,27 @@ var enumerateNetworkInterfaceNamesAsync = function () {
         switch (_context2.prev = _context2.next) {
           case 0:
             _context2.next = 2;
-            return fs.readdirAsync(dirpath);
+            return (0, _bluebird.resolve)(fs.readdirAsync(dirpath));
 
           case 2:
             entries = _context2.sent;
             _context2.next = 5;
-            return mapAsyncMapFilter(entries, // entries
+            return (0, _bluebird.resolve)(mapAsyncMapFilter(entries, // entries
             function (entry) {
               return fs.lstatAsync(path.join(dirpath, entry));
             }, // imapper, map entry to stat, async
             function (entry, stat) {
               return stat.isSymbolicLink() ? entry : null;
-            });
+            }));
 
           case 5:
             interfaces = _context2.sent;
             _context2.next = 8;
-            return mapAsyncMapFilter(interfaces, function (itfc) {
+            return (0, _bluebird.resolve)(mapAsyncMapFilter(interfaces, function (itfc) {
               return fs.readlinkAsync(path.join(dirpath, itfc));
             }, function (itfc, link) {
               return !link.startsWith('../../devices/virtual/') ? itfc : null;
-            });
+            }));
 
           case 8:
             return _context2.abrupt('return', _context2.sent);
@@ -121,17 +113,11 @@ var formatFileValue = function formatFileValue(value) {
   if (arr.every(function (item) {
     return (item.match(/=/g) || []).length === 1;
   })) {
-    var _ret = function () {
-      var object = {};
-      arr.forEach(function (item) {
-        return object[item.split('=')[0]] = autoInt(item.split('=')[1]);
-      });
-      return {
-        v: object
-      };
-    }();
-
-    if ((typeof _ret === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret)) === "object") return _ret.v;
+    var object = {};
+    arr.forEach(function (item) {
+      return object[item.split('=')[0]] = autoInt(item.split('=')[1]);
+    });
+    return object;
   }
 
   arr = arr.map(function (item) {
@@ -155,26 +141,26 @@ var objectifyAsync = function () {
           case 0:
             object = {};
             _context3.next = 3;
-            return fs.readdirAsync(dirpath);
+            return (0, _bluebird.resolve)(fs.readdirAsync(dirpath));
 
           case 3:
             entries = _context3.sent;
             _context3.next = 6;
-            return mapAsyncMapFilter(entries, function (entry) {
+            return (0, _bluebird.resolve)(mapAsyncMapFilter(entries, function (entry) {
               return fs.lstatAsync(path.join(dirpath, entry));
             }, function (entry, stat) {
               return (0, _assign2.default)(stat, { entry: entry });
-            });
+            }));
 
           case 6:
             stats = _context3.sent;
             _context3.next = 9;
-            return mapAsyncMapFilter(stats, function (stat) {
+            return (0, _bluebird.resolve)(mapAsyncMapFilter(stats, function (stat) {
               var entryPath = path.join(dirpath, stat.entry);
               if (stat.isFile()) return fs.readFileAsync(entryPath);else if (stat.isSymbolicLink()) return fs.readlinkAsync(entryPath);else if (stat.isDirectory()) return Promise.resolve(objectifyAsync(entryPath));else return null;
             }, function (stat, value) {
               return genKeyValuePair(stat, value);
-            });
+            }));
 
           case 9:
             pairs = _context3.sent;
@@ -206,16 +192,16 @@ var enumerateNetworkInterfacesAsync = function () {
         switch (_context4.prev = _context4.next) {
           case 0:
             _context4.next = 2;
-            return enumerateNetworkInterfaceNamesAsync(classNetPath);
+            return (0, _bluebird.resolve)(enumerateNetworkInterfaceNamesAsync(classNetPath));
 
           case 2:
             names = _context4.sent;
             _context4.next = 5;
-            return mapAsyncMapFilter(names, function (name) {
+            return (0, _bluebird.resolve)(mapAsyncMapFilter(names, function (name) {
               return Promise.resolve(objectifyAsync(path.join(classNetPath, name)));
             }, function (name, obj) {
               return (0, _assign2.default)(obj, { name: name });
-            });
+            }));
 
           case 5:
             return _context4.abrupt('return', _context4.sent);
@@ -238,14 +224,14 @@ var enumerateNetworkInterfacesAsync = function () {
 //   .then(r => console.log(JSON.stringify(r, null, '  ')))
 //   .catch(e => console.log(e))
 
-exports.default = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee5() {
+module.exports = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee5() {
   return _regenerator2.default.wrap(function _callee5$(_context5) {
     while (1) {
       switch (_context5.prev = _context5.next) {
         case 0:
           _context5.t0 = os.networkInterfaces();
           _context5.next = 3;
-          return enumerateNetworkInterfacesAsync();
+          return (0, _bluebird.resolve)(enumerateNetworkInterfacesAsync());
 
         case 3:
           _context5.t1 = _context5.sent;

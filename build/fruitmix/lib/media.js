@@ -163,19 +163,17 @@ var createMediaShareDoc = function createMediaShareDoc(userUUID, obj) {
   if (typeof sticky !== 'boolean') sticky = false;
 
   if (!Array.isArray(contents)) contents = [];else {
-    (function () {
 
-      var time = new Date().getTime();
-      contents = contents.filter(isSHA256).filter(function (item, index, array) {
-        return index === array.indexOf(item);
-      }).map(function (digest) {
-        return {
-          author: userUUID,
-          digest: digest,
-          time: time
-        };
-      });
-    })();
+    var _time = new Date().getTime();
+    contents = contents.filter(isSHA256).filter(function (item, index, array) {
+      return index === array.indexOf(item);
+    }).map(function (digest) {
+      return {
+        author: userUUID,
+        digest: digest,
+        time: _time
+      };
+    });
   }
 
   if (!contents.length) {
@@ -272,14 +270,14 @@ var updateMediaShareDoc = function updateMediaShareDoc(userUUID, doc, ops) {
       return op.path === 'maintainers' && op.op === 'delete';
     });
     if (op && Array.isArray(op.value)) {
-      maintainers = subtractUUIDArrray(maintainers, sortDedup(isUUID)(op.value));
+      maintainers = subtractUUIDArray(maintainers, sortDedup(isUUID)(op.value));
     }
 
     op = ops.find(function (op) {
       return op.path === 'maintainers' && op.op === 'add';
     });
     if (op && Array.isArray(op.value)) {
-      maintainers = addUUIDArray(maintainers, sortDedup(isSHA256)(op.value).filter(function (x) {
+      maintainers = addUUIDArray(maintainers, sortDedup(isUUID)(op.value).filter(function (x) {
         return x !== doc.author;
       }));
     }
@@ -324,51 +322,47 @@ var updateMediaShareDoc = function updateMediaShareDoc(userUUID, doc, ops) {
       return op.path === 'contents' && op.op === 'delete';
     });
     if (op && Array.isArray(op.value)) {
-      (function () {
 
-        var c = [].concat((0, _toConsumableArray3.default)(contents));
-        var dirty = false;
+      var c = [].concat((0, _toConsumableArray3.default)(contents));
+      var dirty = false;
 
-        sortDedup(isSHA256)(op.value).forEach(function (digest) {
-          var index = c.findIndex(function (x) {
-            return x.digest === digest && (userUUID === doc.author || userUUID === x.creator);
-          });
-
-          if (index !== -1) {
-            c.splice(index, 1);
-            dirty = true;
-          }
+      sortDedup(isSHA256)(op.value).forEach(function (digest) {
+        var index = c.findIndex(function (x) {
+          return x.digest === digest && (userUUID === doc.author || userUUID === x.creator);
         });
 
-        if (dirty) contents = c;
-      })();
+        if (index !== -1) {
+          c.splice(index, 1);
+          dirty = true;
+        }
+      });
+
+      if (dirty) contents = c;
     }
 
     op = ops.find(function (op) {
       return op.path === 'contents' && op.op === 'add';
     });
     if (op && Array.isArray(op.value)) {
-      (function () {
 
-        var c = [].concat((0, _toConsumableArray3.default)(contents));
-        var dirty = false;
+      var _c = [].concat((0, _toConsumableArray3.default)(contents));
+      var _dirty = false;
 
-        sortDedup(isSHA256)(op.value).forEach(function (digest) {
-          var index = c.findIndex(function (x) {
-            return x.digest === digest;
-          });
-          if (index !== -1) return;
-
-          c.push({
-            digest: b,
-            creator: userUUID,
-            ctime: new Date().getTime()
-          });
-          dirty = true;
+      sortDedup(isSHA256)(op.value).forEach(function (digest) {
+        var index = _c.findIndex(function (x) {
+          return x.digest === digest;
         });
+        if (index !== -1) return;
 
-        if (dirty) contents = c;
-      })();
+        _c.push({
+          digest: b,
+          creator: userUUID,
+          ctime: new Date().getTime()
+        });
+        _dirty = true;
+      });
+
+      if (_dirty) contents = _c;
     }
   }
 
@@ -507,41 +501,33 @@ var Media = function (_EventEmitter) {
         if (owner === userUUID) {
           arr.push({ owner: owner, digest: digest, comments: talk.doc.comments, sha1: SHA1(talk.doc.comments) });
         } else {
-          var _ret4 = function () {
 
-            var shareSet = _this2.mediaMap.get(digest);
-            if (!shareSet) return {
-                v: void 0
-              };
+          var shareSet = _this2.mediaMap.get(digest);
+          if (!shareSet) return;
 
-            // fellows (mutual, reciprocal.... see thesaurus.com for more approriate words)
-            var fellows = new _set2.default();
-            shareSet.forEach(function (share) {
-              if (owner === share.doc.author && userViewable(share, userUUID)) {
-                fellows.add(share.doc.author);
-                share.doc.maintainers.forEach(function (u) {
-                  return fellows.add(u);
-                });
-                share.doc.viewers.forEach(function (u) {
-                  return fellows.add(u);
-                });
-              }
-            });
+          // fellows (mutual, reciprocal.... see thesaurus.com for more approriate words)
+          var fellows = new _set2.default();
+          shareSet.forEach(function (share) {
+            if (owner === share.doc.author && userViewable(share, userUUID)) {
+              fellows.add(share.doc.author);
+              share.doc.maintainers.forEach(function (u) {
+                return fellows.add(u);
+              });
+              share.doc.viewers.forEach(function (u) {
+                return fellows.add(u);
+              });
+            }
+          });
 
-            // the talk owner did not share anything with you, otherwise, at least himself and you will
-            // be in fellows
-            if (fellows.size === 0) return {
-                v: void 0
-              };
+          // the talk owner did not share anything with you, otherwise, at least himself and you will
+          // be in fellows
+          if (fellows.size === 0) return;
 
-            var comments = talk.doc.comments.filter(function (cmt) {
-              return fellows.has(cmt.author);
-            });
-            var sha1 = SHA1(comments);
-            arr.push({ owner: owner, digest: digest, comments: comments, sha1: sha1 });
-          }();
-
-          if ((typeof _ret4 === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret4)) === "object") return _ret4.v;
+          var comments = talk.doc.comments.filter(function (cmt) {
+            return fellows.has(cmt.author);
+          });
+          var sha1 = SHA1(comments);
+          arr.push({ owner: owner, digest: digest, comments: comments, sha1: sha1 });
         }
       });
 
@@ -632,31 +618,21 @@ var Media = function (_EventEmitter) {
       var _this7 = this;
 
       try {
-        var _ret5 = function () {
 
-          var share = _this7.shareMap.get(shareUUID);
-          if (!share) return {
-              v: callback('ENOENT')
-            }; // FIXME
+        var share = this.shareMap.get(shareUUID);
+        if (!share) return callback('ENOENT'); // FIXME
 
-          if (share.doc.author !== userUUID) return {
-              v: callback('EACCESS')
-            };
+        if (share.doc.author !== userUUID) return callback('EACCESS');
 
-          var doc = updateMediaShareDoc(userUUID, share.doc, ops);
-          if (doc === share.doc) return {
-              v: callback(null, share)
-            };
+        var doc = updateMediaShareDoc(userUUID, share.doc, ops);
+        if (doc === share.doc) return callback(null, share);
 
-          _this7.shareStore.store(doc, function (err, newShare) {
-            if (err) return callback(err);
-            _this7.unindexShare(share);
-            _this7.indexShare(newShare);
-            callback(null, newShare);
-          });
-        }();
-
-        if ((typeof _ret5 === 'undefined' ? 'undefined' : (0, _typeof3.default)(_ret5)) === "object") return _ret5.v;
+        this.shareStore.store(doc, function (err, newShare) {
+          if (err) return callback(err);
+          _this7.unindexShare(share);
+          _this7.indexShare(newShare);
+          callback(null, newShare);
+        });
       } catch (e) {
         console.log(e);
       }
