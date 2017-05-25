@@ -132,7 +132,7 @@ router.post('/:digest', function (req, res) {
     form.on('error', function (err) {
       if (abort) return;
       abort = true;
-      console.log('err4: ');
+      console.log('err4: ', err.message);
       return res.status(500).json({}); // TODO
     });
 

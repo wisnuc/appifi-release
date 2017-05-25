@@ -16,10 +16,6 @@ var _map = require('babel-runtime/core-js/map');
 
 var _map2 = _interopRequireDefault(_map);
 
-var _createClass2 = require('babel-runtime/helpers/createClass');
-
-var _createClass3 = _interopRequireDefault(_createClass2);
-
 var _set = require('babel-runtime/core-js/set');
 
 var _set2 = _interopRequireDefault(_set);
@@ -28,22 +24,31 @@ var _classCallCheck2 = require('babel-runtime/helpers/classCallCheck');
 
 var _classCallCheck3 = _interopRequireDefault(_classCallCheck2);
 
+var _createClass2 = require('babel-runtime/helpers/createClass');
+
+var _createClass3 = _interopRequireDefault(_createClass2);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var Media = function Media(digest) {
-  (0, _classCallCheck3.default)(this, Media);
+var Media = function () {
+  function Media(digest) {
+    (0, _classCallCheck3.default)(this, Media);
 
-  this.digest = digest;
-  this.type = '';
-  this.metadata = null;
-  this.nodes = new _set2.default();
-  // this.shares = new Set()
-}
+    this.digest = digest;
+    this.type = '';
+    this.metadata = null;
+    this.nodes = new _set2.default();
+    // this.shares = new Set()
+  }
 
-// isEmpty() {
-//   return this.nodes.size === 0 && this.shares.size === 0
-// }
-;
+  (0, _createClass3.default)(Media, [{
+    key: 'isEmpty',
+    value: function isEmpty() {
+      return this.nodes.size === 0;
+    }
+  }]);
+  return Media;
+}();
 
 var MediaData = function () {
   function MediaData(modelData, fileData, fileShareData, mediaShareData) {

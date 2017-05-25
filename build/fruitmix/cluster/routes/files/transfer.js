@@ -29,17 +29,29 @@ router.get('/', function (req, res) {
   });
 });
 
+/**
+ * src / dst:{
+ *  type: 'fruitmix' or 'ext'
+ *  path:  if type = 'fruitmix', UUID / else relpath
+ *  rootPath: if type = 'fruitmix' ,it undefine, else UUID
+ * }
+ * 
+ */
+
 router.post('/:type', function (req, res) {
   var type = req.params.type === 'move' ? 'createMove' : req.params.type === 'copy' ? 'createCopy' : undefined;
   if (type) {
-    var src = req.body.srcpath;
-    var dst = req.body.dstpath;
+    var src = req.body.src;
+    var dst = req.body.dst;
     if (typeof src.path !== 'string' || typeof dst.path !== 'string') return res.error(new Error('path type error'), 400);
-    if (!(src.type === 'fruitmix' && isUUID(src.path) || src.type === 'ext' && !path.isAbsolute(src.path))) return res.error(new Error('src error'), 400);
-    if (!(dst.type === 'fruitmix' && isUUID(dst.path) || !(dst.type === 'ext' && !path.isAbsolute(dst.path)))) return res.error(new Error('dst error'), 400);
+    if (!(src.type === 'fruitmix' && isUUID(src.path) || src.type === 'ext' && path.isAbsolute(src.path))) return res.error(new Error('src error'), 400);
+    if (!(dst.type === 'fruitmix' && isUUID(dst.path) || dst.type === 'ext' && path.isAbsolute(dst.path))) return res.error(new Error('dst error'), 400);
 
     _config2.default.ipc.call(type, { src: src, dst: dst, userUUID: req.user.uuid }, function (e, data) {
-      if (e) return res.error(e, 500);
+      if (e) {
+        console.log(e);
+        return res.error(e, 500);
+      }
       return res.success(data, 200);
     });
   } else {

@@ -119,7 +119,7 @@ var DirectoryNode = function (_Node) {
 
         if (err.code === 'EABORT') return;
 
-        // if parent`s exit 
+        // if parent`s exist 
         _this3.parent ? _this3.parent.probe() : _this3.probe();
         return;
       });

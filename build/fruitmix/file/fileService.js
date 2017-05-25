@@ -800,70 +800,80 @@ var FileService = function () {
       var _ref17 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee5(_ref18) {
         var userUUID = _ref18.userUUID,
             targetUUID = _ref18.targetUUID,
+            dirUUID = _ref18.dirUUID,
             name = _ref18.name;
-        var node, newPath, xstat;
+        var dirnode, node, newPath, xstat;
         return _regenerator2.default.wrap(function _callee5$(_context5) {
           while (1) {
             switch (_context5.prev = _context5.next) {
               case 0:
+                dirnode = this.data.findNodeByUUID(dirUUID);
                 node = this.data.findNodeByUUID(targetUUID);
 
-                if (node) {
-                  _context5.next = 3;
+                if (dirnode) {
+                  _context5.next = 4;
                   break;
                 }
 
                 throw new _error4.default.ENODENOTFOUND();
 
-              case 3:
-                if (this.userWritable(userUUID, node)) {
-                  _context5.next = 5;
+              case 4:
+                if (node) {
+                  _context5.next = 6;
+                  break;
+                }
+
+                throw new _error4.default.ENODENOTFOUND();
+
+              case 6:
+                if (this.userWritable(userUUID, dirnode)) {
+                  _context5.next = 8;
                   break;
                 }
 
                 throw new _error4.default.EACCESS();
 
-              case 5:
+              case 8:
                 if (!(typeof name !== 'string' || path.basename(path.normalize(name)) !== name)) {
-                  _context5.next = 7;
+                  _context5.next = 10;
                   break;
                 }
 
                 throw new _error4.default.EINVAL();
 
-              case 7:
-                newPath = path.join(path.dirname(node.abspath()), name);
-                _context5.prev = 8;
-                _context5.next = 11;
-                return (0, _bluebird.resolve)(fs.renameAsync(node.abspath, newPath));
+              case 10:
+                newPath = path.join(dirnode.abspath(), name);
+                _context5.prev = 11;
+                _context5.next = 14;
+                return (0, _bluebird.resolve)(fs.renameAsync(node.abspath(), newPath));
 
-              case 11:
-                _context5.next = 13;
+              case 14:
+                _context5.next = 16;
                 return (0, _bluebird.resolve)((0, _xstat.readXstatAsync)(newPath));
 
-              case 13:
+              case 16:
                 xstat = _context5.sent;
 
                 this.data.updateNode(node, xstat);
-                return _context5.abrupt('return', node);
-
-              case 18:
-                _context5.prev = 18;
-                _context5.t0 = _context5['catch'](8);
-                throw _context5.t0;
+                return _context5.abrupt('return');
 
               case 21:
                 _context5.prev = 21;
-
-                if (node.parent) this.data.requestProbeByUUID(node.parent);else if (node.isDirectory()) this.data.requestProbeByUUID(targetUUID);
-                return _context5.finish(21);
+                _context5.t0 = _context5['catch'](11);
+                throw _context5.t0;
 
               case 24:
+                _context5.prev = 24;
+
+                if (node.parent) this.data.requestProbeByUUID(node.parent);else if (node.isDirectory()) this.data.requestProbeByUUID(targetUUID);
+                return _context5.finish(24);
+
+              case 27:
               case 'end':
                 return _context5.stop();
             }
           }
-        }, _callee5, this, [[8, 18, 21, 24]]);
+        }, _callee5, this, [[11, 21, 24, 27]]);
       }));
 
       function renameAsync(_x10) {
@@ -942,7 +952,7 @@ var FileService = function () {
               case 13:
                 _context6.prev = 13;
                 _context6.next = 16;
-                return (0, _bluebird.resolve)((0, _async.rimrafAsync)(node.namepath()));
+                return (0, _bluebird.resolve)((0, _async.rimrafAsync)(node.abspath()));
 
               case 16:
                 _context6.next = 18;

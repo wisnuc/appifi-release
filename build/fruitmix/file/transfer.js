@@ -28,6 +28,16 @@ var _inherits2 = require('babel-runtime/helpers/inherits');
 
 var _inherits3 = _interopRequireDefault(_inherits2);
 
+var _regenerator = require('babel-runtime/regenerator');
+
+var _regenerator2 = _interopRequireDefault(_regenerator);
+
+var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
+
+var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
+
+var _bluebird = require('bluebird');
+
 var _path = require('path');
 
 var _path2 = _interopRequireDefault(_path);
@@ -62,7 +72,84 @@ var _config2 = _interopRequireDefault(_config);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-var isFruitmix = function isFruitmix(uuid) {};
+var isFruitmix = function isFruitmix(type) {
+  return type === 'fruitmix';
+};
+
+var rootPathAsync = function () {
+  var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(type, uuid) {
+    var storage, blocks, volumes, fileSystems, target;
+    return _regenerator2.default.wrap(function _callee$(_context) {
+      while (1) {
+        switch (_context.prev = _context.next) {
+          case 0:
+            if (!(type !== 'fs')) {
+              _context.next = 2;
+              break;
+            }
+
+            throw new Error('type not supported, yet');
+
+          case 2:
+            _context.t0 = JSON;
+            _context.next = 5;
+            return (0, _bluebird.resolve)(_fs2.default.readFileAsync('/run/wisnuc/storage'));
+
+          case 5:
+            _context.t1 = _context.sent;
+            storage = _context.t0.parse.call(_context.t0, _context.t1);
+            blocks = storage.blocks, volumes = storage.volumes;
+
+            if (!(!Array.isArray(blocks) || !Array.isArray(volumes))) {
+              _context.next = 10;
+              break;
+            }
+
+            throw new Error('bad storage format');
+
+          case 10:
+
+            /** TODO this function should be in sync with extractFileSystem in boot.js **/
+            fileSystems = [].concat((0, _toConsumableArray3.default)(blocks.filter(function (blk) {
+              return blk.isFileSystem && !blk.isVolumeDevice && blk.isMounted;
+            })), (0, _toConsumableArray3.default)(volumes.filter(function (vol) {
+              return vol.isFileSystem && !vol.isMissing && vol.isMounted;
+            })));
+
+            if (uuid) {
+              _context.next = 13;
+              break;
+            }
+
+            return _context.abrupt('return', fileSystems);
+
+          case 13:
+            target = fileSystems.find(function (fsys) {
+              return fsys.fileSystemUUID === uuid;
+            });
+
+            if (target) {
+              _context.next = 16;
+              break;
+            }
+
+            throw new Error('not found');
+
+          case 16:
+            return _context.abrupt('return', target.mountpoint);
+
+          case 17:
+          case 'end':
+            return _context.stop();
+        }
+      }
+    }, _callee, undefined);
+  }));
+
+  return function rootPathAsync(_x, _x2) {
+    return _ref.apply(this, arguments);
+  };
+}();
 
 var Worker = function (_EventEmitter) {
   (0, _inherits3.default)(Worker, _EventEmitter);
@@ -91,6 +178,8 @@ var Worker = function (_EventEmitter) {
   }, {
     key: 'error',
     value: function error(e) {
+      console.log('error', e);
+
       for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
         args[_key - 1] = arguments[_key];
       }
@@ -101,6 +190,8 @@ var Worker = function (_EventEmitter) {
   }, {
     key: 'finish',
     value: function finish(data) {
+      console.log('finish this task');
+
       for (var _len2 = arguments.length, args = Array(_len2 > 1 ? _len2 - 1 : 0), _key2 = 1; _key2 < _len2; _key2++) {
         args[_key2 - 1] = arguments[_key2];
       }
@@ -112,11 +203,13 @@ var Worker = function (_EventEmitter) {
     key: 'start',
     value: function start() {
       if (this.finished) throw 'worker already finished';
+      console.log('start run worker');
       this.run();
     }
   }, {
     key: 'abort',
     value: function abort() {
+      console.log('abort');
       if (this.finished) throw 'worker already finished';
       this.emit('error', new _error2.default.EABORT());
       this.finalize();
@@ -143,6 +236,16 @@ var Worker = function (_EventEmitter) {
  * WARNING
  */
 
+/**
+ * src / dst:{
+ *  type: 'fruitmix' or 'ext'
+ *  path:  if type = 'fruitmix', UUID / else relpath
+ *  rootPath: if type = 'fruitmix' ,it undefine, else UUID
+ * }
+ * 
+ * 
+ */
+
 var Move = function (_Worker) {
   (0, _inherits3.default)(Move, _Worker);
 
@@ -162,53 +265,169 @@ var Move = function (_Worker) {
     key: 'cleanUp',
     value: function cleanUp() {}
   }, {
+    key: 'setSrcPath',
+    value: function () {
+      var _ref2 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee2() {
+        var srcType, spath;
+        return _regenerator2.default.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                srcType = this.src.type === 'fruitmix';
+
+                if (srcType) {
+                  _context2.next = 9;
+                  break;
+                }
+
+                _context2.next = 4;
+                return (0, _bluebird.resolve)(rootPathAsync('fs', this.src.rootPath));
+
+              case 4:
+                spath = _context2.sent;
+
+                this.srcPath = _path2.default.join(spath, this.src.path);
+                return _context2.abrupt('return', this.srcPath);
+
+              case 9:
+                this.srcPath = this.data.findNodeByUUID(this.src.path).abspath();
+                return _context2.abrupt('return', this.srcPath);
+
+              case 11:
+              case 'end':
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this);
+      }));
+
+      function setSrcPath() {
+        return _ref2.apply(this, arguments);
+      }
+
+      return setSrcPath;
+    }()
+  }, {
+    key: 'setDstPath',
+    value: function () {
+      var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
+        var dstType, dpath;
+        return _regenerator2.default.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                dstType = this.dst.type === 'fruitmix';
+
+                if (dstType) {
+                  _context3.next = 9;
+                  break;
+                }
+
+                _context3.next = 4;
+                return (0, _bluebird.resolve)(rootPathAsync('fs', this.dst.rootPath));
+
+              case 4:
+                dpath = _context3.sent;
+
+                this.dstPath = _path2.default.join(dpath, this.dst.path);
+                return _context3.abrupt('return', this.dstPath);
+
+              case 9:
+                this.dstPath = this.data.findNodeByUUID(this.dst.path).abspath();
+                return _context3.abrupt('return', this.dstPath);
+
+              case 11:
+              case 'end':
+                return _context3.stop();
+            }
+          }
+        }, _callee3, this);
+      }));
+
+      function setDstPath() {
+        return _ref3.apply(this, arguments);
+      }
+
+      return setDstPath;
+    }()
+  }, {
+    key: 'setPath',
+    value: function setPath(callback) {
+      var _this3 = this;
+
+      this.setSrcPath().asCallback(function (e) {
+        if (e) return callback(e);
+        _this3.setDstPath().asCallback(function (e) {
+          if (e) return callback(e);
+          return callback();
+        });
+      });
+    }
+  }, {
     key: 'run',
     value: function run() {
-      var _this3 = this;
+      var _this4 = this;
 
       if (this.state !== 'PADDING') return;
       this.state = 'RUNNING';
-      var srcType = src.type === 'fruitmix';
-      var dstType = dst.type === 'fruitmix';
+      var srcType = this.src.type === 'fruitmix';
+      var dstType = this.dst.type === 'fruitmix';
       var modeType = srcType && dstType ? 'FF' : srcType && !dstType ? 'FE' : !srcType && dstType ? 'EF' : 'EE';
+
+      this.setPath(function (e) {
+        if (e) return _this4.error(e);
+        if (_this4.dstPath.indexOf(_this4.srcPath) !== -1) return _this4.error(new Error('dst could not be child of src'));
+        _this4.work(modeType);
+      });
+    }
+  }, {
+    key: 'work',
+    value: function work(modeType) {
+      var _this5 = this;
+
+      console.log('start run new task');
+      console.log(this.srcPath, this.dstPath);
       switch (modeType) {
         case 'FF':
         case 'FE':
           this.copy(function (err) {
-            if (_this3.finished) return;
-            if (err) return _this3.error(err);
-            _this3.delete(function (err) {
-              if (_this3.finished) return;
-              if (err) return _this3.error(err);
+            if (_this5.finished) return;
+            if (err) return _this5.error(err);
+            _this5.delete(function (err) {
+              if (_this5.finished) return;
+              if (err) return _this5.error(err);
 
-              var srcNode = _this3.data.findNodeByUUID(_path2.default.basename(_this3.src));
-              var dstNode = _this3.data.findNodeByUUID(_path2.default.basename(_this3.dst));
-              if (srcNode) _this3.data.requestProbeByUUID(srcNode.parent);
-              if (dstNode) _this3.data.requestProbeByUUID(dstNode.uuid);
+              var srcNode = _this5.data.findNodeByUUID(_this5.src.path);
+              var dstNode = _this5.data.findNodeByUUID(_this5.dst.path);
+              if (srcNode) {
+                if (srcNode.parent) _this5.data.requestProbeByUUID(srcNode.parent.uuid);else _this5.data.requestProbeByUUID(srcNode.uuid);
+              }
 
-              return _this3.finish(_this3); //TODO probe
+              if (dstNode) _this5.data.requestProbeByUUID(dstNode.uuid);
+
+              return _this5.finish(_this5); //TODO probe
             });
           });
           break;
         case 'EF':
           this.cleanXattr(function (err) {
-            if (_this3.finished) return;
-            if (err) return _this3.error(err);
-            _this3.move(function (err) {
-              if (_this3.finished) return;
-              if (err) return _this3.error(err);
+            if (_this5.finished) return;
+            if (err) return _this5.error(err);
+            _this5.move(function (err) {
+              if (_this5.finished) return;
+              if (err) return _this5.error(err);
 
-              var dstNode = _this3.data.findNodeByUUID(_path2.default.basename(_this3.dst.path));
-              if (dstNode) _this3.data.requestProbeByUUID(dstNode.uuid);
-              return _this3.finish(_this3);
+              var dstNode = _this5.data.findNodeByUUID(_path2.default.basename(_this5.dst.path));
+              if (dstNode) _this5.data.requestProbeByUUID(dstNode.uuid);
+              return _this5.finish(_this5);
             });
           });
           break;
         case 'EE':
           this.move(function (err) {
-            if (_this3.finished) return;
-            if (err) return _this3.error(err);
-            return _this3.finish(_this3);
+            if (_this5.finished) return;
+            if (err) return _this5.error(err);
+            return _this5.finish(_this5);
           });
       }
     }
@@ -217,7 +436,7 @@ var Move = function (_Worker) {
     value: function copy(callback) {
       // let srcpath = this.src.type === 'fruitmix' ? this.data.findNodeByUUID(path.basename(this.src.path)) : 
       // TODO to join ext path Jack
-      _child_process2.default.exec('cp -r --reflink=auto ' + this.src + ' ' + this.dst, function (err, stdout, stderr) {
+      _child_process2.default.exec('cp -r --reflink=auto ' + this.srcPath + ' ' + this.dstPath, function (err, stdout, stderr) {
         if (err) return callback(err);
         if (stderr) return callback(stderr);
         return callback(null, stdout);
@@ -227,7 +446,7 @@ var Move = function (_Worker) {
     key: 'delete',
     value: function _delete(callback) {
       // TODO  join Path Jack
-      _child_process2.default.exec('rm -rf ' + this.src, function (err, stdout, stderr) {
+      _child_process2.default.exec('rm -rf ' + this.srcPath, function (err, stdout, stderr) {
         if (err) return callback(err);
         if (stderr) return callback(stderr);
         return callback(null, stdout);
@@ -245,12 +464,12 @@ var Move = function (_Worker) {
         _fsXattr2.default.setSync(fpath, xattrType, (0, _stringify2.default)({}));
         _fs2.default.lstatSync(fpath).isFile() ? callback() : callback(dirContext);
       };
-      this.visit(this.src, { type: 'user.fruitmix' }, clean, callback);
+      this.visit(this.srcPath, { type: 'user.fruitmix' }, clean, callback);
     }
   }, {
     key: 'move',
     value: function move(callback) {
-      _child_process2.default.exec('mv -f ' + this.src + ' ' + this.dst, function (err, stdout, stderr) {
+      _child_process2.default.exec('mv -f ' + this.srcPath + ' ' + this.dstPath, function (err, stdout, stderr) {
         if (err) return callback(err);
         if (stderr) return callback(stderr);
         return callback(null, stdout);
@@ -259,7 +478,7 @@ var Move = function (_Worker) {
   }, {
     key: 'visit',
     value: function (_visit) {
-      function visit(_x, _x2, _x3, _x4) {
+      function visit(_x3, _x4, _x5, _x6) {
         return _visit.apply(this, arguments);
       }
 
@@ -299,14 +518,14 @@ var Copy = function (_Worker2) {
   function Copy(src, dst, tmp, data, userUUID) {
     (0, _classCallCheck3.default)(this, Copy);
 
-    var _this4 = (0, _possibleConstructorReturn3.default)(this, (Copy.__proto__ || (0, _getPrototypeOf2.default)(Copy)).call(this));
+    var _this6 = (0, _possibleConstructorReturn3.default)(this, (Copy.__proto__ || (0, _getPrototypeOf2.default)(Copy)).call(this));
 
-    _this4.src = src;
-    _this4.dst = dst;
-    _this4.tmp = tmp;
-    _this4.data = data;
-    _this4.userUUID = userUUID;
-    return _this4;
+    _this6.src = src;
+    _this6.dst = dst;
+    _this6.tmp = tmp;
+    _this6.data = data;
+    _this6.userUUID = userUUID;
+    return _this6;
   }
 
   (0, _createClass3.default)(Copy, [{
@@ -315,12 +534,12 @@ var Copy = function (_Worker2) {
   }, {
     key: 'run',
     value: function run() {
-      var _this5 = this;
+      var _this7 = this;
 
       if (this.state !== 'PADDING') return;
       this.state = 'RUNNING';
-      var srcType = isFruitmix(this.src);
-      var dstType = isFruitmix(this.dst);
+      var srcType = isFruitmix(this.src.type);
+      var dstType = isFruitmix(this.dst.type);
 
       //check src.type .path
 
@@ -334,22 +553,22 @@ var Copy = function (_Worker2) {
       //     break
       // }
       this.copy(function (err) {
-        if (_this5.finished) return;
-        if (err) return _this5.error(err);
-        _fs2.default.rename(_this5.tmp, _this5.dst, function (err) {
-          if (_this5.finished) return;
-          if (err) return _this5.error(err);
+        if (_this7.finished) return;
+        if (err) return _this7.error(err);
+        _fs2.default.rename(_this7.tmp, _this7.dst, function (err) {
+          if (_this7.finished) return;
+          if (err) return _this7.error(err);
           if (modeType === 'FF') {
-            var srcNode = _this5.data.findNodeByUUID(_path2.default.basename(_this5.src));
-            var dstNode = _this5.data.findNodeByUUID(_path2.default.basename(_this5.dst));
-            if (srcNode) _this5.data.requestProbeByUUID(srcNode.parent);
-            if (dstNode) _this5.data.requestProbeByUUID(dstNode.uuid);
+            var srcNode = _this7.data.findNodeByUUID(_path2.default.basename(_this7.src));
+            var dstNode = _this7.data.findNodeByUUID(_path2.default.basename(_this7.dst));
+            if (srcNode) _this7.data.requestProbeByUUID(srcNode.parent);
+            if (dstNode) _this7.data.requestProbeByUUID(dstNode.uuid);
           } //probe src dst
           if (modeType === 'EF') {
-            var _dstNode = _this5.data.findNodeByUUID(_path2.default.basename(_this5.dst));
-            if (_dstNode) _this5.data.requestProbeByUUID(_dstNode.uuid);
+            var _dstNode = _this7.data.findNodeByUUID(_path2.default.basename(_this7.dst));
+            if (_dstNode) _this7.data.requestProbeByUUID(_dstNode.uuid);
           } //probe dst
-          return _this5.finish(_this5);
+          return _this7.finish(_this7);
         });
       });
     }
@@ -385,60 +604,60 @@ var Transfer = function () {
       if (diff <= 0) return;
 
       this.workersQueue.filter(function (worker) {
-        return !worker.isRunning();
+        return worker.isPadding();
       }).slice(0, diff).forEach(function (worker) {
         return worker.start();
       });
     }
   }, {
     key: 'createMove',
-    value: function createMove(_ref, callback) {
-      var _this6 = this;
+    value: function createMove(_ref4, callback) {
+      var _this8 = this;
 
-      var src = _ref.src,
-          dst = _ref.dst,
-          userUUID = _ref.userUUID;
+      var src = _ref4.src,
+          dst = _ref4.dst,
+          userUUID = _ref4.userUUID;
 
       createMoveWorker(src, dst, this.data, userUUID, function (err, worker) {
-        if (err) return callback(ett);
+        if (err) return callback(err);
         worker.on('finish', function (worker) {
           worker.state = 'FINISHED';
-          _this6.schedule();
+          _this8.schedule();
         });
         worker.on('error', function (worker) {
           worker.state = 'WARNING';
-          _this6.workersQueue.splice(_this6.workersQueue.indexOf(worker), 1);
-          _this6.warningQueue.push(worker);
-          _this6.schedule();
+          _this8.workersQueue.splice(_this8.workersQueue.indexOf(worker), 1);
+          _this8.warningQueue.push(worker);
+          _this8.schedule();
         });
-        _this6.workersQueue.push(worker);
-        callback(null, worker);
-        _this6.schedule();
+        _this8.workersQueue.push(worker);
+        callback(null, { id: worker.id, state: worker.state });
+        _this8.schedule();
       });
     }
   }, {
     key: 'createCopy',
-    value: function createCopy(_ref2, callback) {
-      var _this7 = this;
+    value: function createCopy(_ref5, callback) {
+      var _this9 = this;
 
-      var src = _ref2.src,
-          dst = _ref2.dst,
-          userUUID = _ref2.userUUID;
+      var src = _ref5.src,
+          dst = _ref5.dst,
+          userUUID = _ref5.userUUID;
 
       createCopyWorker(src, dst, this.data, userUUID, function (err, worker) {
         if (err) return callback(err);
         worker.on('finish', function (worker) {
           worker.state = 'FINISHED';
-          _this7.schedule();
+          _this9.schedule();
         });
         worker.on('error', function (worker) {
           worker.state = 'WARNING';
-          _this7.workersQueue.splice(_this7.workersQueue.indexOf(worker), 1);
-          _this7.warningQueue.push(worker);
-          _this7.schedule();
+          _this9.workersQueue.splice(_this9.workersQueue.indexOf(worker), 1);
+          _this9.warningQueue.push(worker);
+          _this9.schedule();
         });
-        _this7.workersQueue.push(worker);
-        _this7.schedule();
+        _this9.workersQueue.push(worker);
+        _this9.schedule();
         callback(null, worker);
       });
     }
@@ -454,9 +673,9 @@ var Transfer = function () {
     }
   }, {
     key: 'abortWorker',
-    value: function abortWorker(_ref3, callback) {
-      var userUUID = _ref3.userUUID,
-          workerId = _ref3.workerId;
+    value: function abortWorker(_ref6, callback) {
+      var userUUID = _ref6.userUUID,
+          workerId = _ref6.workerId;
 
       var worker = this.workersQueue.find(function (worker) {
         return worker.id === workerId && worker.userUUID === userUUID;
@@ -491,20 +710,20 @@ var Transfer = function () {
 }();
 
 var createMoveWorker = function createMoveWorker(src, dst, data, userUUID, callback) {
-  if (_fs2.default.existsSync(src) && _fs2.default.existsSync(dst)) {
-    var worker = new Move(src, dst, data);
-    return callback(null, worker);
-  }
-  return callback(new Error('path not exists'));
+  // if(fs.existsSync(src) && fs.existsSync(dst)) {
+  var worker = new Move(src, dst, data);
+  return callback(null, worker);
+  // }
+  // return callback(new Error('path not exists'))
 };
 
 var createCopyWorker = function createCopyWorker(src, dst, data, userUUID, callback) {
   var tmp = _path2.default.join(_config2.default.path, 'tmp'); //TODO Get tmp folder Jack
-  if (_fs2.default.existsSync(src) && _fs2.default.existsSync(dst)) {
-    var worker = new Copy(src, dst, tmp, data);
-    return callback(null, worker);
-  }
-  return callback(new Error('path not exists'));
+  // if(fs.existsSync(src) && fs.existsSync(dst)) {
+  var worker = new Copy(src, dst, tmp, data);
+  return callback(null, worker);
+  // }
+  // return callback(new Error('path not exists'))
 };
 
 exports.default = Transfer;

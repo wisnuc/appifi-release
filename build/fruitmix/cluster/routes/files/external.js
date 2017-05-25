@@ -40,7 +40,7 @@ var isUUID = function isUUID(text) {
   return typeof text === 'string' && validator.isUUID(text);
 };
 var isNormalizedPath = function isNormalizedPath(rpath) {
-  return typeof rppath === 'string' && path.normalize(rpath) === rpath;
+  return typeof rpath === 'string' && path.normalize(rpath) === rpath;
 };
 var isSanitizedName = function isSanitizedName(name) {
   return typeof name === 'string' && sanitize(name) === name;
@@ -61,31 +61,23 @@ var rootPathAsync = function () {
             throw new Error('type not supported, yet');
 
           case 2:
-            if (!(uuid !== undefined && !isUUID(uuid))) {
-              _context.next = 4;
-              break;
-            }
-
-            throw new Error('Bad uuid ' + uuid);
-
-          case 4:
             _context.t0 = JSON;
-            _context.next = 7;
+            _context.next = 5;
             return (0, _bluebird.resolve)(fs.readFileAsync('/run/wisnuc/storage'));
 
-          case 7:
+          case 5:
             _context.t1 = _context.sent;
             storage = _context.t0.parse.call(_context.t0, _context.t1);
             blocks = storage.blocks, volumes = storage.volumes;
 
             if (!(!Array.isArray(blocks) || !Array.isArray(volumes))) {
-              _context.next = 12;
+              _context.next = 10;
               break;
             }
 
             throw new Error('bad storage format');
 
-          case 12:
+          case 10:
 
             /** TODO this function should be in sync with extractFileSystem in boot.js **/
             fileSystems = [].concat((0, _toConsumableArray3.default)(blocks.filter(function (blk) {
@@ -95,28 +87,28 @@ var rootPathAsync = function () {
             })));
 
             if (uuid) {
-              _context.next = 15;
+              _context.next = 13;
               break;
             }
 
             return _context.abrupt('return', fileSystems);
 
-          case 15:
+          case 13:
             target = fileSystems.find(function (fsys) {
               return fsys.fileSystemUUID === uuid;
             });
 
             if (target) {
-              _context.next = 18;
+              _context.next = 16;
               break;
             }
 
             throw new Error('not found');
 
-          case 18:
+          case 16:
             return _context.abrupt('return', target.mountpoint);
 
-          case 19:
+          case 17:
           case 'end':
             return _context.stop();
         }
@@ -142,39 +134,46 @@ var readdirOrDownloadAsync = function () {
       while (1) {
         switch (_context3.prev = _context3.next) {
           case 0:
-            if (!(type === 'fs' && isUUID(uuid) && typeof relpath === 'string' && (relpath.length === 0 || isNormalizedPath(relpath)))) {
-              _context3.next = 3;
+            console.log(type === 'fs');
+            console.log(isUUID(uuid));
+            console.log(relpath.length === 0 || isNormalizedPath(relpath));
+            console.log(relpath);
+
+            if (!(type === 'fs'
+            // && isUUID(uuid)
+            && (relpath.length === 0 || isNormalizedPath(relpath)))) {
+              _context3.next = 7;
               break;
             }
 
-            _context3.next = 4;
+            _context3.next = 8;
             break;
 
-          case 3:
+          case 7:
             throw new Error('invalid arguments');
 
-          case 4:
-            _context3.next = 6;
+          case 8:
+            _context3.next = 10;
             return (0, _bluebird.resolve)(rootPathAsync(type, uuid));
 
-          case 6:
+          case 10:
             rootpath = _context3.sent;
             abspath = path.join(rootpath, relpath);
-            _context3.next = 10;
+            _context3.next = 14;
             return (0, _bluebird.resolve)(fs.lstatAsync(abspath));
 
-          case 10:
+          case 14:
             stats = _context3.sent;
 
             if (!stats.isDirectory()) {
-              _context3.next = 21;
+              _context3.next = 25;
               break;
             }
 
-            _context3.next = 14;
+            _context3.next = 18;
             return (0, _bluebird.resolve)(fs.readdirAsync(abspath));
 
-          case 14:
+          case 18:
             entries = _context3.sent;
 
             statEntryAsync = function () {
@@ -231,28 +230,28 @@ var readdirOrDownloadAsync = function () {
               };
             }();
 
-            _context3.next = 18;
+            _context3.next = 22;
             return (0, _bluebird.resolve)((0, _bluebird.all)(entries.map(function (entry) {
               return statEntryAsync(entry);
             })).filter(function (r) {
               return r !== null;
             }));
 
-          case 18:
+          case 22:
             return _context3.abrupt('return', _context3.sent);
 
-          case 21:
+          case 25:
             if (!stats.isFile()) {
-              _context3.next = 23;
+              _context3.next = 27;
               break;
             }
 
             return _context3.abrupt('return', abspath);
 
-          case 23:
+          case 27:
             throw new Error('unsupported file type');
 
-          case 24:
+          case 28:
           case 'end':
             return _context3.stop();
         }

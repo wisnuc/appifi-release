@@ -227,9 +227,9 @@ router.patch('/rename/:dirUUID/:nodeUUID', function (req, res) {
       nodeUUID = _req$params5.nodeUUID;
 
   var filename = req.body.filename;
-  _config2.default.ipc.call('rename', { userUUI: req.user.uuid, targetUUID: dirUUID, name: filename }, function (err, node) {
+  _config2.default.ipc.call('rename', { userUUID: req.user.uuid, targetUUID: nodeUUID, dirUUID: dirUUID, name: filename }, function (err, node) {
     if (err) return res.error(err);
-    return res.success(node, 200);
+    return res.success(null, 200);
   });
 });
 
@@ -245,9 +245,9 @@ router.delete('/:dirUUID/:nodeUUID', function (req, res) {
 
   var args = { userUUID: userUUID, dirUUID: dirUUID, nodeUUID: nodeUUID };
 
-  _config2.default.ipc.call('del', args, function (err, filepath) {
+  _config2.default.ipc.call('del', args, function (err, data) {
     if (err) return res.error(err);
-    return res.status(200).sendFile(filepath);
+    return res.success(data);
   });
 });
 
