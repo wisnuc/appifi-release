@@ -1,171 +1,139 @@
-'use strict';
+const Promise = require('bluebird')
+const path = require('path')
+const fs = Promise.promisifyAll(require('fs'))
+// const mkdirpAsync = Promise.promisify(require('mkdirp'))
+const deepFreeze = require('deep-freeze')
 
-var _regenerator = require('babel-runtime/regenerator');
+const broadcast = require('../common/broadcast')
+const createPersistenceAsync = require('../common/persistence')
 
-var _regenerator2 = _interopRequireDefault(_regenerator);
+/**
+This module maintains station-wide configuration.
 
-var _assign = require('babel-runtime/core-js/object/assign');
+It requries a file to persist data and a temporary file directory.
 
-var _assign2 = _interopRequireDefault(_assign);
+In `production` mode, the paths are `/etc/wisnuc.json` and `/etc/wisnuc-tmp`, respectively.
+In `test` mode, the paths are `<cwd>/tmptest/wisnuc.json` and `<cwd>/tmptest/tmp`, respectively.
 
-var _bluebird = require('bluebird');
+@module   Config
+@requires Broadcast
+@requires Persistence
+*/
 
-var _isInteger = require('babel-runtime/core-js/number/is-integer');
+/**
+Fired when `Config` module initialized.
 
-var _isInteger2 = _interopRequireDefault(_isInteger);
+@event ConfigUpdate
+@global
+*/
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+/**
+`Config` is an data type internally used in this module. It's JSON equivalent is persisted to a file.
 
-var fs = (0, _bluebird.promisifyAll)(require('fs'));
-var validator = require('validator');
-var deepEqual = require('deep-equal');
-var deepFreeze = require('deep-freeze');
-var createPersistenceAsync = require('../common/persistence');
+@typedef {object} Config
+@property {string} lastFileSystem - last booted file system containing fruitmix and appifi
+@property {string} bootMode - normal or maintenance
+@property {number} barcelonaFanScale - barcelona specific setting
+@property {networkInterfaceConfig[]} networkInterfaces - a list of network interface config.
+*/
 
-/*******************************************************************************
+/**
+Default config object if config file not found or NODE_ENV is `test`
 
-Example wisnuc.json file
-
-{
-  "version": 1,
-  "dockerInstall": null,
-  "lastFileSystem": {
-    "type": "btrfs",
-    "uuid": "09f8a66c-0fac-4096-8274-7fcf33a6b87c"
-  },
-  "bootMode": "normal",
-  "barcelonaFanScale": 65,
-  "ipAliasing": [{ "mac": "xxxx", "ipv4": "xxxx"}]
-}
-
-*******************************************************************************/
-
-var defaultConfig = {
-  version: 1,
-  dockerInstall: null,
+@const
+@type {Config}
+*/
+const defaultConfig = {
   lastFileSystem: null,
   bootMode: 'normal',
   barcelonaFanScale: 50,
-  ipAliasing: []
-};
+  networkInterfaces: []
+}
 
-var isUUID = function isUUID(uuid) {
-  return typeof uuid === 'string' && validator.isUUID(uuid);
-};
+module.exports = new class {
+  constructor () {
+    /**
+    Configuration
+    @member config
+    @type {Config}
+    */
+    this.config = null
 
-var isValidLastFileSystem = function isValidLastFileSystem(lfs) {
-  return lfs === null || lfs.type === 'btrfs' && isUUID(lfs.uuid);
-};
-var isValidBootMode = function isValidBootMode(bm) {
-  return bm === 'normal' || bm === 'maintenance';
-};
-var isValidBarcelonaFanScale = function isValidBarcelonaFanScale(bfs) {
-  return (0, _isInteger2.default)(bfs) && bfs >= 0 && bfs <= 100;
-};
-var isValidIpAliasing = function isValidIpAliasing(arr) {
-  return arr.every(function (ia) {
-    return typeof ia.mac === 'string' && validator.isMACAddress(ia.mac) && typeof ia.ipv4 === 'string' && validator.isIP(ia.ipv4, 4);
-  });
-};
+    /**
+    Persistence worker for persisting config file
 
-/**
- * pseudo class singleton
- */
-module.exports = {
+    @member persistence
+    @type {Persistence}
+    */
+    this.persistence = null
 
-  // cannot be written as async initAsync(...) 
-  initAsync: function () {
-    var _ref = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(fpath, tmpdir) {
-      var read, dirty;
-      return _regenerator2.default.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              read = void 0, dirty = false;
+    /**
+    Config file path
 
+    @member filePath
+    @type {string}
+    */
+    this.filePath = ''
 
-              this.config = (0, _assign2.default)({}, defaultConfig);
-              _context.next = 4;
-              return (0, _bluebird.resolve)(createPersistenceAsync(fpath, tmpdir, 500));
+    /**
+    Temp dir for saving config file
+    @member tmpDir
+    @type {string}
+    */
+    this.tmpDir = ''
 
-            case 4:
-              this.persistence = _context.sent;
-              _context.prev = 5;
-              _context.t0 = JSON;
-              _context.next = 9;
-              return (0, _bluebird.resolve)(fs.readFileAsync(fpath));
+    this.initAsync()
+      .then(() => broadcast.emit('ConfigUpdate', null, this.config))
+      .catch(e => broadcast.emit('ConfigUpdate', e))
+  }
 
-            case 9:
-              _context.t1 = _context.sent;
-              read = _context.t0.parse.call(_context.t0, _context.t1);
-              _context.next = 15;
-              break;
+  /**
+  Load and validate config from file, or set it to default.
+  @inner
+  @fires ConfigUpdate
+  @listens FanScaleUpdate
+  @listens BootModeUpdate
+  @listens FileSystemUpdate
+  @listens NetworkInterfacesUpdate
+  */
+  async initAsync () {
+    let cwd = process.cwd()
 
-            case 13:
-              _context.prev = 13;
-              _context.t2 = _context['catch'](5);
-
-            case 15:
-
-              if (!read) {
-                dirty = true;
-              } else {
-
-                if (isValidLastFileSystem(read.lastFileSystem)) (0, _assign2.default)(this.config, { lastFileSystem: read.lastFileSystem });
-
-                if (isValidBootMode(read.bootMode)) (0, _assign2.default)(this.config, { bootMode: read.bootMode });
-
-                if (isValidBarcelonaFanScale(read.barcelonaFanScale)) (0, _assign2.default)(this.config, { barcelonaFanScale: read.barcelonaFanScale });
-
-                if (isValidIpAliasing(read.ipAliasing)) (0, _assign2.default)(this.config, { ipAliasing: read.ipAliasing });
-
-                if (!deepEqual(this.config, read)) dirty = true;
-              }
-
-              deepFreeze(this.config);
-              if (dirty) this.persistence.save(this.config);
-
-              console.log('[system] config loaded', this.config);
-
-            case 19:
-            case 'end':
-              return _context.stop();
-          }
-        }
-      }, _callee, this, [[5, 13]]);
-    }));
-
-    function initAsync(_x, _x2) {
-      return _ref.apply(this, arguments);
+    // initialize paths
+    if (process.env.NODE_ENV === 'test') {
+      this.filePath = path.join(cwd, 'tmptest', 'wisnuc.json')
+      this.tmpDir = path.join(cwd, 'tmp')
+    } else {
+      this.filePath = '/etc/wisnuc.json'
+      this.tmpDir = '/etc/wisnuc-tmp'
     }
 
-    return initAsync;
-  }(),
+    // initialize member
+    this.config = Object.assign({}, defaultConfig)
+    this.persistence = await createPersistenceAsync(this.filePath, this.tmpDir, 50)
 
-  merge: function merge(props) {
+    // load file
+    try {
+      this.config = JSON.parse(await fs.readFileAsync(this.filePath))
+    } catch (e) {
+      this.config = defaultConfig
+    }
 
-    this.config = (0, _assign2.default)({}, this.config, props);
-    deepFreeze(this.config);
+    deepFreeze(this.config)
 
-    this.persistence.save(this.config);
-  },
-  updateLastFileSystem: function updateLastFileSystem(lfs, forceNormal) {
-
-    if (!isValidLastFileSystem(lfs)) return;
-    if (forceNormal !== undefined && typeof forceNormal !== 'boolean') return;
-    var lastFileSystem = { type: 'btrfs', uuid: lfs.uuid };
-    if (forceNormal) this.merge({ lastFileSystem: lastFileSystem, bootMode: 'normal' });else this.merge({ lastFileSystem: lastFileSystem });
-  },
-  updateBootMode: function updateBootMode(bm) {
-    isValidBootMode(bm) && this.merge({ bootMode: bm });
-  },
-  updateBarcelonaFanScale: function updateBarcelonaFanScale(bfs) {
-    isValidBarcelonaFanScale(bfs) && this.merge({ barcelonaFanScale: bfs });
-  },
-  updateIpAliasing: function updateIpAliasing(arr) {
-    isValidIpAliasing(arr) && this.merge({ ipAliasing: arr });
-  },
-  get: function get() {
-    return this.config;
+    broadcast.on('FanScaleUpdate', (err, data) => err || this.update({barcelonaFanScale: data}))
+    broadcast.on('FileSystemUpdate', (err, data) => err || this.update({lastFileSystem: data}))
+    broadcast.on('NetworkInterfacesUpdate', (err, data) => err || this.update({networkInterfaces: data}))
+    broadcast.on('BootModeUpdate', (err, data) => err || this.update({ bootMode: data }))
   }
-};
+
+  /**
+  Update configuration
+  */
+  update (props) {
+    this.config = Object.assign({}, this.config, props)
+    deepFreeze(this.config)
+    this.persistence.save(this.config)
+    process.nextTick(() => broadcast.emit('ConfigUpdate', null, this.config))
+  }
+}()

@@ -1,472 +1,261 @@
-'use strict';
+const Promise = require('bluebird')
+const path = require('path')
+const child = Promise.promisifyAll(require('child_process'))
+const mkdirp = require('mkdirp')
+const rimraf = require('rimraf')
+// const debug = require('debug')('system:boot')
 
-var _assign = require('babel-runtime/core-js/object/assign');
+const router = require('express').Router()
 
-var _assign2 = _interopRequireDefault(_assign);
-
-var _stringify = require('babel-runtime/core-js/json/stringify');
-
-var _stringify2 = _interopRequireDefault(_stringify);
-
-var _bluebird = require('bluebird');
-
-var _typeof2 = require('babel-runtime/helpers/typeof');
-
-var _typeof3 = _interopRequireDefault(_typeof2);
-
-var _regenerator = require('babel-runtime/regenerator');
-
-var _regenerator2 = _interopRequireDefault(_regenerator);
-
-var _toConsumableArray2 = require('babel-runtime/helpers/toConsumableArray');
-
-var _toConsumableArray3 = _interopRequireDefault(_toConsumableArray2);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var path = require('path');
-var fs = require('fs');
-var child = require('child_process');
-var rimraf = require('rimraf');
-var mkdirp = require('mkdirp');
-
-var Developer = require('./developer');
-var Config = require('./config');
-var Storage = require('./storage');
-var fruitmix = require('./boot/fruitmix');
-
-var debug = require('debug')('system:boot');
-
-var bootableFsTypes = ['btrfs', 'ext4', 'ntfs'];
-
-var rimrafAsync = (0, _bluebird.promisify)(rimraf);
-var mkdirpAsync = (0, _bluebird.promisify)(mkdirp);
+const { isUUID } = require('../common/assertion')
+const broadcast = require('../common/broadcast')
 
 /**
-const decorateStorageAsync = async pretty => {
+`boot` module is responsible for boot logic.
 
-  let mps = [] 
+The internal state of `boot` module incl 5 variables. All of them are exposed to clients via restful API.
 
-  pretty.volumes.forEach(vol => {
-    if (vol.isMounted && !vol.isMissing) mps.push({
-      ref: vol,
-      mp: vol.mountpoint
-    })
-  })
-
-  pretty.blocks.forEach(blk => {
-    if (!blk.isVolumeDevice && blk.isMounted && blk.isExt4)
-      mps.push({
-        ref: blk,
-        mp: blk.mountpoint
-      })
-  })
-
-  await Promise
-    .map(mps, obj => fruitmix.probeAsync(obj.mp).reflect())
-    .each((inspection, index) => {
-      if (inspection.isFulfilled())
-        mps[index].ref.wisnuc = inspection.value() 
-      else {
-        console.log(inspection.reason())
-        mps[index].ref.wisnuc = 'ERROR'
-      }
-    })
-
-  return pretty
+```
+boot {
+  mode,     // boot mode
+  last,     // file system (uuid)
+  state,    // boot module state
+  current,  // file system (uuid)
+  error,    // boot error
 }
-**/
+```
 
-// extract file systems out of storage object
-var extractFileSystems = function extractFileSystems(_ref) {
-  var blocks = _ref.blocks,
-      volumes = _ref.volumes;
-  return [].concat((0, _toConsumableArray3.default)(blocks.filter(function (blk) {
-    return blk.isFileSystem && !blk.isVolumeDevice;
-  })), (0, _toConsumableArray3.default)(volumes.filter(function (vol) {
-    return vol.isFileSystem;
-  })));
-};
+`mode` is a user configuration rather than a run-time state.
 
-// 
-var shouldProbeFileSystem = function shouldProbeFileSystem(fsys) {
-  return fsys.isVolume && fsys.isMounted && !fsys.isMissing || !fsys.isVolume && fsys.isMounted && (fsys.isExt4 || fsys.isNTFS);
-};
+There are two modes defined to boot the system.
 
-// 
-var probeAllAsync = function () {
-  var _ref2 = (0, _bluebird.method)(function (fileSystems) {
-    return (0, _bluebird.map)(fileSystems.filter(shouldProbeFileSystem), function () {
-      var _ref3 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee(fsys) {
-        return _regenerator2.default.wrap(function _callee$(_context) {
-          while (1) {
-            switch (_context.prev = _context.next) {
-              case 0:
-                _context.prev = 0;
-                _context.next = 3;
-                return (0, _bluebird.resolve)(fruitmix.probeAsync(fsys.mountpoint));
++ In `normal` mode, boot module tries to select a file system and to bring up all applications automatically.
++ In `maintenance` mode, boot module won't bring up any application. User can select this mode to fulfill jobs related to disk or file system management.
 
-              case 3:
-                fsys.wisnuc = _context.sent;
-                _context.next = 9;
-                break;
+`last` is a read-only configuration. Each time a file system is selected to bring up applications, the file system is saved to `last` configuration.
 
-              case 6:
-                _context.prev = 6;
-                _context.t0 = _context['catch'](0);
+`state` is the state of boot module (not the state of applications). It can be `starting`, `started`, `stopping`.
 
-                fsys.wisnuc = { status: 'EFAIL' };
+`current` is the currently selected file system used by applications. `error` records an error code when `boot` module fails to set `current`. `error` and `current` are used like `err` and `data` in a node callback.
 
-              case 9:
-              case 'end':
-                return _context.stop();
-            }
-          }
-        }, _callee, undefined, [[0, 6]]);
-      }));
+It is possible that both of them are `null`, when:
++ the system boots into `maintenance` mode by the user,
++ applications are stopped by the user but the system is not shutdown. (not supported yet)
 
-      return function (_x2) {
-        return _ref3.apply(this, arguments);
-      };
-    }());
-  });
+#### Boot Logic
 
-  return function probeAllAsync(_x) {
-    return _ref2.apply(this, arguments);
-  };
-}();
++ If `mode` is `maintenance`, boot module stops, waiting for user requests.
++ If `mode` is `normal`, boot module tries to find the `last` file system.
+  + If `last` is found and is OK, it is used as current file system.
+  + If `last` is found but not OK, `error` is set.
+  + If `last` is not found
+    + If there is exactly one btrfs volume and it is OK with fruitmix installed, it is used as current file systme.
+    + Otherwise, `error` is set.
 
-var throwError = function throwError(message) {
-  throw new Error(message);
-};
+#### Restful APIs
 
-var assertFileSystemGood = function assertFileSystemGood(fsys) {
-  return !bootableFsTypes.includes(fsys.fileSystemType) ? throwError('unsupported bootable type') : !fsys.isMounted ? throwError('file system is not mounted') : fsys.isVolume && fsys.isMissing ? throwError('file system has missing device') : true;
-};
+`state` or `current` can be updated via http patch.
 
-var assertReadyToBoot = function assertReadyToBoot(wisnuc) {
-  return !wisnuc || (typeof wisnuc === 'undefined' ? 'undefined' : (0, _typeof3.default)(wisnuc)) !== 'object' || wisnuc.status !== 'READY' ? throwError('fruitmix status not READY') : true;
-};
+Updating state to `poweroff` or `reboot` would shutdown or reboot the system, respectively.
 
-var assertReadyToInstall = function assertReadyToInstall(wisnuc) {
-  return !wisnuc || (typeof wisnuc === 'undefined' ? 'undefined' : (0, _typeof3.default)(wisnuc)) !== 'object' || wisnuc.status !== 'ENOENT' ? throwError('fruitmix status not ENOENT') : true;
-};
+When `state` is `reboot`, `mode` can be `normal` or `maintenance` as an option (reboot to normal / maintenance mode)
 
-var shutdownAsync = function () {
-  var _ref4 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee2(reboot) {
-    var cmd;
-    return _regenerator2.default.wrap(function _callee2$(_context2) {
-      while (1) {
-        switch (_context2.prev = _context2.next) {
-          case 0:
-            cmd = reboot === true ? 'reboot' : 'poweroff';
-            _context2.next = 3;
-            return (0, _bluebird.resolve)(child.execAsync('echo "PWR_LED 3" > /proc/BOARD_io').reflect());
+When `current` is null, it can be set to a btrfs file system uuid. This is the `run` operation.
 
-          case 3:
-            _context2.next = 5;
-            return (0, _bluebird.resolve)((0, _bluebird.delay)(3000));
+The file system must either have a good fruitmix installation (`users` is an array) or have no fruitmix at all (`users` is `ENOENT`)
 
-          case 5:
-            _context2.next = 7;
-            return (0, _bluebird.resolve)(child.execAsync(cmd));
+@module Boot
+*/
 
-          case 7:
-          case 'end':
-            return _context2.stop();
-        }
+/**
+Fired when boot mode changed by the user
+
+@event BootModeUpdate
+@global
+*/
+
+/**
+Fired when currently used file system changed, either by init boot, or by user
+
+@event FileSystemUpdate
+@global
+*/
+
+/**
+Fired when user tries to shutdown the system.
+
+@event SystemShutdown
+@global
+*/
+
+/**
+Copy of config.bootMode
+@type {string}
+*/
+let mode
+
+/**
+Copy of config.lastFileSystem
+@type {string}
+*/
+let last
+
+/**
+Copy of storage
+@type {module:Storage~Storage}
+*/
+let storage
+
+/**
+This is boot module state, not apps state.
+@type {string}
+*/
+let state = 'starting'
+
+/**
+File system uuid of currently used file system.
+@type {string}
+*/
+let current = null
+
+/**
+Error code when current is null
+@type {string}
+*/
+let error = null
+
+/**
+Module init. Hook listeners to `ConfigUpdate` and `StorageUpdate` events.
+@listens ConfigUpdate
+@listens StorageUpdate
+*/
+const init = () => {
+  const readyToBoot = () =>
+    mode !== undefined && last !== undefined && storage !== undefined
+
+  broadcast.on('ConfigUpdate', (err, config) => {
+    if (err) return
+    if (config.bootMode !== 'normal' && config.bootMode !== 'maintenance') {
+      process.nextTick(() => broadcast.emit('BootModeUpdate', null, 'normal'))
+      return
+    }
+    if (config.lastFileSystem !== null && !isUUID(config.lastFileSystem)) {
+      process.nextTick(() => broadcast.emit('FileSystemUpdate', null, null))
+      return
+    }
+    mode = config.bootMode
+    last = config.lastFileSystem
+    if (state === 'starting' && readyToBoot()) boot()
+  })
+
+  broadcast.on('StorageUpdate', (err, _storage) => {
+    if (err) return
+    if (storage === _storage) return
+    storage = _storage
+    if (state === 'starting' && readyToBoot()) boot()
+  })
+}
+
+/**
+Boot the system
+@fires FileSystemUpdate
+*/
+const boot = () => {
+
+  let v
+  if (mode === 'maintenance') {
+    current = null
+    error = null
+  } else {
+    let volumes = storage.volumes
+
+    if (last && (v = volumes.find(v => v.fileSystemUUID === last.uuid))) {
+      if (!v.isMounted) {
+        current = null
+        error = 'ELASTNOTMOUNT'
+      } else if (v.isMissing) {
+        current = null
+        error = 'ELASTMISSING'
+      } else if (!Array.isArray(v.users)) {
+        current = null
+        error = 'ELASTDAMAGED'
+      } else {
+        current = v.fileSystemUUID
+        error = null
       }
-    }, _callee2, undefined);
-  }));
-
-  return function shutdownAsync(_x3) {
-    return _ref4.apply(this, arguments);
-  };
-}();
-
-var cfs = function cfs(fsys) {
-  return { type: fsys.fileSystemType, uuid: fsys.fileSystemUUID, mountpoint: fsys.mountpoint };
-};
-
-module.exports = {
-
-  data: null,
-  fruitmix: null,
-
-  probedStorageAsync: function () {
-    var _ref5 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee3() {
-      var storage, fileSystems;
-      return _regenerator2.default.wrap(function _callee3$(_context3) {
-        while (1) {
-          switch (_context3.prev = _context3.next) {
-            case 0:
-              storage = Storage.get();
-              fileSystems = extractFileSystems(storage);
-              _context3.next = 4;
-              return (0, _bluebird.resolve)(probeAllAsync(fileSystems));
-
-            case 4:
-              return _context3.abrupt('return', storage);
-
-            case 5:
-            case 'end':
-              return _context3.stop();
-          }
-        }
-      }, _callee3, this);
-    }));
-
-    function probedStorageAsync() {
-      return _ref5.apply(this, arguments);
-    }
-
-    return probedStorageAsync;
-  }(),
-
-  boot: function boot(cfs) {
-
-    // maintenance mode does not need to start fruitmix
-    if (Config.get().bootMode === 'normal') this.fruitmix = fruitmix.fork(cfs);
-
-    // this.data = { state: 'normal', currentFileSystem: cfs }
-    this.data = {
-      state: Config.get().bootMode,
-      currentFileSystem: cfs
-    };
-    Config.updateLastFileSystem({ type: cfs.type, uuid: cfs.uuid });
-  },
-
-
-  // autoboot
-  autoBootAsync: function () {
-    var _ref6 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee4() {
-      var storage, fileSystems, last, type, uuid, fsys, alts;
-      return _regenerator2.default.wrap(function _callee4$(_context4) {
-        while (1) {
-          switch (_context4.prev = _context4.next) {
-            case 0:
-              _context4.next = 2;
-              return (0, _bluebird.resolve)(Storage.refreshAsync());
-
-            case 2:
-              storage = _context4.sent;
-              fileSystems = extractFileSystems(storage);
-              _context4.next = 6;
-              return (0, _bluebird.resolve)(probeAllAsync(fileSystems));
-
-            case 6:
-
-              console.log('[autoboot] storage and fruitmix', (0, _stringify2.default)(storage, null, '  '));
-
-              last = Config.get().lastFileSystem;
-
-              if (!last) {
-                _context4.next = 17;
-                break;
-              }
-
-              type = last.type, uuid = last.uuid;
-              fsys = fileSystems.find(function (f) {
-                return f.fileSystemType === type && f.fileSystemUUID === uuid;
-              });
-
-              if (!fsys) {
-                _context4.next = 15;
-                break;
-              }
-
-              try {
-                assertFileSystemGood(fsys);
-                assertReadyToBoot(fsys.wisnuc);
-                this.boot(cfs(fsys));
-              } catch (e) {
-                console.log('[autoboot] failed to boot lastfs', last, e);
-                this.data = { state: 'maintenance', error: 'EFAIL', message: e.message };
-              }
-              console.log('[autoboot] boot state', this.data);
-              return _context4.abrupt('return');
-
-            case 15:
-              _context4.next = 18;
-              break;
-
-            case 17:
-              console.log('[autoboot] no lastfs');
-
-            case 18:
-
-              // find all good and ready-to-boot file systems
-              alts = fileSystems.filter(function (f) {
-                try {
-                  assertFileSystemGood(f);
-                  assertReadyToBoot(f.wisnuc);
-                  return true;
-                } catch (e) {
-                  return false;
-                }
-              });
-
-
-              if (alts.length === 1) this.boot(cfs(alts[0]));else this.data = { state: 'maintenance', error: alts.length === 0 ? 'ENOALT' : 'EMULTIALT' };
-
-              console.log('[autoboot] boot state', this.data);
-
-            case 21:
-            case 'end':
-              return _context4.stop();
-          }
-        }
-      }, _callee4, this);
-    }));
-
-    function autoBootAsync() {
-      return _ref6.apply(this, arguments);
-    }
-
-    return autoBootAsync;
-  }(),
-
-  // manual boot only occurs in maintenance mode.
-  // this operation should not update boot state if failed.
-  // target: file system UUID
-  // username, password, if install is true or reinstall is true
-  manualBootAsync: function () {
-    var _ref7 = (0, _bluebird.coroutine)(_regenerator2.default.mark(function _callee5(args) {
-      var target, username, password, install, reinstall, storage, fileSystems, fsys, wisnuc;
-      return _regenerator2.default.wrap(function _callee5$(_context5) {
-        while (1) {
-          switch (_context5.prev = _context5.next) {
-            case 0:
-              if (!(this.data.state !== 'maintenance')) {
-                _context5.next = 2;
-                break;
-              }
-
-              throw new Error('not in maintenance mode');
-
-            case 2:
-              target = args.target, username = args.username, password = args.password, install = args.install, reinstall = args.reinstall;
-              _context5.next = 5;
-              return (0, _bluebird.resolve)(Storage.refreshAsync());
-
-            case 5:
-              storage = _context5.sent;
-              fileSystems = extractFileSystems(storage);
-              fsys = fileSystems.find(function (f) {
-                return f.uuid === target;
-              });
-
-              if (fsys) {
-                _context5.next = 10;
-                break;
-              }
-
-              throw (0, _assign2.default)(new Error('target not found'), { code: 'ENOENT' });
-
-            case 10:
-
-              assertFileSystemGood(fsys);
-              _context5.next = 13;
-              return (0, _bluebird.resolve)(fruitmix.probeAsync(fsys.mountpoint));
-
-            case 13:
-              wisnuc = _context5.sent;
-
-              if (!(reinstall === true || install === true)) {
-                _context5.next = 25;
-                break;
-              }
-
-              if (!reinstall) {
-                _context5.next = 22;
-                break;
-              }
-
-              _context5.next = 18;
-              return (0, _bluebird.resolve)(rimrafAsync(path.join(fsys.mountpoint, 'wisnuc')));
-
-            case 18:
-              _context5.next = 20;
-              return (0, _bluebird.resolve)(mkdirpAsync(path.join(fsys.mountpoint, 'wisnuc', 'fruitmix')));
-
-            case 20:
-              _context5.next = 23;
-              break;
-
-            case 22:
-              assertReadyToInstall(wisnuc);
-
-            case 23:
-              _context5.next = 26;
-              break;
-
-            case 25:
-              // direct boot, fruitmix status must be 'READY'
-              assertReadyToBoot(wisnuc);
-
-            case 26:
-
-              Config.merge({ bootMode: 'normal' });
-              _context5.next = 29;
-              return (0, _bluebird.resolve)((0, _bluebird.delay)(200));
-
-            case 29:
-
-              this.boot(cfs(fsys));
-
-            case 30:
-            case 'end':
-              return _context5.stop();
-          }
-        }
-      }, _callee5, this);
-    }));
-
-    function manualBootAsync(_x4) {
-      return _ref7.apply(this, arguments);
-    }
-
-    return manualBootAsync;
-  }(),
-
-  // reboot
-  rebootAsync: function () {
-    var _ref8 = (0, _bluebird.method)(function (op, target) {
-
-      switch (op) {
-        case 'poweroff':
-          shutdownAsync(false).asCallback(function () {});
-          break;
-
-        case 'reboot':
-          shutdownAsync(true).asCallback(function () {});
-          break;
-
-        case 'rebootMaintenance':
-          Config.updateBootMode('maintenance');
-          shutdownAsync(true).asCallback(function () {});
-          break;
-
-        case 'rebootNormal':
-          // should check bootability ??? TODO
-          if (target) Config.updateLastFileSystem({ type: 'btrfs', uuid: target }, true);else Config.updateBootMode('normal');
-
-          shutdownAsync(true).asCallback(function () {});
-          break;
-
-        default:
-          throw new Error('unexpected case'); // TODO
+    } else { // either last not found or last not bootable
+      if (volumes.length === 1 &&
+        volumes[0].isMounted &&
+        !volumes[0].isMissing &&
+        Array.isArray(volumes[0].users)) {
+        v = volumes[0]
+        current = v.fileSystemUUID
+        error = null
+      } else {
+        current = null
+        error = 'ENOALT'
       }
-    });
-
-    function rebootAsync(_x5, _x6) {
-      return _ref8.apply(this, arguments);
     }
-
-    return rebootAsync;
-  }(),
-
-  get: function get() {
-    return this.data;
+    broadcast.emit('FileSystemUpdate', error, current)
+    if (current) broadcast.emit('FruitmixStart', path.join(v.mountpoint, 'wisnuc', 'fruitmix'))
   }
-};
+  state = 'started'
+}
+
+init()
+
+/**
+see apib document
+*/
+router.get('/', (req, res) => res.status(200).json({ mode, last, state, current, error }))
+
+/**
+see apib document
+@function
+@fires FileSystemUpdate
+@fires BootModeUpdate
+*/
+router.patch('/', (req, res, next) => {
+  let arg = req.body
+
+  const err = (code, message) => res.status(code).json({ message })
+
+  if (arg.hasOwnProperty('current')) {
+    if (arg.hasOwnProperty('state')) return err(400, 'curent and state cannot be patched simultaneously')
+    if (arg.hasOwnProperty('mode')) return err(400, 'current and mode cannot be patched simultaneously')
+    if (current !== null) return err(400, 'current file system is already set')
+
+    let v = storage.volumes.find(v => v.uuid === arg.current)
+    if (!v) return err(400, 'volume not found')
+    if (!v.isMounted) return err(400, 'volume is not mounted')
+    if (v.isMissing) return err(400, 'volume has missing devices')
+    if (!Array.isArray(v.users) && v.users !== 'ENOENT') return err(400, 'only volumes without fruitmix or with users can be used')
+
+    let froot = path.join(v.mountpoint, 'wisnuc', 'fruitmix')
+    let tmp = path.join(froot, 'tmp')
+    rimraf(tmp, err => {
+      if (err) return next(err) 
+      mkdirp(tmp, err => {
+        if (err) return next(err)
+        current = v.fileSystemUUID
+        error = null
+
+        if (mode === 'maintenance') broadcast.emit('BootModeUpdate', null, 'normal')
+        broadcast.emit('FileSystemUpdate', null, current)
+        broadcast.emit('FruitmixStart', froot)
+        process.nextTick(() => res.status(200).json({ mode, last, state, current, error }))
+      })
+    })
+  } else if (arg.hasOwnProperty('state')) {
+    if (arg.state !== 'poweroff' && arg.state !== 'reboot') return err(400, 'invalid state')
+    if (arg.state === 'reboot' && arg.mode === 'maintenance') broadcast.emit('BootModeUpdate', null, 'maintenance')
+
+    broadcast.emit('SystemShutdown')
+    setTimeout(() => child.exec(arg.state), 4000)
+    res.status(200).end()
+  } else {
+    err(400, 'either current or state must be provided')
+  }
+})
+
+module.exports = router
