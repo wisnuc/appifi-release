@@ -33,7 +33,7 @@ class Station {
     this.connect = undefined
     this.pipe = undefined
     this.initialized = false
-    this.init()
+    // this.init() do not init
   }                                                  
   
   init() {
@@ -159,7 +159,7 @@ class Station {
   requestRegisterStation(froot, callback) {
     // console.log(publicKey)
     request
-      .post(CONFIG.CLOUD_PATH + 'v1/stations')
+      .post(CONFIG.CLOUD_PATH + 's/v1/stations')
       .set('Content-Type', 'application/json')
       .send({
         publicKey: this.publicKey
@@ -170,6 +170,7 @@ class Station {
           debug(err)
           return callback(new Error('register error')) 
         }
+        res.body.data.label = 'stationName'
         let ws = fs.createWriteStream(SA_PATH)
         ws.write(JSON.stringify(res.body.data, null, ' '))
         ws.close()
