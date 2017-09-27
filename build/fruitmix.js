@@ -2,22 +2,46 @@ const Promise = require('bluebird')
 const path = require('path')
 const fs = Promise.promisifyAll(require('fs'))
 const EventEmitter = require('events')
+const crypto = require('crypto')
 
 const rimraf = require('rimraf')
 const mkdirp = require('mkdirp')
 const mkdirpAsync = Promise.promisify(mkdirp)
 const rimrafAsync = Promise.promisify(rimraf)
-const uuid = require('uuid')
+const UUID = require('uuid')
 
 const UserList = require('./user/user')
 const DriveList = require('./forest/forest')
 const BoxData = require('./box/boxData')
 const Thumbnail = require('./lib/thumbnail2')
 const File = require('./forest/file')
+const Identifier = require('./lib/identifier')
+const { btrfsConcat, btrfsClone } = require('./lib/btrfs')
 
 const { assert, isUUID, isSHA256, validateProps } = require('./common/assertion')
 
 const CopyTask = require('./tasks/fruitcopy')
+const MoveTask = require('./tasks/fruitmove')
+
+const { readXstat, forceXstat } = require('./lib/xstat')
+
+const combineHash = (a, b) => {
+  let a1 = typeof a === 'string'
+    ? Buffer.from(a, 'hex')
+    : a
+
+
+  let b1 = typeof b === 'string'
+    ? Buffer.from(b, 'hex')
+    : b
+
+  let hash = crypto.createHash('sha256')
+  hash.update(Buffer.concat([a1, b1]))
+
+  let digest = hash.digest('hex')
+  return digest
+}
+
 
 /**
 Fruitmix is the facade of internal modules, including user, drive, forest, and box.
@@ -30,7 +54,6 @@ bypass the facade to access the internal modules.
 Fruitmix is also responsible for initialize all internal modules and paths.
 */
 class Fruitmix extends EventEmitter {
-
 
   /**
   @params {string} froot - fruitmix root path, should be an normalized absolute path
@@ -76,7 +99,7 @@ class Fruitmix extends EventEmitter {
   }
 
   async storeMediaMapAsync () {
-    let tmp = path.join(this.fruitmixPath, 'tmp', uuid.v4())
+    let tmp = path.join(this.fruitmixPath, 'tmp', UUID.v4())
     let fpath = path.join(this.fruitmixPath, 'metadataDB.json')
     let metadata = Array.from(this.mediaMap).map(x => {
       try{
@@ -939,29 +962,440 @@ class Fruitmix extends EventEmitter {
   }
 
   async createTaskAsync (user, props) {
-    if (typeof props !== 'object' || props === null)
-      throw new Error('invalid')
+    if (typeof props !== 'object' || props === null) {
+      throw Object.assign(new Error('invalid'), { status: 400 })
+    }
 
-    let src, dst, task
-    switch(props.type) {
-    case 'copy':
+    let src, dst, task, entries
+    if (props.type === 'copy' || props.type === 'move') {
       src = await this.getDriveDirAsync(user, props.src.drive, props.src.dir) 
       dst = await this.getDriveDirAsync(user, props.dst.drive, props.dst.dir)
-      let entries = props.entries.map(uuid => {
+      entries = props.entries.map(uuid => {
         let xstat = src.entries.find(x => x.uuid === uuid)
         if (!xstat) throw new Error('entry not found')
         return xstat
       })
 
-      task = new CopyTask(this, user, Object.assign({}, props, { entries }))
+      if (props.type === 'copy') {
+        task = new CopyTask(this, user, Object.assign({}, props, { entries }))
+      } else {
+        task = new MoveTask(this, user, Object.assign({}, props, { entries }))
+      }
       this.tasks.push(task)
       return task.view()
+    }
 
-    default:
-      throw new Error('invalid task type')
-    } 
+    throw new Error('invalid task type')
   }
 
+  ////////////////////////////
+  
+  mkdirp (user, driveUUID, dirUUID, name, cb) {
+    let callback = (err, data) => {
+      if(err) return cb(err)
+      else{
+        cb(null, data) 
+        dir.read()
+      }
+    }
+    // TODO permission check
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
+    if (!dir) {
+      let err = new Error('drive or dir not found')
+      err.status = 404
+      return process.nextTick(() => cb(err))
+    }
+
+    let dst = path.join(dir.abspath(), name)
+    mkdirp(dst, err => {
+      if (err) return callback(err)
+      readXstat(dst, (err, xstat) => {
+        if (err) return callback(err)
+        callback(null, xstat)
+      })
+    })
+  }
+
+  rimraf (user, driveUUID, dirUUID, name, uuid, cb) {
+    let callback = (err, data) => {
+      if(err) return cb(err)
+      else{
+        cb(null, data) 
+        dir.read()
+      }
+    }
+    // TODO permission check
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
+    if (!dir) {
+      let err = new Error('drive or dir not found')
+      err.status = 404
+      return process.nextTick(() => cb(err))
+    }
+
+    let dst = path.join(dir.abspath(), name)
+    readXstat(dst, (err, xstat) => {
+      // ENOENT treated as success
+      if (err && err.code === 'ENOENT') return callback(null)
+      if (err) return callback(err)
+      if (xstat.uuid !== uuid) 
+        return callback(Object.assign(new Error('uuid mismatch'), { status: 403 }))
+
+      rimraf(dst, err => callback(err))
+    })
+  }
+
+  createNewFile(user, driveUUID, dirUUID, name, tmp, hash, overwrite, cb) {
+    let callback = (err, data) => {
+      if(err) return cb(err)
+      else{
+        cb(null, data)
+        dir.read()
+      }
+    }
+
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
+    if (!dir) {
+      let err = new Error('drive or dir not found')
+      err.status = 404
+      return process.nextTick(() => cb(err))
+    }
+
+    let dst = path.join(dir.abspath(), name)
+    if (overwrite) {
+      readXstat(dst, (err, xstat) => {
+        if (err) return callback(err)
+        if (xstat.uuid !== overwrite) {
+          let err = new Error('overwrite (uuid) mismatch') 
+          err.status = 403
+          return callback(err)
+        }
+
+        forceXstat(tmp, { uuid: xstat.uuid, hash }, (err, xstat) => {
+          if (err) return callback(err) 
+          // dirty
+          Object.assign(xstat, { name })
+          fs.rename(tmp, dst, err => {
+            if (err) return callback(err)
+            return callback(null, xstat)
+          }) 
+        })
+      })
+    } else {
+      forceXstat(tmp, { hash }, (err, xstat) => {
+        if (err) return callback(err)
+        // dirty
+        Object.assign(xstat, { name })
+        fs.link(tmp, dst, err => {
+          if (err) {
+            callback(err)
+          } else {
+            callback(null, xstat)
+            if (xstat.magic === 'JPEG') {
+              if (!this.mediaMap.has(xstat.hash)) {
+                Identifier.identify(dst, xstat.hash, xstat.uuid, (err, metadata) => {
+                  // TODO
+                  if (err) return
+                  this.mediaMap.set(xstat.hash, metadata)
+                })
+              }
+            }
+          }
+        })
+      })
+    }
+  }
+
+  /**
+  data { path, size, sha256 }
+  **/
+  appendFile(user, driveUUID, dirUUID, name, hash, data, cb) {
+
+    let callback = (err, d) => {
+      if(err) return cb(err)
+      else{
+        cb(null, d)
+        dir.read()
+      }
+    }
+
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
+    if (!dir) {
+      let err = new Error('drive or dir not found')
+      err.status = 404
+      return process.nextTick(() => cb(err))
+    }
+
+    let dst = path.join(dir.abspath(), name)
+    readXstat(dst, (err, xstat) => {
+      if (err) return callback(err)
+      if (xstat.type !== 'file') 
+        return callback(Object.assign(new Error('not a file'), { code: 'EISDIR' }))
+      if (xstat.hash !== hash) 
+        return callback(new Error(`append (target) hash mismatch, actual: ${xstat.hash}`))
+      if (xstat.size % (1024 * 1024 * 1024) !== 0) 
+        return callback(new Error('target size must be multiple of 1G'))
+
+      let tmp = path.join(this.getTmpDir(), UUID.v4())
+      btrfsConcat(tmp, [dst, data.path], err => {
+        if (err) return callback(err)
+
+        fs.lstat(dst, (err, stat) => {
+          if (err) return callback(err)
+          if (stat.mtime.getTime() !== xstat.mtime) {
+            let err = new Error('race detected')
+            err.code = 'ERACE'
+            return callback(err)
+          }
+
+          let fingerprint = xstat.size === 0 
+            ? data.sha256
+            : combineHash(xstat.hash, data.sha256)
+
+          forceXstat(tmp, { uuid: xstat.uuid, hash: fingerprint }, (err, xstat2) => {
+            if (err) return callback(err)
+            // dirty
+            xstat2.name = name
+            fs.rename(tmp, dst, err => {
+              if (err) return callback(err)
+              callback(null, xstat2)               
+            }) 
+          })
+        })
+      })
+    }) 
+  }
+
+  rename(user, driveUUID, dirUUID, fromName, toName, overwrite, cb) {
+    let callback = (err, data) => {
+      if(err) return cb(err)
+      else{
+        cb(null, data)        
+        dir.read()
+      }
+    }
+
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
+    if (!dir) {
+      let err = new Error('drive or dir not found')
+      err.status = 404
+      return process.nextTick(() => cb(err))
+    }
+
+    let fromPath = path.join(dir.abspath(), fromName)
+    let toPath = path.join(dir.abspath(), toName)
+    let tmpPath = path.join(this.getTmpDir(), UUID.v4())
+
+    if (overwrite) {
+      // if overwrite is provided, the uuid must be reserved
+      readXstat(fromPath, (err, srcXstat) => {
+        if (err) return callback(err)
+        if (srcXstat.type !== 'file') {
+          let e = new Error(`${fromName} is not a file`)
+          return callback(e)
+        }
+
+        readXstat(toPath, (err, dstXstat) => {
+          if (err) return callback(err)
+          if (dstXstat.type !== 'file') {
+            let e = new Error(`${toName} is not a file`)
+            return callback(e)
+          }          
+
+          if (dstXstat.uuid !== overwrite) {
+            let e = new Error(`overwrite uuid mismatch, actual: ${dstXstat.uuid}`)
+            return callback(e)
+          }
+
+          // 1. clone fromPath to tmpPath
+          // 2. check xstat
+          // 3. stamp tmpPath
+          // 4. rename
+          // 5. remove src
+          btrfsClone(tmpPath, fromPath, err => {
+            if (err) return callback(err)
+            readXstat(fromPath, (err, xstat) => {
+              if (err) {
+                rimraf(tmpPath, () => {})
+                return callback(err)
+              }
+
+              forceXstat(tmpPath, { uuid: dstXstat.uuid, hash: srcXstat.hash }, err => {
+                if (err) {
+                  rimraf(tmpPath, () => {})
+                  return callback(err)
+                }
+
+                fs.rename(tmpPath, toPath, err => {
+                  rimraf(tmpPath, () => {})
+                  if (err) return callback(err) 
+                  rimraf(fromPath, err => {
+                    if (err) return callback(err)
+                    readXstat(toPath, callback)
+                  })
+                })
+              })              
+            }) 
+          }) 
+        })
+      })
+    } else {
+      // we cannot use fs.link because it may leave two files with the SAME uuid.
+      fs.lstat(toPath, (err, stat) => {
+        if (err) {
+          if (err.code !== 'ENOENT') return callback(err)
+          fs.rename(fromPath, toPath, err => err ? callback(err) : readXstat(toPath, callback))
+        } else {
+          let e = new Error('file or directory exists')
+          e.code = 'EEXIST'
+          callback(e)
+        }
+      })      
+    }
+  }
+
+  dup(user, driveUUID, dirUUID, fromName, toName, overwrite, cb) {
+    let callback = (err, data) => {
+      if(err) return cb(err)
+      else{
+        cb(null, data) 
+        dir.read()
+      }
+    }
+
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID) 
+    if (!dir) {
+      let err = new Error('drive or dir not found')
+      err.status = 404
+      return process.nextTick(() => cb(err))
+    }
+
+    let fromPath = path.join(dir.abspath(), fromName)
+    let toPath = path.join(dir.abspath(), toName)
+    let tmpPath = path.join(this.getTmpDir(), UUID.v4())
+
+    readXstat(fromPath, (err, srcXstat) => {
+      if (err) return callback(err)
+      if (srcXstat.type !== 'file') {
+        let e = new Error(`${fromName} is not a file`)
+        return callback(e)
+      }
+
+      btrfsClone(tmpPath, fromPath, err => {
+        if (err) return callback(err)
+        readXstat(fromPath, (err, xstat) => {
+          if (err) return callback(err)
+          if (xstat.uuid !== srcXstat.uuid || xstat.mtime !== srcXstat.mtime) {
+            let e = new Error(`race condition detected, try again`)
+            return callback(e)
+          }
+         
+          if (overwrite) {
+            readXstat(toPath, (err, dstXstat) => {
+              if (err) return callback(err)
+              if (dstXstat.type !== 'file') {
+                let e = new Error(`${toName} is not a file`)
+                return callback(e)
+              }
+
+              if (dstXstat.uuid !== overwrite) {
+                let e = new Error(`uuid mismatch, actual: ${dstXstat.uuid}`)
+                return callback(e)
+              }
+
+              let props = { uuid: dstXstat.uuid }
+              if (srcXstat.hash) props.hash = srcXstat.hash
+        
+              forceXstat(tmpPath, props, err => {
+                if (err) return callback(err)
+                fs.rename(tmpPath, toPath, err => {
+                  rimraf(tmpPath, () => {})
+                  if (err) return callback(err)
+                  readXstat(toPath, callback) 
+                })
+              })
+            })
+          } else {
+            forceXstat(tmpPath, { hash: srcXstat.hash }, (err, xstat) => {
+              if (err) return callback(err)
+              fs.link(tmpPath, toPath, err => {
+                rimraf(tmpPath, () => {})
+                if (err) return callback(err)
+                readXstat(toPath, callback)
+              })
+            })
+          }
+        })
+      })
+    })
+  }
+
+  // callback returns 
+  // ENOTEMPTY, ENOTDIR
+  // this function try to move srcDirUUID into dstDirUUID
+  // this function may fail if target exists (non-empty)
+  mvdir(user, srcDriveUUID, srcDirUUID, name, dstDriveUUID, dstDirUUID, callback) {
+ 
+    let srcDir = this.driveList.getDriveDir(srcDriveUUID, srcDirUUID) 
+    if (!srcDir) return callback(new Error('source drive or dir not found'))
+    if (srcDir.name !== name) return callback(new Error('source directory name mismatch'))
+    if (srcDir.parent === null) return callback(new Error('source directory is root'))
+
+    let dstDir = this.driveList.getDriveDir(dstDriveUUID, dstDirUUID)
+    if (!dstDir) return callback(new Error('destination drive or dir not found'))
+
+    let srcPath = srcDir.abspath()
+    readXstat(srcPath, (err, xstat) => {
+      if (err) return callback(err)
+      if (xstat.uuid !== srcDir.uuid) {
+        srcDir.parent.read() 
+        return callback(new Error('inconsistent data between in-memory cache and disk file system'))
+      }
+
+      let dstPath = path.join(dstDir.abspath(), name)
+      try {
+        fs.renameSync(srcPath, dstPath)
+      } catch (e) {
+        // ENOTEMPTY target is non-empty directory 
+        // ENOTDIR target is not a directory
+        return callback(e)
+      }
+
+      let srcParent = srcDir.parent
+      srcDir.detach()
+      srcDir.attach(dstDir)
+      srcParent.read()
+      dstDir.read()
+      callback(null)
+    })
+  }
+
+  mvfile(user, srcDriveUUID, srcDirUUID, fileUUID, name, dstDriveUUID, dstDirUUID, callback) {
+    let srcDir = this.driveList.getDriveDir(srcDriveUUID, srcDirUUID)
+    if (!srcDir) return callback(new Error('source drive or directory not found'))
+    
+    let dstDir = this.driveList.getDriveDir(dstDriveUUID, dstDirUUID)
+    if (!dstDir) return callback(new Error('destination drive or directory not found'))
+
+    let srcPath = path.join(srcDir.abspath(), name)
+    readXstat(srcPath, (err, xstat) => {
+      if (err) return callback(err)
+      if (xstat.uuid !== fileUUID) return callback(new Error('uuid mismatch'))
+     
+      let dstPath = path.join(dstDir.abspath(), name) 
+      fs.lstat(dstPath, (err, stat) => {
+        if (!err) return callback(new Error('target exists'))
+        if (err.code !== 'ENOENT') return callback(err)
+
+        // EISDIR rename file to existing directory
+        fs.rename(srcPath, dstPath, err => {
+          if (err) return callback(err)
+          srcDir.read()
+          dstDir.read()
+          callback(null)
+        })
+      })
+    })
+  }
 }
 
 const broadcast = require('./common/broadcast')
