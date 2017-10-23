@@ -45,6 +45,11 @@ class Directory extends Node {
     /** mtime **/
     this.mtime = -xstat.mtime
 
+    this.fileCount = 0
+    this.dirCount = 0
+
+    this.level = -1
+
     // index
     this.ctx.indexDirectory(this)
 
@@ -67,15 +72,14 @@ class Directory extends Node {
 
   /**
   Update children according to xstats returned from `read`.
-  This is a internal function and is only called in `readdir`.
+  This is an internal function and is only called in `readdir`.
   @param {xstat[]} xstats
   @param {Monitor[]} monitors
   */
   merge(xstats, monitors) { 
 
     // remove non-interested files
-    xstats = xstats.filter(x => x.type === 'directory' 
-      || (x.type === 'file' && typeof x.magic === 'string'))
+    xstats = xstats.filter(x => x.type === 'directory' || (x.type === 'file' && typeof x.magic === 'string'))
 
     // convert to a map
     let map = new Map(xstats.map(x => [x.uuid, x]))
@@ -98,11 +102,13 @@ class Directory extends Node {
 
     // new 
     map.forEach(val => {
-      if (val.type === 'file')
+      if (val.type === 'file') {
         new File(this.ctx, this, val)
-      else 
+      } else {
         new Directory(this.ctx, this, val, monitors)
+      }
     })
+
   }
 
   /**
@@ -123,10 +129,19 @@ class Directory extends Node {
     // either name or timestamp changed, a read is required.
     this.name = xstat.name
 
-    monitors
-      ? monitors.forEach(monitor => this.read(monitor))
-      : this.read()
+    if (monitors) {
+      monitors.forEach(monitor => this.read(monitor))
+    } else {
+      this.read()
+    }
   }
+
+/**
+  pathChanging () {
+    [...this.children].forEach(child => child.pathChanging)
+    
+  }
+**/
 
   /**
   Request a `readdir` operation. 
@@ -168,10 +183,6 @@ class Directory extends Node {
       })
     }) 
   }
-
-  rimraf() {
-    
-  } 
 
   nameWalk(names) {
     if (names.length === 0) return this
