@@ -67,12 +67,15 @@ class Fruitmix extends EventEmitter {
     let thumbDir = path.join(froot, 'thumbnail')
     let tmpDir = path.join(froot, 'tmp')
 
+    rimraf.sync(tmpDir)
+    mkdirp.sync(tmpDir)
+
     this.fruitmixPath = froot
 
     let metaPath = path.join(froot, 'metadataDB.json')
     this.mediaMap = new PersistentMap(metaPath, tmpDir)
 
-    console.log(`metadata loaded, ${this.mediaMap.size} entries`)
+    // console.log(`metadata loaded, ${this.mediaMap.size} entries`)
 
     this.thumbnail = new Thumbnail(thumbDir, tmpDir)
     this.userList = new UserList(froot)
