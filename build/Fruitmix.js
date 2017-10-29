@@ -22,6 +22,8 @@ const { btrfsConcat, btrfsClone } = require('./lib/btrfs')
 const jwt = require('jwt-simple')
 const secret = require('./config/passportJwt')
 
+const PersistentMap = require('./lib/persistent-map')
+
 const { assert, isUUID, isSHA256, validateProps } = require('./common/assertion')
 
 const CopyTask = require('./tasks/fruitcopy')
@@ -66,17 +68,17 @@ class Fruitmix extends EventEmitter {
     let tmpDir = path.join(froot, 'tmp')
 
     this.fruitmixPath = froot
-    this.mediaMap = this.loadMediaMap(path.join(froot, 'metadataDB.json'))
+
+    let metaPath = path.join(froot, 'metadataDB.json')
+    this.mediaMap = new PersistentMap(metaPath, tmpDir)
+
+    console.log(`metadata loaded, ${this.mediaMap.size} entries`)
+
     this.thumbnail = new Thumbnail(thumbDir, tmpDir)
     this.userList = new UserList(froot)
     this.driveList = new DriveList(froot, this.mediaMap)
     this.boxData = new BoxData(froot)
     this.tasks = []
-    this.storeTimer = setInterval(() => {
-      this.storeMediaMapAsync()
-        .then(() => {})
-        .catch(e => {})
-    }, 1000 * 60 * 60)
 
     if (!nosmb) {
       samba.start(froot)
@@ -210,26 +212,6 @@ class Fruitmix extends EventEmitter {
       } catch (e) { } // TODO:
     })
     return mediaMap
-  }
-
-  async storeMediaMapAsync () {
-    let tmp = path.join(this.fruitmixPath, 'tmp', UUID.v4())
-    let fpath = path.join(this.fruitmixPath, 'metadataDB.json')
-    let metadata = Array.from(this.mediaMap).map(x => {
-      try {
-        return JSON.stringify(x)
-      } catch (e) {
-        debug(e)
-      }
-    })
-    try {
-      await fs.writeFileAsync(tmp, metadata.join('\n'))
-      await rimrafAsync(fpath)
-      await fs.renameAsync(tmp, fpath)
-    } catch (e) {
-      debug(e)
-      throw e
-    }
   }
 
   /**
@@ -993,7 +975,8 @@ class Fruitmix extends EventEmitter {
   // NEW API
   getMetadata (user, fingerprint) {
     if (!this.userCanReadMedia(user, fingerprint)) { throw Object.assign(new Error('permission denied'), { status: 401 }) }
-    return Object.assign({}, this.mediaMap.get(fingerprint), { hash: fingerprint })
+    // return Object.assign({}, this.mediaMap.get(fingerprint), { hash: fingerprint })
+    return this.mediaMap.get(fingerprint)
   }
 
   getFingerprints (user, ...args) {
@@ -1165,15 +1148,19 @@ class Fruitmix extends EventEmitter {
             callback(err)
           } else {
             callback(null, xstat)
+/**
             if (xstat.magic === 'JPEG') {
               if (!this.mediaMap.has(xstat.hash)) {
                 Identifier.identify(dst, xstat.hash, xstat.uuid, (err, metadata) => {
+                  console.log(metadata)
                   // TODO
                   if (err) return
                   this.mediaMap.set(xstat.hash, metadata)
+                  console.log(this.mediaMap)
                 })
               }
             }
+**/
           }
         })
       })
