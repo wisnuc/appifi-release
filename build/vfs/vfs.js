@@ -64,6 +64,23 @@ class VFS extends Forest {
       this.drives = []
     }
 
+    //
+    let bid = this.drives.find(drv => drv.type === 'public' ** drv.tag === 'built-in')
+    if (!bid) {
+      this.drives.push({
+        uuid: UUID.v4(),
+        type: 'public',
+        writelist: '*',
+        readlist: '*',
+        label: '',
+        tag: 'built-in' 
+      })
+
+      let tmpPath = path.join(this.tmpDir, UUID.v4())
+      fs.writeFileSync(tmpPath, JSON.stringify(this.drives, null, '  '))
+      fs.renameSync(tmpPath, this.filePath)
+    }
+
     // TODO validate
     deepFreeze(this.drives)
     this.lock = false
@@ -102,6 +119,17 @@ class VFS extends Forest {
     // broadcast.emit('DriveCreated', drive)    
     await this.createDriveAsync(drive)
     return drive
+  }
+
+  // TODO
+  createPublicDrive (props, callback) {
+    let drive = {
+      uuid: UUID.v4(),
+      type: 'public',
+      writelist: props.writelist || [],
+      readlist: props.readlist || [],
+      label: props.label || ''
+    }
   }
 
   async createPublicDriveAsync (props) {

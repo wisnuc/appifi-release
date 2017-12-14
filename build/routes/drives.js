@@ -12,7 +12,6 @@ const UUID = require('uuid')
 const { isSHA256, isUUID } = require('../lib/assertion')
 const Dicer = require('dicer')
 const getFruit = require('../fruitmix')
-const { pipeHash, drainHash } = require('../lib/tailhash')
 const HashStream = require('../lib/hash-stream')
 
 const Debug = require('debug')
@@ -25,14 +24,28 @@ const fruitless = (req, res, next) => getFruit() ? next() : next(EFruitUnavail)
 
 const EMPTY_SHA256_HEX = crypto.createHash('sha256').digest('hex')
 
-/**
-Get a fruitmix drive
-*/
-router.get('/', fruitless, auth.jwt(), (req, res) => 
-  res.status(200).json(getFruit().getDriveList(req.user)))
+const fruit = (req, res, next) => {
+  req.fruit = getFruit()
+  if (req.fruit) {
+    next()
+  } else {
+    res.status(503).json({ message: 'fruitmix not available' })
+  }
+}
 
 /**
-Create a fruitmix drive
+DriveList GET
+*/
+/**
+router.get('/', fruitless, auth.jwt(), (req, res) => 
+  res.status(200).json(getFruit().getDriveList(req.user)))
+**/
+router.get('/', fruit, auth.jwt(), (req, res, next) => 
+  req.fruit.getDriveList2(req.user, (err, list) => 
+    err ? next(err) : res.status(200).json(list)))
+
+/**
+DriveList POST TODO change to callback
 */
 router.post('/', fruitless, auth.jwt(), (req, res, next) => 
   getFruit().createPublicDriveAsync(req.user, req.body)
@@ -40,10 +53,11 @@ router.post('/', fruitless, auth.jwt(), (req, res, next) =>
     .catch(next))
 
 /**
-Get single drive
+Drive GET
 */
-router.get('/:driveUUID', fruitless, auth.jwt(), (req, res, next) => 
-  res.status(200).json(getFruit().getDrive(req.user, req.params.driveUUID)))
+router.get('/:driveUUID', fruit, auth.jwt(), (req, res, next) => 
+  req.fruit.getDrive2(req.user, req.params.driveUUID, (err, drive) => 
+    err ? next(err) : res.status(200).json(drive)))
 
 /**
 Patch a drive, only public drive is allowed
@@ -143,16 +157,6 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
 
   let dir = fruit.driveList.getDriveDir(driveUUID, dirUUID)
   if (!dir) {
-/**
-    console.log('======')
-    console.log('driveUUID', driveUUID)
-    console.log('dirUUID', dirUUID)
-    console.log('dir not fond')
-    console.log('======')
-
-    process.exit(1)
-*/
-
     return res.status(404).end()
   }
 
@@ -199,7 +203,7 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
     debug(x) 
     debug('  parts', num(parts))
     debug('  parsers_', num(parsers), num(parsers_))
-    debug('  pipes, drains_', num(pipes), num(drains), num(drains_))
+    debug('  pipes, pipes_', num(pipes), num(pipes_))
     debug('  _dryrun', _dryrun)
     debug('  dryrun', dryrun)
     debug('  dryrun_', dryrun_)
@@ -212,7 +216,7 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
       console.log(x) 
       console.log('  parts', num(parts))
       console.log('  parsers_', num(parsers), num(parsers_))
-      console.log('  pipes, drains_', num(pipes), num(pipes_))
+      console.log('  pipes, pipes_', num(pipes), num(pipes_))
       console.log('  _dryrun', _dryrun)
       console.log('  dryrun', dryrun)
       console.log('  dryrun_', dryrun_)
@@ -223,21 +227,21 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
     }
   }
 
-
+/**
   const assertNoDup = () => {
     const all = [
       ...num(parts),
       ...num(parsers),
       ...num(parsers_),
       ...num(pipes),
-      ...num(drains),
-      ...num(drains_),
+      ...num(pipes_),
       ...num(executions)
     ]
 
     let set = new Set(all)
     if (set.size !== all.length) throw new Error('duplicate found')
   }
+**/
 
   const guard = (message, f) => ((...args) => {
     // print(`--------------------- ${message} >>>> begin`)
@@ -367,7 +371,6 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
     })
     parsers.splice(0)
 
-    // for drains and drains_, the remaining job must NOT have errored predecessor
     while (true) {
       let index = pipes.findIndex(predecessorErrored)
       if (index !== -1) {
@@ -529,7 +532,7 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
           err.code === 'ESHA256MISMATCH') {
           err.status = 400
         } else {
-          console.log('hash stream error code', err.code)
+          console.log('hash stream error code', err.code, x.hs)
         }
         error(x, err)
       } else {
@@ -721,6 +724,7 @@ router.post('/:driveUUID/dirs/:dirUUID/entries', fruitless, auth.jwt(), (req, re
   })
 
   req.pipe(dicer)
+
 })
 
 /**
