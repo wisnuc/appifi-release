@@ -7,18 +7,23 @@ const getFruit = require('../fruitmix')
 const userInfo = (req, res, next) => {
   let guid = req.query.guid
   let text = req.get('Authorization')
-
   if (text) {
     let split = text.split(' ')
-    let local = jwt.decode(split[1], secret)
+    let local
+    try {
+      local = jwt.decode(split[1], secret)
+    } catch(e) {
+      e.status = 401
+      return next(e)
+    }
     let user = getFruit().findUserByUUID(local.uuid)
 
     if (!user || user.global.id !== guid)
       return res.status(401).end()
-    req.user = user
+    req.user = { global: {id: user.global.id} }
     next()
   } else {
-    let exist = [...getFruit().boxData.map.values()].find(box => (box.doc.users.includes(guid)
+    let exist = [...getFruit().boxData.boxes.values()].find(box => (box.doc.users.includes(guid)
                     || box.doc.owner === guid))
     if (!exist) return res.status(401).end()
     req.user = { global: {id: guid} }
@@ -34,8 +39,7 @@ router.get('/', userInfo, (req, res) => {
       deadline: new Date().getTime() + 4 * 60 * 60 * 1000
     }
     res.status(200).json({ type: 'JWT', token: jwt.encode(token, secret) })
-  }
-  else {
+  } else {
     res.status(404).end()
   }
 })

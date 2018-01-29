@@ -28,11 +28,13 @@ class DlnaServer {
 
   async startAsync(mediaPath) {
     if (process.env.hasOwnProperty('NODE_PATH')) {
-      console.log('bypass dlna in auto test')
+      // mute
+      // console.log('bypass dlna in auto test')
       return
     }
     this.isStop = false
     let conf = confGen(mediaPath)
+    await child.execAsync('chown minidlna:minidlna /var/cache/minidlna')
     await fs.writeFileAsync(dlnaConfPath, conf)
     await this.restartAsync()
     debug('dlna start!')

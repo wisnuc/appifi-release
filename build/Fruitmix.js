@@ -14,8 +14,10 @@ const UUID = require('uuid')
 
 const Magic = require('./lib/magic')
 const UserList = require('./user/user')
+const DocStore = require('./box/docStore')
+const BlobStore = require('./box/BlobStore')
+const BoxData = require('./box/Boxes')
 const DriveList = require('./vfs/vfs')
-const BoxData = require('./box/boxData')
 const Thumbnail = require('./lib/thumbnail2')
 const File = require('./vfs/file')
 const Identifier = require('./lib/identifier')
@@ -47,6 +49,7 @@ const debug = Debug('fruitmix')
 const mixin = require('./fruitmix/mixin')
 const driveapi = require('./fruitmix/drive')
 const ndriveapi = require('./fruitmix/ndrive')
+const boxapi = require('./fruitmix/box')
 
 const combineHash = (a, b) => {
   let a1 = typeof a === 'string' ? Buffer.from(a, 'hex') : a
@@ -66,6 +69,8 @@ const Throw = (err, code, status) => {
 }
 
 const nosmb = !!process.argv.find(arg => arg === '--disable-smb') || process.env.NODE_PATH !== undefined
+
+const noBox = !!process.argv.find(arg => arg === '--disable-box') || process.env.NODE_PATH !== undefined
 
 /**
 Fruitmix is the facade of internal modules, including user, drive, forest, and box.
@@ -104,8 +109,8 @@ class Fruitmix extends EventEmitter {
     this.userList = new UserList(froot)
     this.driveList = new DriveList(froot, this.mediaMap)
     this.vfs = this.driveList
-    // this.boxData = new BoxData(froot)
     this.tasks = []
+
     if (!nosmb) {
       this.smbServer = new SambaServer(froot)
       this.smbServer.on('SambaServerNewAudit', audit => {
@@ -119,6 +124,9 @@ class Fruitmix extends EventEmitter {
     this.dlnaServer.startAsync(this.getBuiltInDrivePath())
       .then(() => {})
       .catch(console.error.bind(console,'dlna start error'))
+    
+    if (!noBox) this.boxData = new BoxData(this)
+    
   }
 
   async startSambaAsync(user) {
@@ -751,7 +759,7 @@ class Fruitmix extends EventEmitter {
     return this.driveList.getDriveDirs(driveUUID)
   }
 
-  async getDriveDirAsync (user, driveUUID, dirUUID, metadata) {
+  async getDriveDirAsync (user, driveUUID, dirUUID, metadata, counter) {
     // FIXME should this 401 ?
     if (!this.userCanRead(user, driveUUID)) throw Object.assign(new Error('Permission Denied'), { status: 401 })
     let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
@@ -774,8 +782,9 @@ class Fruitmix extends EventEmitter {
         }
       })
     }
-
-    return { path, entries }
+    let dirCounter
+    if(counter) dirCounter = this.getDirCounter(user, driveUUID, dirUUID)
+    return counter ? { path, entries, 'counter':dirCounter } : { path, entries }
   }
 
   // this is slightly different from async versoin
@@ -825,6 +834,20 @@ class Fruitmix extends EventEmitter {
       })
     })
     return Array.from(m.values())
+  }
+
+  getDirCounter (user, driveUUID, dirUUID) {
+    if (!this.userCanRead(user, driveUUID)) throw Object.assign(new Error('Permission Denied'), { status: 401 })
+    let dir = this.driveList.getDriveDir(driveUUID, dirUUID)
+    if (!dir) throw Object.assign(new Error('dir not found'), { status: 404 })
+    let fileCount = 0, fileSize = 0, dirCount = 0, mediaCount = 0
+    dir.postVisit(node => {
+      if(node instanceof File) return mediaCount ++
+      fileCount += node.fileCount
+      fileSize += node.fileSize
+      dirCount += node.dirCount
+    })
+    return { fileCount, fileSize, dirCount, mediaCount }
   }
 
   // NEW API
@@ -999,6 +1022,7 @@ class Fruitmix extends EventEmitter {
 
   updateSubTask(user, taskUUID, nodeUUID, props, callback) {
     let task = this.tasks.find(t => t.user.uuid === user.uuid && t.uuid === taskUUID) 
+
     if (!task) {
       let err = new Error(`task ${taskUUID} not found`)
       err.code = 'ENOTFOUND'
@@ -1400,6 +1424,7 @@ class Fruitmix extends EventEmitter {
 Object.assign(Fruitmix.prototype, {})
 Object.assign(Fruitmix.prototype, driveapi)
 Object.assign(Fruitmix.prototype, ndriveapi)
+Object.assign(Fruitmix.prototype, boxapi)
 module.exports = Fruitmix
 
 

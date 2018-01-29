@@ -278,11 +278,12 @@ class Base extends EventEmitter {
     } else {
       node.update(props)
       if (props.applyToAll) {
-        let type = node instanceof Directory ? 'dir' : 'file'
+        let type = node instanceof Dir ? 'dir' : 'file'
         this.policies[type][0] = props.policy[0] || this.policies[type][0]
         this.policies[type][1] = props.policy[1] || this.policies[type][1]
-
         // FIXME retry all ?
+        if (type === 'dir') [...this.conflictDirs].forEach(n => n.retry())
+        else [...this.conflictFiles].forEach(n => n.retry())
       }
     } 
 
